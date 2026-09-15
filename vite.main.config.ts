@@ -3,10 +3,15 @@ import { defineConfig } from 'vite';
 
 // https://vitejs.dev/config
 export default defineConfig({
-    resolve: {
-        alias: {
-            // '@renderer': path.resolve(__dirname, './src/renderer'),
-            // '@lib': path.resolve(__dirname, './src/lib'),
-        },
-    }
+  build: {
+    rollupOptions: {
+      external: ['better-sqlite3'],
+    },
+  },
+  resolve: {
+    alias: {
+      // '@renderer': path.resolve(__dirname, './src/renderer'),
+      // '@lib': path.resolve(__dirname, './src/lib'),
+    },
+  },
 });
