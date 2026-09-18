@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-// import path from 'path';
+import path from 'path';
 
 // https://vitejs.dev/config
 export default defineConfig({
@@ -10,8 +10,11 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      // '@renderer': path.resolve(__dirname, './src/renderer'),
-      // '@lib': path.resolve(__dirname, './src/lib'),
+      '@lib': path.resolve(__dirname, './src/renderer/lib'),
+      '@components': path.resolve(__dirname, './src/renderer/components'),
+      '@modules': path.resolve(__dirname, './src/renderer/modules'),
+      '@shared': path.resolve(__dirname, './src/shared'),
+      '@store': path.resolve(__dirname, './src/renderer/store'),
     },
   },
 });

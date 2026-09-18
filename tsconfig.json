@@ -11,6 +11,11 @@
     "moduleResolution": "bundler",
     "types": ["vite/client"],
     "paths": {
+      "@lib/*": ["./src/renderer/lib/*"],
+      "@components/*": ["./src/renderer/components/*"],
+      "@modules/*": ["./src/renderer/modules/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@store/*": ["./src/renderer/store/*"]
     }
   },
   "include": [
