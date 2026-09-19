@@ -72,6 +72,19 @@ Defines payment methods by name and type. It does not represent invoice payment 
 
 Classifies entries and stores a display color. Categories belong to users. Invoice payments must not repeat the purchase categories as another expense.
 
+`icon_key` stores a serializable icon identifier (for example, `food` or `salary`),
+independent of the editable category name. Supported identifiers are defined by
+`CategoryIconKey` in `src/shared/contracts/categories.ts`; Lucide components are
+mapped only in `src/renderer/lib/category-icons.ts`. Unknown or missing identifiers
+render the `other` icon. Transaction queries expose the identifier as
+`category_icon_key`, with `null` for uncategorized entries.
+
+Database initialization adds this column to existing databases once and assigns
+icons to recognized original category names. Other categories default to `other`.
+Renaming a category does not change its stored icon. There is currently no category
+editing API or icon picker; a future category editor should validate `icon_key`
+against the supported identifiers before persisting it.
+
 ### `recurrences` and `recurrences_versions`
 
 `recurrences` preserves the continuous identity of a repeating commitment. `recurrences_versions` stores each rule version, including amount, frequency, interval, and validity dates. A recurring transaction points to the version that generated it so historical entries retain their original rule.
