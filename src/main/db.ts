@@ -126,6 +126,19 @@ export function initDb(dbPath: string): Database.Database {
         CHECK (total_installments > 0)
       );
     `);
+
+      // Migrate existing databases as CREATE TABLE does not add columns.
+      const categoryColumns = db.pragma('table_info(categories)') as {
+        name: string;
+      }[];
+      if (!categoryColumns.some((column) => column.name === 'icon_key')) {
+        db.exec(
+          "ALTER TABLE categories ADD COLUMN icon_key TEXT NOT NULL DEFAULT 'other'",
+        );
+        db.exec(`UPDATE categories SET icon_key = lower(name)
+          WHERE name IN ('Salary', 'Freelance', 'Investment', 'Housing', 'Food',
+            'Transport', 'Shopping', 'Health', 'Entertainment', 'Savings')`);
+      }
     })();
     return db;
   } catch (error) {

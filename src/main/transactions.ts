@@ -1,9 +1,9 @@
-import type Database from 'better-sqlite3';
 import type {
-  Transaction,
+  TransactionDto,
   TransactionInput,
-  TransactionOptions,
-} from '../shared/types';
+} from '@shared/contracts/transaction';
+import type { UserDto } from '@shared/contracts/user';
+import type Database from 'better-sqlite3';
 
 // Fixed identity for the prototype; the renderer cannot select the user.
 export const TEST_USER_EMAIL = 'teste@personal-finance.local';
@@ -16,7 +16,7 @@ export function createTransactionService(db: Database.Database) {
     ).run('Test user', TEST_USER_EMAIL, '!login-disabled');
     const user = db
       .prepare('SELECT id, name, email FROM user WHERE email = ?')
-      .get(TEST_USER_EMAIL) as TransactionOptions['user'];
+      .get(TEST_USER_EMAIL) as UserDto;
     for (const name of ['Instant transfer', 'Cash', 'Debit card']) {
       db.prepare(
         `INSERT INTO payments (name, type) SELECT ?, 1
@@ -25,9 +25,9 @@ export function createTransactionService(db: Database.Database) {
     }
     for (const name of ['Food', 'Housing', 'Salary', 'Other']) {
       db.prepare(
-        `INSERT INTO categories (name, color, user_id) SELECT ?, '#808080', ?
+        `INSERT INTO categories (name, color, icon_key, user_id) SELECT ?, '#808080', ?, ?
         WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = ? AND user_id = ?)`,
-      ).run(name, user.id, name, user.id);
+      ).run(name, name.toLowerCase(), user.id, name, user.id);
     }
     return user;
   })();
@@ -89,31 +89,43 @@ export function createTransactionService(db: Database.Database) {
   }
 
   return {
-    options(): TransactionOptions {
-      return {
-        user,
-        payments: db
-          .prepare('SELECT id, name FROM payments ORDER BY name')
-          .all() as TransactionOptions['payments'],
-        categories: db
-          .prepare(
-            'SELECT id, name FROM categories WHERE user_id = ? AND archived_at IS NULL ORDER BY name',
-          )
-          .all(user.id) as TransactionOptions['categories'],
-      };
-    },
-    list(month: string): Transaction[] {
+    list(month: string): TransactionDto[] {
       if (typeof month !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month))
         throw new Error('Invalid month.');
-      return db
+      const rows = db
         .prepare(
-          `SELECT t.*, p.name AS payment_name, c.name AS category_name
+          `SELECT t.*, p.name AS payment_name, c.name AS category_name,
+          c.icon_key AS category_icon_key
         FROM transactions t JOIN payments p ON p.id = t.payment_id
         LEFT JOIN categories c ON c.id = t.category_id
         WHERE t.user_id = ? AND t.reference_date >= ? AND t.reference_date < date(?, '+1 month')
         ORDER BY t.reference_date DESC, t.id DESC`,
         )
-        .all(user.id, `${month}-01`, `${month}-01`) as Transaction[];
+        .all(user.id, `${month}-01`, `${month}-01`) as (Omit<
+        TransactionDto,
+        'category'
+      > & {
+        category_id: number | null;
+        category_name: string | null;
+        category_icon_key: string | null;
+      })[];
+      return rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        amount_cents: row.amount_cents,
+        type: row.type,
+        reference_date: row.reference_date,
+        payment_date: row.payment_date,
+        payment_id: row.payment_id,
+        category:
+          row.category_id === null
+            ? null
+            : {
+                id: row.category_id,
+                name: row.category_name ?? '',
+                icon_key: row.category_icon_key ?? 'other',
+              },
+      }));
     },
     create(input: TransactionInput) {
       db.prepare(

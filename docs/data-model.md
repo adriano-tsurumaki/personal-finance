@@ -76,8 +76,8 @@ Classifies entries and stores a display color. Categories belong to users. Invoi
 independent of the editable category name. Supported identifiers are defined by
 `CategoryIconKey` in `src/shared/contracts/categories.ts`; Lucide components are
 mapped only in `src/renderer/lib/category-icons.ts`. Unknown or missing identifiers
-render the `other` icon. Transaction queries expose the identifier as
-`category_icon_key`, with `null` for uncategorized entries.
+render the `other` icon. Transaction responses expose category details as
+`category: { id, name, icon_key }`, with `category: null` for uncategorized entries.
 
 Database initialization adds this column to existing databases once and assigns
 icons to recognized original category names. Other categories default to `other`.
