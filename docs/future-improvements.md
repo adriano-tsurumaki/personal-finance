@@ -1,6 +1,17 @@
 # Future improvements and pending work
 
-This document complements the [data-model documentation](data-model.md). It separates deferred features from technical work needed to consolidate the first version.
+This document complements the [data model](data-model.md) and [project structure conventions](project-structure.md). It separates deferred features from technical work needed to consolidate the first version.
+
+## Tracking rules
+
+Keep concrete implementation gaps here rather than in the structure guide. When a task touches an affected area, inspect the relevant code and update the item after checking its completion criteria. Do not treat an existing note as proof that work is still pending, or close an item based only on a rename or type declaration. Completed checklist items should include the verification date and a short description of the evidence. Work outside the requested scope remains deferred.
+
+## Structure follow-up
+
+The following items were checked against the working tree on 2026-09-18. They are scoped follow-ups, not prerequisites for unrelated tasks.
+
+- [ ] Move the preload API interface from `src/shared/types.ts` into a subject-specific file in `src/shared/contracts/`. Complete when its consumers, including the `Window` declaration, import the contract from that location and type checking passes. Transaction DTOs already live in contracts and do not need this migration.
+- [ ] Consolidate UI entry points, markup, and styles under `src/renderer` during a relevant UI organization task. Inspect `src/ts`, `src/html`, `src/titlebar`, `src/renderer.ts`, and `src/index.css` when planning the move. Complete when affected imports and Electron/Vite entry paths resolve to the new locations, the build passes, and both application and titlebar load correctly.
 
 ## Deferred features
 
