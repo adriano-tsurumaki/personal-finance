@@ -8,12 +8,10 @@ declare global {
       minimize(): Promise<void>;
       toggleMaximize(): Promise<boolean>;
       close(): Promise<void>;
-
       onMaximizedChange(callback: (isMaximized: boolean) => void): () => void;
+      platform: 'win32' | 'darwin' | 'linux';
     };
-  }
 
-  interface Window {
     api: Api;
   }
 }
