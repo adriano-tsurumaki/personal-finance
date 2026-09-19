@@ -41,7 +41,7 @@ body {
     height: 100%;
     padding-left: 12px;
 
-    /* Permite arrastar a janela por esta área. */
+    /* Allow the window to be dragged from this area. */
     -webkit-app-region: drag;
 }
 
@@ -59,8 +59,8 @@ body {
     height: 100%;
 
     /*
-     * Botões dentro de uma área drag precisam ser explicitamente
-     * marcados como não arrastáveis.
+     * Buttons inside a draggable area must be explicitly marked as
+     * non-draggable.
      */
     -webkit-app-region: no-drag;
 }
