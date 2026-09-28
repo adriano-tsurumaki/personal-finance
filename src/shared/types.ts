@@ -1,3 +1,4 @@
+import type { MonthlyStatementDto } from './contracts/monthly-statement';
 import type { TransactionDto, TransactionInput } from './contracts/transaction';
 
 export interface Api {
@@ -5,4 +6,6 @@ export interface Api {
   createTransaction(input: TransactionInput): Promise<void>;
   updateTransaction(id: number, input: TransactionInput): Promise<void>;
   deleteTransaction(id: number): Promise<void>;
+
+  getMonthlyStatement(month: string): Promise<MonthlyStatementDto>;
 }
