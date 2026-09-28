@@ -54,7 +54,7 @@ Prevent duplicate category names for the same user regardless of case, while pre
 
 ### Database evolution and integration
 
-- Add migrations because `CREATE TABLE IF NOT EXISTS` cannot update existing databases.
+- [x] Add versioned schema migrations (verified 2026-09-21): Drizzle generates SQL and snapshots; startup applies pending migrations. Integration tests verify legacy adoption, subsequent schema changes, repeat runs, and failure rollback.
 - Keep shared types and database consumers aligned with schema changes.
 - Prevent queries from counting both card purchases and invoice payments as cash outflows.
 - Generate installments and recurring occurrences idempotently.

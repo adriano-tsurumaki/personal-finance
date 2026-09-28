@@ -1,6 +1,6 @@
 # Data model
 
-This document records the goals, table responsibilities, and decisions for the first version. The implemented schema lives in [`src/main/db.ts`](../src/main/db.ts). Deferred work is tracked in [Future improvements](future-improvements.md).
+This document records the goals, table responsibilities, and decisions for the first version. The implemented schema lives in [`src/main/db/schema.ts`](../src/main/db/schema.ts). Deferred work is tracked in [Future improvements](future-improvements.md).
 
 ## Main screen goal
 
@@ -27,12 +27,12 @@ An installment purchase creates one transaction per installment. Shared purchase
 
 An installment group connects entries from the same purchase over time. An invoice groups card entries for a billing period.
 
-| Example | `installment_id` | `credit_card_invoice_id` |
-| --- | --- | --- |
-| One-time card purchase | Empty | Set |
-| Card purchase installment | Set | Set |
-| Invoice-based installment | Set | Empty |
-| Salary or direct purchase | Empty | Empty |
+| Example                   | `installment_id` | `credit_card_invoice_id` |
+| ------------------------- | ---------------- | ------------------------ |
+| One-time card purchase    | Empty            | Set                      |
+| Card purchase installment | Set              | Set                      |
+| Invoice-based installment | Set              | Empty                    |
+| Salary or direct purchase | Empty            | Empty                    |
 
 An `invoice_items` table is unnecessary because each installment is already a transaction. `transactions.credit_card_invoice_id` directly associates an entry with its invoice.
 
@@ -79,8 +79,8 @@ mapped only in `src/renderer/lib/category-icons.ts`. Unknown or missing identifi
 render the `other` icon. Transaction responses expose category details as
 `category: { id, name, icon_key }`, with `category: null` for uncategorized entries.
 
-Database initialization adds this column to existing databases once and assigns
-icons to recognized original category names. Other categories default to `other`.
+The Drizzle schema gives new categories an `other` default. The prototype seed
+assigns icons explicitly. Existing icons from the previous initializer are preserved.
 Renaming a category does not change its stored icon. There is currently no category
 editing API or icon picker; a future category editor should validate `icon_key`
 against the supported identifiers before persisting it.
@@ -132,7 +132,7 @@ A R$250 purchase made on August 20 appears in the August timeline. If its invoic
 
 - Money is stored as integer cents to avoid floating-point errors.
 - Dates use `YYYY-MM-DD`; SQLite's `DATE` declaration does not validate the format.
-- The table-creation SQL has been validated with an in-memory SQLite database.
-- `CREATE TABLE IF NOT EXISTS` does not update existing tables; schema evolution requires migrations.
+- Schema constraints and transaction operations are covered by SQLite integration tests.
+- Schema changes use versioned Drizzle migrations; see [Database development](database-development.md).
 - Cascade deletion behavior remains scheduled for review.
 - The schema does not yet generate invoices, recurrences, installments, or summary queries.
