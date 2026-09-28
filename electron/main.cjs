@@ -8,6 +8,7 @@ const {
 } = require('electron');
 const started = require('electron-squirrel-startup');
 const { initDb } = require('../src/main/db.ts');
+const { getDevelopmentDatabasePath } = require('../src/main/db/config.ts');
 const { registerIpcHandlers } = require('../src/main/ipc.ts');
 
 const TITLEBAR_HEIGHT = 28;
@@ -181,9 +182,15 @@ ipcMain.handle('window:close', (event) => {
 app
   .whenReady()
   .then(async () => {
-    const dbPath = path.join(app.getPath('userData'), 'personal_finance.db');
-    const db = initDb(dbPath);
-    app.once('will-quit', () => db.close());
+    const dbPath = app.isPackaged
+      ? path.join(app.getPath('userData'), 'personal_finance.db')
+      : getDevelopmentDatabasePath(app.getAppPath());
+    const migrationsFolder = path.join(
+      app.isPackaged ? process.resourcesPath : app.getAppPath(),
+      'drizzle',
+    );
+    const db = initDb(dbPath, migrationsFolder);
+    app.once('will-quit', () => db.$client.close());
 
     registerIpcHandlers(db, () => contentView?.webContents);
     await createWindow();

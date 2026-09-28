@@ -91,3 +91,9 @@ typings/
 
 # Electron-Forge
 out/
+
+# Local SQLite development databases
+*.db
+*.db-wal
+*.db-shm
+*.db-journal

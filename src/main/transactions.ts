@@ -1,36 +1,71 @@
+import { and, desc, eq, gte, isNull, lt, sql } from 'drizzle-orm';
 import type {
   TransactionDto,
   TransactionInput,
 } from '@shared/contracts/transaction';
-import type { UserDto } from '@shared/contracts/user';
-import type Database from 'better-sqlite3';
+import type { AppDatabase } from './db';
+import {
+  categoriesTable,
+  paymentsTable,
+  transactionsTable,
+  usersTable,
+} from './db/schema';
 
 // Fixed identity for the prototype; the renderer cannot select the user.
 export const TEST_USER_EMAIL = 'teste@personal-finance.local';
 
-export function createTransactionService(db: Database.Database) {
-  const user = db.transaction(() => {
-    db.prepare(
-      `INSERT INTO user (name, email, password) VALUES (?, ?, ?)
-      ON CONFLICT(email) DO NOTHING`,
-    ).run('Test user', TEST_USER_EMAIL, '!login-disabled');
-    const user = db
-      .prepare('SELECT id, name, email FROM user WHERE email = ?')
-      .get(TEST_USER_EMAIL) as UserDto;
+export function createTransactionService(db: AppDatabase) {
+  const user = db.transaction((tx) => {
+    tx.insert(usersTable)
+      .values({
+        name: 'Test user',
+        email: TEST_USER_EMAIL,
+        password: '!login-disabled',
+      })
+      .onConflictDoNothing({ target: usersTable.email })
+      .run();
+    const user = tx
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.email, TEST_USER_EMAIL))
+      .get();
+    if (!user) throw new Error('Could not initialize the test user.');
     for (const name of ['Instant transfer', 'Cash', 'Debit card']) {
-      db.prepare(
-        `INSERT INTO payments (name, type) SELECT ?, 1
-        WHERE NOT EXISTS (SELECT 1 FROM payments WHERE name = ? AND type = 1)`,
-      ).run(name, name);
+      if (
+        !tx
+          .select({ id: paymentsTable.id })
+          .from(paymentsTable)
+          .where(and(eq(paymentsTable.name, name), eq(paymentsTable.type, 1)))
+          .get()
+      ) {
+        tx.insert(paymentsTable).values({ name, type: 1 }).run();
+      }
     }
     for (const name of ['Food', 'Housing', 'Salary', 'Other']) {
-      db.prepare(
-        `INSERT INTO categories (name, color, icon_key, user_id) SELECT ?, '#808080', ?, ?
-        WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = ? AND user_id = ?)`,
-      ).run(name, name.toLowerCase(), user.id, name, user.id);
+      if (
+        !tx
+          .select({ id: categoriesTable.id })
+          .from(categoriesTable)
+          .where(
+            and(
+              eq(categoriesTable.name, name),
+              eq(categoriesTable.user_id, user.id),
+            ),
+          )
+          .get()
+      ) {
+        tx.insert(categoriesTable)
+          .values({
+            name,
+            color: '#808080',
+            icon_key: name.toLowerCase(),
+            user_id: user.id,
+          })
+          .run();
+      }
     }
     return user;
-  })();
+  });
 
   function validDate(value: unknown): value is string {
     if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value))
@@ -59,28 +94,38 @@ export function createTransactionService(db: Database.Database) {
       throw new Error('Invalid date.');
     if (
       !Number.isSafeInteger(input.payment_id) ||
-      !db.prepare('SELECT id FROM payments WHERE id = ?').get(input.payment_id)
+      !db
+        .select({ id: paymentsTable.id })
+        .from(paymentsTable)
+        .where(eq(paymentsTable.id, input.payment_id))
+        .get()
     )
       throw new Error('Invalid payment method.');
     if (
       input.category_id !== null &&
       (!Number.isSafeInteger(input.category_id) ||
         !db
-          .prepare(
-            'SELECT id FROM categories WHERE id = ? AND user_id = ? AND archived_at IS NULL',
+          .select({ id: categoriesTable.id })
+          .from(categoriesTable)
+          .where(
+            and(
+              eq(categoriesTable.id, input.category_id),
+              eq(categoriesTable.user_id, user.id),
+              isNull(categoriesTable.archived_at),
+            ),
           )
-          .get(input.category_id, user.id))
+          .get())
     )
       throw new Error('Invalid category.');
-    return [
-      input.name.trim(),
-      input.type,
-      input.amount_cents,
-      input.reference_date,
-      input.payment_date,
-      input.payment_id,
-      input.category_id,
-    ];
+    return {
+      name: input.name.trim(),
+      type: input.type,
+      amount_cents: input.amount_cents,
+      reference_date: input.reference_date,
+      payment_date: input.payment_date,
+      payment_id: input.payment_id,
+      category_id: input.category_id,
+    };
   }
 
   function validateId(id: number) {
@@ -92,66 +137,81 @@ export function createTransactionService(db: Database.Database) {
     list(month: string): TransactionDto[] {
       if (typeof month !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month))
         throw new Error('Invalid month.');
-      const rows = db
-        .prepare(
-          `SELECT t.*, p.name AS payment_name, c.name AS category_name,
-          c.icon_key AS category_icon_key
-        FROM transactions t JOIN payments p ON p.id = t.payment_id
-        LEFT JOIN categories c ON c.id = t.category_id
-        WHERE t.user_id = ? AND t.reference_date >= ? AND t.reference_date < date(?, '+1 month')
-        ORDER BY t.reference_date DESC, t.id DESC`,
-        )
-        .all(user.id, `${month}-01`, `${month}-01`) as (Omit<
-        TransactionDto,
-        'category'
-      > & {
-        category_id: number | null;
-        category_name: string | null;
-        category_icon_key: string | null;
-      })[];
-      return rows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        amount_cents: row.amount_cents,
-        type: row.type,
-        reference_date: row.reference_date,
-        payment_date: row.payment_date,
-        payment_id: row.payment_id,
-        category:
-          row.category_id === null
-            ? null
-            : {
-                id: row.category_id,
-                name: row.category_name ?? '',
-                icon_key: row.category_icon_key ?? 'other',
-              },
-      }));
+      return (
+        db
+          .select({
+            id: transactionsTable.id,
+            name: transactionsTable.name,
+            amount_cents: transactionsTable.amount_cents,
+            type: transactionsTable.type,
+            reference_date: transactionsTable.reference_date,
+            payment_date: transactionsTable.payment_date,
+            payment_id: transactionsTable.payment_id,
+            category: {
+              id: categoriesTable.id,
+              name: categoriesTable.name,
+              icon_key: categoriesTable.icon_key,
+            },
+          })
+          .from(transactionsTable)
+          .innerJoin(
+            paymentsTable,
+            eq(paymentsTable.id, transactionsTable.payment_id),
+          )
+          .leftJoin(
+            categoriesTable,
+            eq(categoriesTable.id, transactionsTable.category_id),
+          )
+          .where(
+            and(
+              eq(transactionsTable.user_id, user.id),
+              gte(transactionsTable.reference_date, `${month}-01`),
+              lt(
+                transactionsTable.reference_date,
+                sql`date(${`${month}-01`}, '+1 month')`,
+              ),
+            ),
+          )
+          .orderBy(
+            desc(transactionsTable.reference_date),
+            desc(transactionsTable.id),
+          )
+          .all()
+          // The month predicate excludes legacy entries without a reference date.
+          .map((row) => ({ ...row, reference_date: row.reference_date! }))
+      );
     },
     create(input: TransactionInput) {
-      db.prepare(
-        `INSERT INTO transactions
-        (name, type, amount_cents, reference_date, payment_date, payment_id, category_id, user_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(...validate(input), user.id);
+      db.insert(transactionsTable)
+        .values({ ...validate(input), user_id: user.id })
+        .run();
     },
     update(id: number, input: TransactionInput) {
       validateId(id);
       const result = db
-        .prepare(
-          `UPDATE transactions SET name = ?, type = ?, amount_cents = ?,
-        reference_date = ?, payment_date = ?, payment_id = ?, category_id = ? WHERE id = ? AND user_id = ?`,
+        .update(transactionsTable)
+        .set(validate(input))
+        .where(
+          and(
+            eq(transactionsTable.id, id),
+            eq(transactionsTable.user_id, user.id),
+          ),
         )
-        .run(...validate(input), id, user.id);
+        .run();
       if (!result.changes) throw new Error('Transaction not found.');
     },
     remove(id: number) {
       validateId(id);
-      if (
-        !db
-          .prepare('DELETE FROM transactions WHERE id = ? AND user_id = ?')
-          .run(id, user.id).changes
-      )
-        throw new Error('Transaction not found.');
+      const result = db
+        .delete(transactionsTable)
+        .where(
+          and(
+            eq(transactionsTable.id, id),
+            eq(transactionsTable.user_id, user.id),
+          ),
+        )
+        .run();
+      if (!result.changes) throw new Error('Transaction not found.');
     },
   };
 }

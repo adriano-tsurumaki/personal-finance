@@ -1,11 +1,11 @@
-import type Database from 'better-sqlite3';
+import type { AppDatabase } from './db';
 import { ipcMain } from 'electron';
 import type { IpcMainInvokeEvent, WebContents } from 'electron';
 import { createTransactionService } from './transactions';
 import type { TransactionInput } from '@shared/contracts/transaction';
 
 export function registerIpcHandlers(
-  db: Database.Database,
+  db: AppDatabase,
   getContent: () => WebContents | undefined,
 ): void {
   const service = createTransactionService(db);
