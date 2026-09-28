@@ -1,0 +1,29 @@
+import { Switch as SwitchPrimitive } from '@base-ui/react/switch';
+import { cn } from '@lib/utils';
+
+function Switch({
+  className,
+  size = 'default',
+  ...props
+}: SwitchPrimitive.Root.Props & {
+  size?: 'sm' | 'default';
+}) {
+  return (
+    <SwitchPrimitive.Root
+      data-slot="switch"
+      data-size={size}
+      className={cn(
+        'peer group/switch relative inline-flex shrink-0 items-center rounded-full border-0 p-0 cursor-pointer transition-colors duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none outline-none after:absolute after:-inset-x-3 after:-inset-y-2 focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-[size=default]:h-5 data-[size=default]:w-9 data-[size=sm]:h-4 data-[size=sm]:w-7 data-checked:bg-primary data-unchecked:bg-input data-disabled:cursor-not-allowed data-disabled:opacity-50',
+        className,
+      )}
+      {...props}
+    >
+      <SwitchPrimitive.Thumb
+        data-slot="switch-thumb"
+        className="pointer-events-none absolute top-0.5 left-0 block rounded-full bg-background transition-transform duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none group-data-[size=default]/switch:size-4 group-data-[size=sm]/switch:size-3 data-unchecked:translate-x-0.5 group-data-[size=default]/switch:data-checked:translate-x-4 group-data-[size=sm]/switch:data-checked:translate-x-3"
+      />
+    </SwitchPrimitive.Root>
+  );
+}
+
+export { Switch };
