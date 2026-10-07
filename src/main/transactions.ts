@@ -10,6 +10,7 @@ import {
   transactionsTable,
   usersTable,
 } from './db/schema';
+import { CreateResult } from '@shared/contracts/result';
 
 // Fixed identity for the prototype; the renderer cannot select the user.
 export const TEST_USER_EMAIL = 'teste@personal-finance.local';
@@ -181,11 +182,15 @@ export function createTransactionService(db: AppDatabase) {
           .map((row) => ({ ...row, reference_date: row.reference_date! }))
       );
     },
-    create(input: TransactionInput) {
+
+    create(input: TransactionInput): CreateResult {
       db.insert(transactionsTable)
         .values({ ...validate(input), user_id: user.id })
         .run();
+
+      return { ok: true };
     },
+
     update(id: number, input: TransactionInput) {
       validateId(id);
       const result = db

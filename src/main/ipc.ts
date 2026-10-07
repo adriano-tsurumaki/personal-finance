@@ -3,6 +3,7 @@ import { ipcMain } from 'electron';
 import type { IpcMainInvokeEvent, WebContents } from 'electron';
 import { createTransactionService } from './transactions';
 import type { TransactionInput } from '@shared/contracts/transaction';
+import { CreateResult } from '@shared/contracts/result';
 
 export function registerIpcHandlers(
   db: AppDatabase,
@@ -23,10 +24,13 @@ export function registerIpcHandlers(
     return service.list(month);
   });
 
-  ipcMain.handle('transactions:create', (event, input: TransactionInput) => {
-    authorize(event);
-    return service.create(input);
-  });
+  ipcMain.handle(
+    'transactions:create',
+    (event, input: TransactionInput): CreateResult => {
+      authorize(event);
+      return service.create(input);
+    },
+  );
 
   ipcMain.handle(
     'transactions:update',

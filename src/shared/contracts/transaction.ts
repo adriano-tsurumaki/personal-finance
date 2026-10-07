@@ -19,6 +19,7 @@ export interface TransactionInput {
   amount_cents: number;
   reference_date: string;
   payment_date: string | null;
+  user_id: number;
   payment_id: number;
   category_id: number | null;
 }
