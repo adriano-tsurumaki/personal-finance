@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
   getTransactions: (month) => ipcRenderer.invoke('transactions:list', month),
+  getTransaction: (id) => ipcRenderer.invoke('transactions:get', id),
   createTransaction: (input) =>
     ipcRenderer.invoke('transactions:create', input),
   updateTransaction: (id, input) =>

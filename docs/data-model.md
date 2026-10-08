@@ -54,6 +54,11 @@ Owns financial data and stores `id`, `name`, unique `email`, and `password`. Pas
 
 Stores individual income and expense entries. Money uses integer cents. `reference_date` positions the entry in a reporting period, while `payment_date` records actual settlement for a direct entry. Optional foreign keys connect categories, recurrence versions, installments, and card invoices.
 
+`note` is optional plain text. Blank or whitespace-only notes are stored as
+`NULL`; nonempty notes have surrounding whitespace trimmed. Existing entries
+remain without notes after migration. Editing may change or clear the note;
+an update that omits the field preserves its existing value.
+
 Installment group and number must be set together, the number must be positive, and `UNIQUE (installment_id, installment_number)` prevents duplicate positions. The application must still ensure the number does not exceed `installment.total_installments`.
 
 ### `installment`

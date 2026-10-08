@@ -15,13 +15,19 @@ export function registerIpcHandlers(
     if (
       event.sender !== getContent() ||
       event.senderFrame !== event.sender.mainFrame
-    )
+    ) {
       throw new Error('Unauthorized request origin.');
+    }
   }
 
   ipcMain.handle('transactions:list', (event, month: string) => {
     authorize(event);
     return service.list(month);
+  });
+
+  ipcMain.handle('transactions:get', (event, id: number) => {
+    authorize(event);
+    return service.get(id);
   });
 
   ipcMain.handle(
@@ -34,7 +40,7 @@ export function registerIpcHandlers(
 
   ipcMain.handle(
     'transactions:update',
-    (event, id: number, input: TransactionInput) => {
+    (event, id: number, input: TransactionInput): CreateResult => {
       authorize(event);
       return service.update(id, input);
     },

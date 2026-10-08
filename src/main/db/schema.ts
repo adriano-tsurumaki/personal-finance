@@ -123,6 +123,7 @@ export const transactionsTable = sqliteTable(
   {
     id: integer().primaryKey({ autoIncrement: true }),
     name: text().notNull(),
+    note: text(),
     type: integer().$type<1 | 2>().notNull(),
     amount_cents: integer().notNull(),
     payment_date: date(),

@@ -4,8 +4,9 @@ import type { TransactionDto, TransactionInput } from './contracts/transaction';
 
 export interface Api {
   getTransactions(month: string): Promise<TransactionDto[]>;
+  getTransaction(id: number): Promise<TransactionInput>;
   createTransaction(input: TransactionInput): Promise<CreateResult>;
-  updateTransaction(id: number, input: TransactionInput): Promise<void>;
+  updateTransaction(id: number, input: TransactionInput): Promise<CreateResult>;
   deleteTransaction(id: number): Promise<void>;
 
   getMonthlyStatement(month: string): Promise<MonthlyStatementDto>;

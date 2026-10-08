@@ -1,6 +1,7 @@
 export interface TransactionDto {
   id: number;
   name: string;
+  note: string | null;
   amount_cents: number;
   type: 1 | 2; // 1: income, 2: expense
   reference_date: string;
@@ -15,6 +16,7 @@ export interface TransactionDto {
 
 export interface TransactionInput {
   name: string;
+  note?: string | null;
   type: 1 | 2; // 1: income, 2: expense
   amount_cents: number;
   reference_date: string;
