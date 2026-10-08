@@ -17,6 +17,8 @@ interface AppState {
   loadMonthlyStatement: () => Promise<void>;
 }
 
+let transactionsRequestId = 0;
+
 export const useAppStore = create<AppState>((set, get) => ({
   monthKey: currentMonthKey(),
   transactions: [],
@@ -45,17 +47,28 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setMonthKey: async (monthKey) => {
     set({ monthKey });
-    await get().loadTransactions();
-    await get().loadMonthlyStatement();
+
+    try {
+      await get().loadTransactions();
+      await get().loadMonthlyStatement();
+    } catch (error) {
+      console.error('Failed to load the selected month', error);
+    }
   },
 
   loadTransactions: async () => {
+    const requestId = ++transactionsRequestId;
+
     try {
       const { monthKey } = get();
       const transactions = await window.api.getTransactions(monthKey);
-      if (get().monthKey === monthKey) set({ transactions });
+
+      if (get().monthKey === monthKey && requestId === transactionsRequestId) {
+        set({ transactions });
+      }
     } catch (error) {
       console.error('Failed to load transactions', error);
+      throw error;
     }
   },
 
