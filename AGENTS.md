@@ -29,3 +29,15 @@ When working on a related area, check relevant pending items against the code an
 update their status only after verifying the completion criteria. Do not perform
 unrelated migrations just to close pending items.
 For financial data rules, consult [Data model](docs/data-model.md).
+
+## Conditional formatting
+
+Always use braces for control-flow bodies, including single-statement `if`
+branches. Separate each `if` statement from adjacent statements with a blank
+line before and after it. No extra blank line is required at block boundaries
+or between an `if` branch and its `else`. ESLint enforces these rules;
+`pnpm lint:fix` applies automatic corrections.
+
+## Code reviews
+
+When performing a code review, follow [Code review guidelines](docs/code-review.md).
