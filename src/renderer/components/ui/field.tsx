@@ -268,7 +268,7 @@ function FieldMoney({
       <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
       <div
         className={cn(
-          'flex min-w-0 items-center gap-2 rounded-md border border-input bg-background px-3 focus-within:ring-2 focus-within:ring-ring',
+          'flex min-w-0 items-center gap-2 rounded-md border border-input bg-background px-3 transition-colors duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none hover:bg-muted has-[:disabled]:pointer-events-none focus-within:ring-2 focus-within:ring-ring',
           disabled && 'cursor-not-allowed opacity-50',
           inputError && 'border-destructive focus-within:ring-destructive',
         )}
@@ -290,7 +290,7 @@ function FieldMoney({
           readOnly={readOnly}
           aria-describedby={describedBy}
           aria-invalid={!!inputError}
-          className="rounded-none border-0 bg-transparent px-0 font-mono tabular-nums focus-visible:ring-0 disabled:opacity-100 aria-invalid:focus-visible:ring-0"
+          className="rounded-none border-0 bg-transparent hover:bg-transparent px-0 font-mono tabular-nums focus-visible:ring-0 disabled:opacity-100 aria-invalid:focus-visible:ring-0"
           onChange={(event) => {
             const text = event.target.value;
 

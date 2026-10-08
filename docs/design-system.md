@@ -249,6 +249,11 @@ name and locale inside that menu, followed by a Change language submenu with che
 header in normal flow; use the menu primitive's keyboard navigation, dismissal,
 and focus restoration.
 
+Text inputs, select triggers, money-field surfaces, and date triggers share the
+same muted fill on hover, with a 150ms color transition and visible keyboard
+focus. Disabled controls do not react to hover. Apply the money-field hover to
+the complete surface, including its currency prefix, rather than the inner input.
+
 The confirmed product requirement localizes interface copy through English-keyed
 JSON catalogs for `pt-BR` and `en-US`. This deliberately extends the reference's
 English-copy convention. Both languages display BRL, with locale-specific
