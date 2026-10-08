@@ -1,10 +1,10 @@
 import AddTransaction from './AddTransaction';
 import TimelineEntryRow from './TimelineEntryRow';
+import MenuOptionsTransaction from './MenuOptionsTransaction';
 import { useAppStore } from '@store/transaction';
 
 export default function TimelineTransaction() {
   const transactions = useAppStore((s) => s.transactions);
-  const monthlyStatement = useAppStore((s) => s.monthlyStatement);
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-8 sm:px-8">
@@ -14,22 +14,26 @@ export default function TimelineTransaction() {
             Transactions
           </h2>
           <p className="text-xs text-muted-foreground">
-            {monthlyStatement.transactionCount}{' '}
-            {monthlyStatement.transactionCount === 1 ? 'entry' : 'entries'}
+            {transactions.length}{' '}
+            {transactions.length === 1 ? 'entry' : 'entries'}
           </p>
         </div>
         <AddTransaction />
       </div>
 
-      <ol className="relative">
+      <div className="relative">
         <span
           className="absolute bottom-4 left-5.5 top-2 w-px bg-border"
           aria-hidden="true"
         />
-        {transactions.map((entry) => (
-          <TimelineEntryRow key={entry.id} entry={entry} />
-        ))}
-      </ol>
+        <ol>
+          {transactions.map((entry) => (
+            <MenuOptionsTransaction key={entry.id} transactionId={entry.id}>
+              {(actions) => <TimelineEntryRow entry={entry} {...actions} />}
+            </MenuOptionsTransaction>
+          ))}
+        </ol>
+      </div>
     </div>
   );
 }

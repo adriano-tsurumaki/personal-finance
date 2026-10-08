@@ -1,6 +1,8 @@
 import { getCategoryIcon } from '@lib/category-icons';
 import { formatSignedCurrency } from '@lib/format/currency';
 import type { TransactionDto } from '@shared/contracts/transaction';
+import { Button } from '@components/ui/button';
+import { Pencil, Trash2 } from 'lucide-react';
 
 function dayLabel(date: string): string {
   return new Date(`${date}T00:00:00`).toLocaleDateString('en-US', {
@@ -11,8 +13,14 @@ function dayLabel(date: string): string {
 
 export default function TimelineEntryRow({
   entry,
+  onEdit,
+  onRemove,
+  disabled,
 }: {
   entry: TransactionDto;
+  onEdit: () => Promise<void>;
+  onRemove: () => Promise<void>;
+  disabled: boolean;
 }): React.JSX.Element {
   const isIncome = entry.type === 1;
   const Icon = getCategoryIcon(entry.category?.icon_key);
@@ -22,7 +30,7 @@ export default function TimelineEntryRow({
   const amountClass = isIncome ? 'text-income' : 'text-expense';
 
   return (
-    <li className="relative flex gap-4 pl-1">
+    <div className="relative flex gap-4 py-2 pl-1 pr-2">
       <div className="relative z-10 flex shrink-0 flex-col items-center">
         <span
           className="absolute inset-0 size-9 rounded-full bg-background z-0"
@@ -36,7 +44,7 @@ export default function TimelineEntryRow({
         </span>
       </div>
 
-      <div className="min-w-0 flex-1 pb-6">
+      <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -64,9 +72,35 @@ export default function TimelineEntryRow({
                 isIncome ? 'income' : 'expense',
               )}
             </p>
+            <div className="mt-1 flex h-6 justify-end gap-1 opacity-0 pointer-events-none transition-opacity duration-150 group-hover/transaction:opacity-100 group-hover/transaction:pointer-events-auto group-has-[:focus-visible]/transaction:opacity-100 group-has-[:focus-visible]/transaction:pointer-events-auto motion-reduce:transition-none">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                className="text-muted-foreground hover:bg-secondary"
+                aria-label={`Edit transaction: ${entry.name}`}
+                title="Edit transaction"
+                onClick={onEdit}
+                disabled={disabled}
+              >
+                <Pencil aria-hidden="true" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                className="text-muted-foreground hover:bg-secondary hover:text-expense"
+                aria-label={`Remove transaction: ${entry.name}`}
+                title="Remove transaction"
+                onClick={onRemove}
+                disabled={disabled}
+              >
+                <Trash2 aria-hidden="true" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
-    </li>
+    </div>
   );
 }
