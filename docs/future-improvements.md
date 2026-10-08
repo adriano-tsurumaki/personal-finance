@@ -15,6 +15,20 @@ The following items were checked against the working tree on 2026-09-18. They ar
 
 ## Deferred features
 
+### Transaction form integration
+
+- Replace fixed category, user, and payment identifiers with the appropriate
+  process contracts and persisted associations. Deferred by request on 2026-10-08.
+- [x] Use the reference date in the transaction form (verified 2026-10-08):
+      the date picker and submitted input update `reference_date`. New entries have
+      `payment_date: null`; editing preserves the existing settlement date. The
+      timeline already displays and filters by reference date.
+- Define an explicit direct-entry settlement workflow. Payment recording remains
+  deferred; editing the reference date must not record or change settlement.
+- Implement the monthly statement IPC API already declared by the renderer.
+  Timeline mutations refresh their own entries; monthly financial indicators
+  cannot refresh until this API is implemented.
+
 ### Multiple invoice payments
 
 Invoices currently use one full payment in `credit_card_invoice.paid_at`. A future `invoice_payments` table could store `invoice_id`, `amount_cents`, `paid_at`, and an optional source account. Paid and outstanding totals would then be derived from those records.
