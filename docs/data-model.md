@@ -17,6 +17,32 @@ Category analysis should count purchases and installments without counting the i
 
 ## Core decisions
 
+### Local profiles and initial catalogs
+
+Profiles are local and open without authentication. Creating a profile stores
+its name, email, and `pt-BR` or `en-US` locale. The active profile can change its locale through the profile menu; changes are validated and persisted before the interface updates. Existing or unsupported
+preferences fall back to `pt-BR`. The historical password column is retained
+for database compatibility; new profiles store a disabled marker, not credentials.
+The active profile is held in the main process for the application session.
+Restarting requires selecting a profile again; transaction operations require
+an active profile and derive ownership from it rather than renderer input.
+
+Default categories use the stable keys `food`, `housing`, `salary`, and `other`.
+Categories remain owned by their profile. The shared payment catalog uses `pix`,
+`debit`, `credit`, and `cash`; selection and main-process validation accept only
+these keys. `pix_credit` remains deferred until its financial rules are defined.
+Legacy methods retain their associations, and recognized legacy defaults acquire
+catalog keys without replacing their identifiers or customized records.
+
+Catalog display names are translated in the renderer. Customized category names
+remain as entered. Retrying initialization preserves existing defaults, including
+archived categories. Both supported locales use BRL without changing stored cents.
+Monetary entry accepts digits and the profile's decimal separator, with up to two
+decimal places; grouping separators and currency-prefixed paste are currently
+rejected rather than reinterpreted. Credit selection records a planned entry;
+invoice association and all settlement workflows remain deferred. Selecting a
+method does not set a payment date.
+
 ### A transaction is one financial entry
 
 `transactions` is the smallest financial unit in the domain: a purchase, salary, bonus, or individual installment. It does not represent every product on a receipt.

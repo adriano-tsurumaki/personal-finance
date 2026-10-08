@@ -1,6 +1,14 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+  listProfiles: () => ipcRenderer.invoke('profiles:list'),
+  getActiveProfile: () => ipcRenderer.invoke('profiles:current'),
+  createProfile: (input) => ipcRenderer.invoke('profiles:create', input),
+  enterProfile: (id) => ipcRenderer.invoke('profiles:enter', id),
+  leaveProfile: () => ipcRenderer.invoke('profiles:leave'),
+  getProfileOptions: () => ipcRenderer.invoke('profiles:options'),
+  updateProfileLocale: (locale) =>
+    ipcRenderer.invoke('profiles:update-locale', locale),
   getTransactions: (month) => ipcRenderer.invoke('transactions:list', month),
   getTransaction: (id) => ipcRenderer.invoke('transactions:get', id),
   createTransaction: (input) =>

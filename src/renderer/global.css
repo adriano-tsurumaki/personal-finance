@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -52,6 +53,10 @@
 }
 
 :root {
+  --font-instrument-sans:
+    'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-jetbrains-mono:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   color-scheme: light;
   --overlay: oklch(0.22 0.02 160 / 30%);
   --background: oklch(0.985 0.004 145);
@@ -179,6 +184,21 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-sm text-foreground;
+  }
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+  #root {
+    display: flex;
+    height: 100dvh;
+    flex-direction: column;
+  }
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
 }

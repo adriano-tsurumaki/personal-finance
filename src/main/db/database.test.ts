@@ -14,7 +14,8 @@ import { test } from 'node:test';
 import { eq, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { initDb } from '../db';
-import { createTransactionService, TEST_USER_EMAIL } from '../transactions';
+import { createTransactionService } from '../transactions';
+import { createProfileService, initializeProfile } from '../profiles';
 import {
   categoriesTable,
   installmentsTable,
@@ -30,14 +31,173 @@ const migrationCount = readdirSync(migrationsFolder, {
   withFileTypes: true,
 }).filter((entry) => entry.isDirectory()).length;
 
+test('profiles persist locale changes, initialize once and isolate financial records', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'finance-profiles-'));
+  const filename = join(directory, 'profiles.db');
+  let db = initDb(filename, migrationsFolder);
+
+  try {
+    let profiles = createProfileService(db);
+    const service = createTransactionService(db, () =>
+      profiles.requireActive(),
+    );
+    assert.equal(profiles.current(), null);
+    assert.deepEqual(profiles.list(), []);
+    assert.throws(() => service.list('2026-10'), /No active profile/);
+    const first = profiles.create({
+      name: ' First ',
+      email: 'FIRST@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(first.ok);
+    assert.equal(first.profile.name, 'First');
+    assert.equal(first.profile.email, 'first@example.test');
+    assert.equal(first.profile.locale, 'en-US');
+    const options = profiles.options();
+    assert.equal(options.categories.length, 4);
+    assert.deepEqual(
+      options.payments.map((method) => method.catalog_key).sort(),
+      ['cash', 'credit', 'debit', 'pix'],
+    );
+    const input = {
+      name: 'Private entry',
+      type: 2 as const,
+      amount_cents: 123456,
+      user_id: 999,
+      payment_id: options.payments[0].id,
+      category_id: options.categories[0].id,
+      reference_date: '2026-10-08',
+      payment_date: null,
+    };
+    service.create(input);
+    const entry = service.list('2026-10')[0];
+    assert.equal(service.get(entry.id).user_id, first.profile.id);
+    db.update(categoriesTable)
+      .set({ name: 'My meals', color: '#123456', archived_at: '2026-10-08' })
+      .where(eq(categoriesTable.id, options.categories[0].id))
+      .run();
+    profiles.leave();
+    assert.throws(() => service.get(entry.id), /No active profile/);
+    const second = profiles.create({
+      name: 'Second',
+      email: 'second@example.test',
+      locale: 'pt-BR',
+    });
+    assert.ok(second.ok);
+    assert.deepEqual(service.list('2026-10'), []);
+    assert.throws(() => service.get(entry.id), /not found/);
+    assert.throws(() => service.create(input), /Invalid category/);
+    const arbitrary = db
+      .insert(paymentsTable)
+      .values({ name: 'Unknown method', type: 1 })
+      .returning()
+      .get();
+    assert.throws(
+      () =>
+        service.create({
+          ...input,
+          category_id: null,
+          payment_id: arbitrary.id,
+        }),
+      /Invalid payment/,
+    );
+    profiles.enter(first.profile.id);
+    profiles.enter(first.profile.id);
+    assert.equal(db.select().from(categoriesTable).all().length, 8);
+    assert.equal(db.select().from(paymentsTable).all().length, 5);
+    assert.equal(profiles.options().categories.length, 3);
+    const preserved = db
+      .select()
+      .from(categoriesTable)
+      .where(eq(categoriesTable.id, options.categories[0].id))
+      .get()!;
+    assert.equal(preserved.name, 'My meals');
+    assert.equal(preserved.color, '#123456');
+    assert.equal(preserved.catalog_key, 'food');
+    assert.equal(profiles.updateLocale('pt-BR').locale, 'pt-BR');
+    assert.equal(profiles.current()?.locale, 'pt-BR');
+    assert.throws(
+      () => profiles.updateLocale('unsupported' as 'pt-BR'),
+      /Unsupported profile locale/,
+    );
+    assert.equal(profiles.current()?.locale, 'pt-BR');
+    profiles.enter(second.profile.id);
+    profiles.updateLocale('en-US');
+    profiles.leave();
+    assert.throws(() => profiles.updateLocale('pt-BR'), /No active profile/);
+    db.$client.close();
+    db = initDb(filename, migrationsFolder);
+    profiles = createProfileService(db);
+    assert.equal(profiles.current(), null);
+    assert.equal(profiles.enter(first.profile.id).locale, 'pt-BR');
+    assert.equal(profiles.enter(second.profile.id).locale, 'en-US');
+    assert.equal(db.select().from(categoriesTable).all().length, 8);
+    assert.equal(
+      db.select().from(transactionsTable).get()!.amount_cents,
+      123456,
+    );
+  } finally {
+    db.$client.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('invalid profiles and duplicate email leave no partial initialization', () => {
+  const db = initDb(':memory:', migrationsFolder);
+
+  try {
+    const profiles = createProfileService(db);
+    for (const input of [
+      null,
+      { name: '', email: 'bad', locale: 'en-US' },
+      { name: 'Valid', email: 'valid@example.test', locale: 'unsupported' },
+    ]) {
+      assert.deepEqual(
+        profiles.create(input as Parameters<typeof profiles.create>[0]),
+        { ok: false, error: 'invalid_profile' },
+      );
+    }
+
+    assert.deepEqual(profiles.list(), []);
+    assert.equal(db.select().from(paymentsTable).all().length, 0);
+    const result = profiles.create({
+      name: 'Valid',
+      email: 'valid@example.test',
+      locale: 'pt-BR',
+    });
+    assert.ok(result.ok);
+    assert.deepEqual(
+      profiles.create({
+        name: 'Duplicate',
+        email: 'VALID@example.test',
+        locale: 'en-US',
+      }),
+      { ok: false, error: 'email_in_use' },
+    );
+    assert.equal(profiles.list().length, 1);
+    assert.equal(profiles.current()?.id, result.profile.id);
+    db.run(
+      sql`UPDATE user SET locale = 'unsupported' WHERE id = ${result.profile.id}`,
+    );
+    assert.equal(profiles.enter(result.profile.id).locale, 'pt-BR');
+    assert.throws(() => profiles.enter(0), /Invalid profile/);
+    assert.throws(() => profiles.enter(999), /not found/);
+  } finally {
+    db.$client.close();
+  }
+});
+
 function setup() {
   const db = initDb(':memory:', migrationsFolder);
-  const service = createTransactionService(db);
-  const user = db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.email, TEST_USER_EMAIL))
-    .get()!;
+  const profiles = createProfileService(db);
+  const result = profiles.create({
+    name: 'Test user',
+    email: 'test@example.test',
+    locale: 'pt-BR',
+  });
+  assert.ok(result.ok);
+  const user = result.profile;
+  const service = createTransactionService(db, () => profiles.requireActive());
   const payment = db.select().from(paymentsTable).get()!;
   const category = db.select().from(categoriesTable).get()!;
   const input = {
@@ -57,9 +217,9 @@ function setup() {
 test('CRUD preserves cents, category joins, month boundaries, ordering and seed idempotence', () => {
   const { db, service, input } = setup();
   try {
-    createTransactionService(db);
+    initializeProfile(db, input.user_id);
     assert.equal(db.select().from(usersTable).all().length, 1);
-    assert.equal(db.select().from(paymentsTable).all().length, 3);
+    assert.equal(db.select().from(paymentsTable).all().length, 4);
     assert.equal(db.select().from(categoriesTable).all().length, 4);
     service.create(input);
     service.create({ ...input, name: 'Uncategorized', category_id: null });
@@ -300,25 +460,17 @@ test('legacy database adoption and later migrations preserve data and run only o
     legacy.$client.exec(
       readFileSync(resolve('src/main/db/fixtures/legacy-schema.sql'), 'utf8'),
     );
-    legacy
-      .insert(usersTable)
-      .values({
-        id: 42,
-        name: 'Existing',
-        email: 'existing@example.test',
-        password: 'preserved',
-      })
-      .run();
-    const payment = legacy
-      .insert(paymentsTable)
-      .values({ name: 'Cash', type: 1 })
-      .returning()
-      .get()!;
-    const category = legacy
-      .insert(categoriesTable)
-      .values({ name: 'Food', color: '#808080', icon_key: 'food', user_id: 42 })
-      .returning()
-      .get()!;
+    legacy.run(
+      sql`INSERT INTO user (id, name, email, password) VALUES (42, 'Existing', 'existing@example.test', 'preserved')`,
+    );
+    legacy.run(
+      sql`INSERT INTO payments (id, name, type) VALUES (8, 'Cash', 1)`,
+    );
+    legacy.run(
+      sql`INSERT INTO categories (id, name, color, icon_key, user_id) VALUES (9, 'Food', '#808080', 'food', 42)`,
+    );
+    const payment = { id: 8 };
+    const category = { id: 9 };
     // Insert against the historical schema, which does not have the note column.
     legacy.run(sql`INSERT INTO transactions
       (id, name, type, amount_cents, reference_date, payment_date, user_id, payment_id, category_id)

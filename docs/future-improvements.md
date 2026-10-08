@@ -10,15 +10,17 @@ Keep concrete implementation gaps here rather than in the structure guide. When 
 
 The following items were checked against the working tree on 2026-09-18. They are scoped follow-ups, not prerequisites for unrelated tasks.
 
-- [ ] Move the preload API interface from `src/shared/types.ts` into a subject-specific file in `src/shared/contracts/`. Complete when its consumers, including the `Window` declaration, import the contract from that location and type checking passes. Transaction DTOs already live in contracts and do not need this migration.
+- [x] Move the preload API interface into `src/shared/contracts/api.ts` (verified 2026-10-08): the `Window` declaration imports the subject-specific contract, profile IPC uses shared DTOs, and type checking passes.
 - [ ] Consolidate UI entry points, markup, and styles under `src/renderer` during a relevant UI organization task. Inspect `src/ts`, `src/html`, `src/titlebar`, `src/renderer.ts`, and `src/index.css` when planning the move. Complete when affected imports and Electron/Vite entry paths resolve to the new locations, the build passes, and both application and titlebar load correctly.
 
 ## Deferred features
 
 ### Transaction form integration
 
-- Replace fixed category, user, and payment identifiers with the appropriate
-  process contracts and persisted associations. Deferred by request on 2026-10-08.
+- [x] Replace fixed category, user, and payment identifiers (verified 2026-10-08):
+      the form loads persisted profile options through IPC, submits the active profile,
+      and selects catalog methods. Main derives ownership from the active profile;
+      database tests verify cross-profile isolation and catalog validation.
 - [x] Use the reference date in the transaction form (verified 2026-10-08):
       the date picker and submitted input update `reference_date`. New entries have
       `payment_date: null`; editing preserves the existing settlement date. The
@@ -28,6 +30,19 @@ The following items were checked against the working tree on 2026-09-18. They ar
 - Implement the monthly statement IPC API already declared by the renderer.
   Timeline mutations refresh their own entries; monthly financial indicators
   cannot refresh until this API is implemented.
+
+### Profile and localization follow-up
+
+- Complete I18N-01 coverage for process-owned surfaces (including titlebar controls),
+  calendar accessibility labels, and any remaining application-owned messages.
+  Profile creation, entry, financial sections, transaction forms, timeline amounts,
+  and profile catalogs already use the scoped JSON catalog foundation.
+- Expand monetary paste rules for grouped or currency-prefixed values as part of
+  TX-01. Current entry accepts ungrouped digits and the saved locale's decimal
+  separator; invalid formats are displayed and cannot be submitted.
+- Define `pix_credit` before adding it to the predefined payment catalog.
+- UI composition and global styles now live in `src/renderer`; the legacy entry
+  wrappers, HTML, and titlebar still need the remaining entry-point consolidation.
 
 ### Multiple invoice payments
 

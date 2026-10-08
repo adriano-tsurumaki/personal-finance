@@ -16,12 +16,14 @@ export const usersTable = sqliteTable('user', {
   name: text().notNull(),
   email: text().notNull().unique(),
   password: text().notNull(),
+  locale: text().$type<'pt-BR' | 'en-US'>().notNull().default('pt-BR'),
 });
 
 export const paymentsTable = sqliteTable('payments', {
   id: integer().primaryKey({ autoIncrement: true }),
   name: text().notNull(),
   type: integer().notNull(),
+  catalog_key: text().unique(),
 });
 
 export const categoriesTable = sqliteTable('categories', {
@@ -30,6 +32,7 @@ export const categoriesTable = sqliteTable('categories', {
   color: text().notNull(),
   icon_key: text().notNull().default('other'),
   archived_at: date(),
+  catalog_key: text(),
   user_id: integer()
     .notNull()
     .references(() => usersTable.id),

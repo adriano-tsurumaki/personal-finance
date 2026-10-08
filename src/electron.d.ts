@@ -1,4 +1,4 @@
-import { Api } from './shared/types';
+import type { Api } from './shared/contracts/api';
 
 export {};
 

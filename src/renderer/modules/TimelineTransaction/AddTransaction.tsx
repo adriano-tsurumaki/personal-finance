@@ -33,9 +33,12 @@ import { format, parseISO } from 'date-fns';
 import { useDialogTransactionStore } from '@store/dialog-transaction';
 import type { CreateResult } from '@shared/contracts/result';
 import { useAppStore } from '@store/transaction';
-import { getLocale, t } from '@lib/i18n';
+import { useProfileStore } from '@store/profile';
+import { categoryLabel, getLocale, t } from '@lib/i18n';
 
 export default function AddTransaction() {
+  const profile = useProfileStore((state) => state.activeProfile);
+  const options = useProfileStore((state) => state.options);
   const types = [
     { value: null, label: t('transactions.selectType') },
     { value: 1, label: t('transactions.income') },
@@ -43,10 +46,17 @@ export default function AddTransaction() {
   ];
   const categories = [
     { value: null, label: t('transactions.selectCategory') },
-    { value: 1, label: t('categories.food') },
-    { value: 2, label: t('categories.housing') },
-    { value: 3, label: t('categories.salary') },
-    { value: 4, label: t('categories.other') },
+    ...options.categories.map((category) => ({
+      value: category.id,
+      label: categoryLabel(category),
+    })),
+  ];
+  const payments = [
+    { value: null, label: t('transactions.selectPayment') },
+    ...options.payments.map((payment) => ({
+      value: payment.id,
+      label: t(`payments.${payment.catalog_key}`),
+    })),
   ];
   const {
     openDialogTransaction,
@@ -88,13 +98,10 @@ export default function AddTransaction() {
     payment_date: state.transaction.payment_date,
   }));
 
-  const { payment_id, user_id, reference_date } = useDialogTransactionStore(
-    (state) => ({
-      payment_id: state.transaction.payment_id,
-      user_id: state.transaction.user_id,
-      reference_date: state.transaction.reference_date,
-    }),
-  );
+  const { payment_id, reference_date } = useDialogTransactionStore((state) => ({
+    payment_id: state.transaction.payment_id,
+    reference_date: state.transaction.reference_date,
+  }));
 
   const handleSubmit = async () => {
     if (!startSubmission()) {
@@ -137,6 +144,17 @@ export default function AddTransaction() {
       const formattedDate = format(parseISO(reference_date), 'yyyy-MM-dd');
 
       if (
+        !profile ||
+        !options.payments.some((payment) => payment.id === payment_id)
+      ) {
+        toast.add({
+          title: t('common.errorTitle'),
+          description: t('transactions.invalidPayment'),
+        });
+        return;
+      }
+
+      if (
         !Number.isSafeInteger(amount_cents) ||
         amount_cents <= 0 ||
         !name.trim()
@@ -154,8 +172,8 @@ export default function AddTransaction() {
         note: note ?? null,
         type: type,
         category_id: category_id,
-        payment_id: mode === 'edit' ? payment_id : 3,
-        user_id: mode === 'edit' ? user_id : 1,
+        payment_id,
+        user_id: profile.id,
         reference_date: formattedDate,
         payment_date: mode === 'edit' ? payment_date : null,
       };
@@ -338,6 +356,37 @@ export default function AddTransaction() {
                 />
               </Field>
             </div>
+            <Field>
+              <FieldLabel htmlFor="payment">
+                {t('transactions.payment')}
+              </FieldLabel>
+              <Select
+                items={payments}
+                value={payment_id || null}
+                onValueChange={(value) =>
+                  handleTransaction('payment_id', value ?? 0)
+                }
+              >
+                <SelectTrigger id="payment">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {payments.map((payment) => (
+                      <SelectItem key={payment.value} value={payment.value}>
+                        {payment.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              {options.payments.find((payment) => payment.id === payment_id)
+                ?.catalog_key === 'credit' && (
+                <p className="text-xs text-muted-foreground">
+                  {t('transactions.creditHint')}
+                </p>
+              )}
+            </Field>
             <Field>
               <FieldLabel htmlFor="note">{t('transactions.note')}</FieldLabel>
               <Input

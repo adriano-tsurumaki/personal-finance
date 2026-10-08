@@ -1,77 +1,16 @@
-import { and, desc, eq, gte, isNull, lt, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, lt, sql } from 'drizzle-orm';
 import type {
   TransactionDto,
   TransactionInput,
 } from '@shared/contracts/transaction';
 import type { AppDatabase } from './db';
-import {
-  categoriesTable,
-  paymentsTable,
-  transactionsTable,
-  usersTable,
-} from './db/schema';
-import { CreateResult } from '@shared/contracts/result';
+import { categoriesTable, paymentsTable, transactionsTable } from './db/schema';
+import type { CreateResult } from '@shared/contracts/result';
 
-// Fixed identity for the prototype; the renderer cannot select the user.
-export const TEST_USER_EMAIL = 'teste@personal-finance.local';
-
-export function createTransactionService(db: AppDatabase) {
-  const user = db.transaction((tx) => {
-    tx.insert(usersTable)
-      .values({
-        name: 'Test user',
-        email: TEST_USER_EMAIL,
-        password: '!login-disabled',
-      })
-      .onConflictDoNothing({ target: usersTable.email })
-      .run();
-    const user = tx
-      .select({ id: usersTable.id })
-      .from(usersTable)
-      .where(eq(usersTable.email, TEST_USER_EMAIL))
-      .get();
-
-    if (!user) {
-      throw new Error('Could not initialize the test user.');
-    }
-
-    for (const name of ['Instant transfer', 'Cash', 'Debit card']) {
-      if (
-        !tx
-          .select({ id: paymentsTable.id })
-          .from(paymentsTable)
-          .where(and(eq(paymentsTable.name, name), eq(paymentsTable.type, 1)))
-          .get()
-      ) {
-        tx.insert(paymentsTable).values({ name, type: 1 }).run();
-      }
-    }
-    for (const name of ['Food', 'Housing', 'Salary', 'Other']) {
-      if (
-        !tx
-          .select({ id: categoriesTable.id })
-          .from(categoriesTable)
-          .where(
-            and(
-              eq(categoriesTable.name, name),
-              eq(categoriesTable.user_id, user.id),
-            ),
-          )
-          .get()
-      ) {
-        tx.insert(categoriesTable)
-          .values({
-            name,
-            color: '#808080',
-            icon_key: name.toLowerCase(),
-            user_id: user.id,
-          })
-          .run();
-      }
-    }
-    return user;
-  });
-
+export function createTransactionService(
+  db: AppDatabase,
+  getActiveUser: () => { id: number },
+) {
   function validDate(value: unknown): value is string {
     if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
       return false;
@@ -85,6 +24,7 @@ export function createTransactionService(db: AppDatabase) {
 
   function validate(
     input: TransactionInput,
+    userId: number,
     existingCategoryId?: number | null,
   ) {
     if (
@@ -124,7 +64,17 @@ export function createTransactionService(db: AppDatabase) {
       !db
         .select({ id: paymentsTable.id })
         .from(paymentsTable)
-        .where(eq(paymentsTable.id, input.payment_id))
+        .where(
+          and(
+            eq(paymentsTable.id, input.payment_id),
+            inArray(paymentsTable.catalog_key, [
+              'pix',
+              'debit',
+              'credit',
+              'cash',
+            ]),
+          ),
+        )
         .get()
     ) {
       throw new Error('Invalid payment method.');
@@ -139,7 +89,7 @@ export function createTransactionService(db: AppDatabase) {
           .where(
             and(
               eq(categoriesTable.id, input.category_id),
-              eq(categoriesTable.user_id, user.id),
+              eq(categoriesTable.user_id, userId),
               input.category_id === existingCategoryId
                 ? undefined
                 : isNull(categoriesTable.archived_at),
@@ -170,6 +120,8 @@ export function createTransactionService(db: AppDatabase) {
 
   return {
     list(month: string): TransactionDto[] {
+      const user = getActiveUser();
+
       if (typeof month !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
         throw new Error('Invalid month.');
       }
@@ -189,6 +141,7 @@ export function createTransactionService(db: AppDatabase) {
               id: categoriesTable.id,
               name: categoriesTable.name,
               icon_key: categoriesTable.icon_key,
+              catalog_key: categoriesTable.catalog_key,
             },
           })
           .from(transactionsTable)
@@ -221,6 +174,7 @@ export function createTransactionService(db: AppDatabase) {
     },
 
     get(id: number): TransactionInput {
+      const user = getActiveUser();
       validateId(id);
       const result = db
         .select()
@@ -255,14 +209,16 @@ export function createTransactionService(db: AppDatabase) {
     },
 
     create(input: TransactionInput): CreateResult {
+      const user = getActiveUser();
       db.insert(transactionsTable)
-        .values({ ...validate(input), user_id: user.id })
+        .values({ ...validate(input, user.id), user_id: user.id })
         .run();
 
       return { ok: true };
     },
 
     update(id: number, input: TransactionInput): CreateResult {
+      const user = getActiveUser();
       validateId(id);
 
       const existing = db
@@ -282,7 +238,7 @@ export function createTransactionService(db: AppDatabase) {
 
       const result = db
         .update(transactionsTable)
-        .set(validate(input, existing.category_id))
+        .set(validate(input, user.id, existing.category_id))
         .where(
           and(
             eq(transactionsTable.id, id),
@@ -299,6 +255,7 @@ export function createTransactionService(db: AppDatabase) {
     },
 
     remove(id: number) {
+      const user = getActiveUser();
       validateId(id);
       const result = db
         .delete(transactionsTable)

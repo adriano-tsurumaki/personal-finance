@@ -237,6 +237,31 @@ Copy examples:
 
 ## Screen recipes and demo boundaries
 
+### Local profile screens in Personal Finance
+
+The application extends the Ledger recipes with a local profile creation form
+and a profile entry screen. Use the centered 48rem surface, a form panel up to
+28rem wide, 20px panel padding, the 16.8px panel radius, compact typography,
+semantic green selection fills, and one primary submit action. Profile entry
+uses radio selection and a Continue action. The financial header shows a circular
+36px profile icon button that opens an anchored menu. Keep the selected profile
+name and locale inside that menu, followed by a Change language submenu with checked options for Português (Brasil) and English (US), and the Leave profile action. Keep the
+header in normal flow; use the menu primitive's keyboard navigation, dismissal,
+and focus restoration.
+
+The confirmed product requirement localizes interface copy through English-keyed
+JSON catalogs for `pt-BR` and `en-US`. This deliberately extends the reference's
+English-copy convention. Both languages display BRL, with locale-specific
+separators, rather than the reference demo's USD. A language preview is available
+before creation; the profile menu can update the saved language afterward. The interface applies the new language only after persistence succeeds. Local profile
+entry has no password or authentication boundary.
+
+The monthly summary API remains deferred. Show dashes in unavailable indicator
+tiles and a clear pending message beneath the balance label. Omit the large
+balance value while unavailable rather than enlarging a placeholder dash or
+presenting prototype zeroes as financial data. Capitalize month headings in both
+supported locales while preserving locale-specific date wording.
+
 The original product stacks monthly, weekly, and recurring sections. The expanded kit keeps the monthly header above **Timelines / Installments / Weekly Goals / Recurring** tabs.
 
 | Screen            | Composition                                                                                                         |

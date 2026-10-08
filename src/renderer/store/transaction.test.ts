@@ -45,6 +45,20 @@ test('timeline refresh applies the latest response and reports load failures', a
     window.api.getTransactions = async () => [updated];
     await useAppStore.getState().loadTransactions();
     assert.deepEqual(useAppStore.getState().transactions, [updated]);
+    const staleResponse = new Promise<TransactionDto[]>((resolve) => {
+      resolveOld = resolve;
+    });
+    window.api.getTransactions = async () => staleResponse;
+    const staleLoad = useAppStore.getState().loadTransactions();
+    useAppStore.setState({
+      monthlyStatement: { ...initialState.monthlyStatement, net: 999 },
+    });
+    useAppStore.getState().reset();
+    resolveOld([updated]);
+    await staleLoad;
+    assert.deepEqual(useAppStore.getState().transactions, []);
+    assert.equal(useAppStore.getState().monthlyStatement.net, 0);
+    assert.equal(useAppStore.getState().transactionsLoading, false);
     window.api.getTransactions = async () => {
       throw new Error('Refresh unavailable');
     };
@@ -52,7 +66,7 @@ test('timeline refresh applies the latest response and reports load failures', a
       useAppStore.getState().loadTransactions(),
       /Refresh unavailable/,
     );
-    assert.deepEqual(useAppStore.getState().transactions, [updated]);
+    assert.deepEqual(useAppStore.getState().transactions, []);
   } finally {
     useAppStore.setState(initialState);
 

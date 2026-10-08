@@ -2,14 +2,16 @@ import type { AppDatabase } from './db';
 import { ipcMain } from 'electron';
 import type { IpcMainInvokeEvent, WebContents } from 'electron';
 import { createTransactionService } from './transactions';
+import { createProfileService } from './profiles';
 import type { TransactionInput } from '@shared/contracts/transaction';
-import { CreateResult } from '@shared/contracts/result';
+import type { CreateResult } from '@shared/contracts/result';
 
 export function registerIpcHandlers(
   db: AppDatabase,
   getContent: () => WebContents | undefined,
 ): void {
-  const service = createTransactionService(db);
+  const profiles = createProfileService(db);
+  const service = createTransactionService(db, () => profiles.requireActive());
 
   function authorize(event: IpcMainInvokeEvent) {
     if (
@@ -19,6 +21,41 @@ export function registerIpcHandlers(
       throw new Error('Unauthorized request origin.');
     }
   }
+
+  ipcMain.handle('profiles:list', (event) => {
+    authorize(event);
+    return profiles.list();
+  });
+
+  ipcMain.handle('profiles:current', (event) => {
+    authorize(event);
+    return profiles.current();
+  });
+
+  ipcMain.handle('profiles:create', (event, input) => {
+    authorize(event);
+    return profiles.create(input);
+  });
+
+  ipcMain.handle('profiles:enter', (event, id) => {
+    authorize(event);
+    return profiles.enter(id);
+  });
+
+  ipcMain.handle('profiles:leave', (event) => {
+    authorize(event);
+    profiles.leave();
+  });
+
+  ipcMain.handle('profiles:options', (event) => {
+    authorize(event);
+    return profiles.options();
+  });
+
+  ipcMain.handle('profiles:update-locale', (event, locale) => {
+    authorize(event);
+    return profiles.updateLocale(locale);
+  });
 
   ipcMain.handle('transactions:list', (event, month: string) => {
     authorize(event);

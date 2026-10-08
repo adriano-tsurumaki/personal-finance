@@ -24,8 +24,11 @@ pnpm dev
 
 `db:migrate` creates the database and applies pending migrations without opening
 the UI. The app also applies pending migrations before registering IPC handlers.
-The existing prototype user, payment methods, and categories are seeded when the
-transaction service starts, inside a transaction without duplicate seed records.
+Startup does not create a prototype user. Local profiles are created through the
+profile screen; creating or entering a profile initializes its default categories
+and the shared payment-method catalog atomically. Stable catalog keys prevent
+repeat initialization from duplicating defaults or overwriting customized names,
+colors, or archived categories. Existing prototype profiles remain selectable.
 Use `pnpm db:studio` to inspect the local database.
 
 ## Changing the schema
@@ -71,3 +74,5 @@ not used to choose the packaged database location.
 `pnpm test:db` runs isolated SQLite tests covering CRUD, month boundaries, category
 joins, user isolation, input validation, seed idempotence, schema constraints,
 legacy adoption, successive migrations, and rollback after a failed migration.
+Profile tests also cover locale persistence after restart, catalog initialization,
+invalid profiles, duplicate emails, and isolation between active profiles.
