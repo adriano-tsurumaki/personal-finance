@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useAppStore } from '@store/transaction';
 import MonthlyFinance from '@modules/MonthlyFinance';
-import TimelineTransaction from '@modules/TimelineTransaction';
+import FinanceSections from '@modules/FinanceSections';
 import { Toaster } from '@components/ui/toast';
 import ConfirmationDialogHost from '@components/ConfirmationDialog/ConfirmationDialogHost';
 
@@ -16,7 +16,7 @@ function App(): React.JSX.Element {
     <Toaster>
       <main className="flex-1 min-h-0 overflow-y-auto">
         <MonthlyFinance />
-        <TimelineTransaction />
+        <FinanceSections />
         <ConfirmationDialogHost />
       </main>
     </Toaster>
