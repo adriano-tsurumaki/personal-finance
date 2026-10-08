@@ -4,6 +4,7 @@ import { cn } from '@lib/utils';
 import { XIcon } from 'lucide-react';
 
 import { Button } from './button';
+import { ToastPortalTarget } from './toast';
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
@@ -76,6 +77,7 @@ function DialogContent({
           />
         )}
       </DialogPrimitive.Popup>
+      <ToastPortalTarget />
     </DialogPortal>
   );
 }

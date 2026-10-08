@@ -14,6 +14,26 @@ import { Button } from '@components/ui/button';
 
 const toast = ToastPrimitive.createToastManager();
 
+const ToastPortalContext = React.createContext<
+  ((container: HTMLElement) => () => void) | null
+>(null);
+
+/** Hosts the single toast viewport inside the active modal portal. */
+function ToastPortalTarget() {
+  const register = React.useContext(ToastPortalContext);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useLayoutEffect(() => {
+    if (!register || !containerRef.current) {
+      return;
+    }
+
+    return register(containerRef.current);
+  }, [register]);
+
+  return <div ref={containerRef} data-slot="toast-portal-target" />;
+}
+
 function ToastProvider({ ...props }: ToastPrimitive.Provider.Props) {
   return <ToastPrimitive.Provider {...props} />;
 }
@@ -27,7 +47,7 @@ function ToastViewport({ className, ...props }: ToastPrimitive.Viewport.Props) {
     <ToastPrimitive.Viewport
       data-slot="toast-viewport"
       className={cn(
-        'pointer-events-none fixed inset-x-4 bottom-4 z-50 mx-auto w-auto max-w-sm outline-none sm:right-4 sm:left-auto sm:mx-0 sm:w-full',
+        'pointer-events-none fixed inset-x-4 bottom-4 z-[100] mx-auto w-auto max-w-sm outline-none sm:right-4 sm:left-auto sm:mx-0 sm:w-full',
         className,
       )}
       {...props}
@@ -195,14 +215,23 @@ function Toaster({
   toastManager = toast,
   ...props
 }: ToastPrimitive.Provider.Props) {
+  const [containers, setContainers] = React.useState<HTMLElement[]>([]);
+  const register = React.useCallback((container: HTMLElement) => {
+    setContainers((current) => [...current, container]);
+    return () =>
+      setContainers((current) => current.filter((item) => item !== container));
+  }, []);
+
   return (
     <ToastProvider toastManager={toastManager} {...props}>
-      {children}
-      <ToastPortal>
-        <ToastViewport>
-          <ToastList />
-        </ToastViewport>
-      </ToastPortal>
+      <ToastPortalContext.Provider value={register}>
+        {children}
+        <ToastPortal container={containers.at(-1)}>
+          <ToastViewport>
+            <ToastList />
+          </ToastViewport>
+        </ToastPortal>
+      </ToastPortalContext.Provider>
     </ToastProvider>
   );
 }
@@ -218,6 +247,7 @@ export {
   ToastContent,
   ToastDescription,
   ToastPortal,
+  ToastPortalTarget,
   ToastProvider,
   ToastTitle,
   ToastViewport,
