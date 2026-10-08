@@ -14,6 +14,7 @@ import {
 
 import { useAppStore } from '@store/transaction';
 import { shiftMonth } from '@shared/lib/calc';
+import { t } from '@lib/i18n';
 
 export default function MonthlyFinance(): React.JSX.Element {
   const monthlyStatement = useAppStore((s) => s.monthlyStatement);
@@ -21,6 +22,7 @@ export default function MonthlyFinance(): React.JSX.Element {
   const setMonthKey = useAppStore((s) => s.setMonthKey);
 
   const [year, month] = monthKey.split('-').map(Number);
+  const summaryAvailable = typeof window.api.getMonthlyStatement === 'function';
 
   return (
     <header className="border-b border-border bg-card">
@@ -30,12 +32,11 @@ export default function MonthlyFinance(): React.JSX.Element {
           <span>Ledger</span>
         </div>
 
-        {/* Month navigator */}
         <div className="mt-6 flex items-center justify-between gap-4">
           <button
             type="button"
             onClick={() => setMonthKey(shiftMonth(monthKey, -1))}
-            aria-label="Previous month"
+            aria-label={t('summary.previous')}
             className="flex size-9 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ChevronLeft className="size-4" />
@@ -50,7 +51,7 @@ export default function MonthlyFinance(): React.JSX.Element {
           <button
             type="button"
             onClick={() => setMonthKey(shiftMonth(monthKey, 1))}
-            aria-label="Next month"
+            aria-label={t('summary.next')}
             className="flex size-9 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ChevronRight className="size-4" />
@@ -60,22 +61,15 @@ export default function MonthlyFinance(): React.JSX.Element {
         <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm text-muted-foreground">
-              End-of-month balance
+              {t('summary.balance')}
             </p>
-            <p className="font-mono text-4xl font-semibold tracking-tight text-foreground tabular-nums sm:text-5xl">
-              <OdometerMoney value={monthlyStatement.closingBalance} />
-            </p>
+            {summaryAvailable && (
+              <p className="font-mono text-4xl font-semibold tracking-tight text-foreground tabular-nums sm:text-5xl">
+                <OdometerMoney value={monthlyStatement.closingBalance} />
+              </p>
+            )}
             <p className="mt-2 text-sm text-muted-foreground">
-              Opened at {formatCompactCurrency(monthlyStatement.openingBalance)}{' '}
-              <span
-                className={
-                  monthlyStatement.net >= 0 ? 'text-income' : 'text-expense'
-                }
-              >
-                {monthlyStatement.net >= 0 ? '+' : '\u2212'}
-                <OdometerMoney value={monthlyStatement.net} absolute /> this
-                month
-              </span>
+              {t('summary.pending')}
             </p>
           </div>
 
@@ -83,7 +77,7 @@ export default function MonthlyFinance(): React.JSX.Element {
             <div className="w-full max-w-60 shrink-0">
               <BalanceSparkline data={monthlyStatement.balanceSeries} />
               <p className="mt-2 text-right text-xs text-muted-foreground">
-                Balance this month
+                {t('summary.balance')}
               </p>
             </div>
           ) : null}
@@ -91,22 +85,38 @@ export default function MonthlyFinance(): React.JSX.Element {
 
         <dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Stat
-            label="Income"
-            value={formatCompactCurrency(monthlyStatement.income)}
+            label={t('summary.income')}
+            value={
+              summaryAvailable
+                ? formatCompactCurrency(monthlyStatement.income)
+                : '—'
+            }
             tone="income"
             icon={<ArrowUpRight className="size-4" aria-hidden="true" />}
           />
           <Stat
-            label="Expenses"
-            value={formatCompactCurrency(monthlyStatement.expense)}
+            label={t('summary.expenses')}
+            value={
+              summaryAvailable
+                ? formatCompactCurrency(monthlyStatement.expense)
+                : '—'
+            }
             tone="expense"
             icon={<ArrowDownRight className="size-4" aria-hidden="true" />}
           />
           <Stat
-            label="Saved"
-            value={`${Math.round(monthlyStatement.savingsRate * 100)}%`}
+            label={t('summary.saved')}
+            value={
+              summaryAvailable
+                ? `${Math.round(monthlyStatement.savingsRate * 100)}%`
+                : '—'
+            }
             tone="neutral"
-            hint={formatCompactCurrency(monthlyStatement.net)}
+            hint={
+              summaryAvailable
+                ? formatCompactCurrency(monthlyStatement.net)
+                : undefined
+            }
           />
         </dl>
       </div>
@@ -147,7 +157,7 @@ function Stat({
         {value}
         {hint ? (
           <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-            net {hint}
+            {t('summary.net', { amount: hint })}
           </span>
         ) : null}
       </dd>

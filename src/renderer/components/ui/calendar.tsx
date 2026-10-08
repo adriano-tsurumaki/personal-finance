@@ -41,8 +41,21 @@ function Calendar({
       captionLayout={captionLayout}
       locale={locale}
       formatters={{
-        formatMonthDropdown: (date) =>
-          date.toLocaleString(locale?.code, { month: 'short' }),
+        formatCaption: (date) => {
+          const label = date.toLocaleString(locale?.code, {
+            month: 'long',
+            year: 'numeric',
+          });
+          return (
+            label.charAt(0).toLocaleUpperCase(locale?.code) + label.slice(1)
+          );
+        },
+        formatMonthDropdown: (date) => {
+          const label = date.toLocaleString(locale?.code, { month: 'short' });
+          return (
+            label.charAt(0).toLocaleUpperCase(locale?.code) + label.slice(1)
+          );
+        },
         ...formatters,
       }}
       classNames={{

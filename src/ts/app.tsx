@@ -1,3 +1,4 @@
+import { useLocale } from '@lib/i18n';
 import { useEffect } from 'react';
 import { useAppStore } from '@store/transaction';
 import MonthlyFinance from '@modules/MonthlyFinance';
@@ -6,6 +7,7 @@ import { Toaster } from '@components/ui/toast';
 import ConfirmationDialogHost from '@components/ConfirmationDialog/ConfirmationDialogHost';
 
 function App(): React.JSX.Element {
+  useLocale();
   const init = useAppStore((state) => state.init);
 
   useEffect(() => {

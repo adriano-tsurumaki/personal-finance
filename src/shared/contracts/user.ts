@@ -3,3 +3,5 @@ export interface UserDto {
   name: string;
   email: string;
 }
+
+export type ProfileLocale = 'pt-BR' | 'en-US';

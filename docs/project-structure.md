@@ -18,18 +18,18 @@ Do not centralize unrelated types in generic files such as `shared/types.ts` or 
 
 ## Directory responsibilities
 
-| Location | Responsibility |
-| --- | --- |
-| `electron/` | Main and preload entry points |
-| `src/main/` | Database access, IPC handlers, main process services, and domain rules |
-| `src/renderer/` | UI entry points, page markup, application composition, and styles |
-| `src/renderer/modules/` | UI features, their components, and presentation models |
-| `src/renderer/components/` | Components reused across features and their props |
-| `src/renderer/lib/` | UI utilities independent of a component, such as formatting |
-| `src/renderer/store/` | Shared UI state and its actions |
-| `src/shared/contracts/` | Input, output, and API contracts between processes, organized by subject |
-| `src/shared/lib/` | Utilities shareable across processes, independent of React, DOM, Node, and Electron |
-| `src/electron.d.ts` | Environment declarations, including the `Window` extension |
+| Location                   | Responsibility                                                                      |
+| -------------------------- | ----------------------------------------------------------------------------------- |
+| `electron/`                | Main and preload entry points                                                       |
+| `src/main/`                | Database access, IPC handlers, main process services, and domain rules              |
+| `src/renderer/`            | UI entry points, page markup, application composition, and styles                   |
+| `src/renderer/modules/`    | UI features, their components, and presentation models                              |
+| `src/renderer/components/` | Components reused across features and their props                                   |
+| `src/renderer/lib/`        | UI utilities independent of a component, such as formatting                         |
+| `src/renderer/store/`      | Shared UI state and its actions                                                     |
+| `src/shared/contracts/`    | Input, output, and API contracts between processes, organized by subject            |
+| `src/shared/lib/`          | Utilities shareable across processes, independent of React, DOM, Node, and Electron |
+| `src/electron.d.ts`        | Environment declarations, including the `Window` extension                          |
 
 Keep feature-specific styles and assets close to the feature. Application-wide styles belong within `src/renderer`. Keep entry points thin and delegate behavior to the responsible modules or services.
 
@@ -54,15 +54,15 @@ These rules apply to `import type` and type re-exports. Although removed at runt
 
 ## Where types belong
 
-| Definition | Location |
-| --- | --- |
-| Component props | In the component or an adjacent `types.ts` |
-| Presentation model | In the UI module that owns it |
-| Store state | Alongside the store; local state stays in the component or module |
-| DTO sent or returned by main | `src/shared/contracts/`, organized by subject |
-| Preload API interface | `src/shared/contracts/`; the `Window` declaration imports it |
-| Entity or value object | In the domain responsible for its rules |
-| Environment declaration | A `.d.ts` file |
+| Definition                   | Location                                                          |
+| ---------------------------- | ----------------------------------------------------------------- |
+| Component props              | In the component or an adjacent `types.ts`                        |
+| Presentation model           | In the UI module that owns it                                     |
+| Store state                  | Alongside the store; local state stays in the component or module |
+| DTO sent or returned by main | `src/shared/contracts/`, organized by subject                     |
+| Preload API interface        | `src/shared/contracts/`; the `Window` declaration imports it      |
+| Entity or value object       | In the domain responsible for its rules                           |
+| Environment declaration      | A `.d.ts` file                                                    |
 
 Use `.ts` for ordinary exported and imported types. Related contracts can share a file; one file per interface is not required.
 
@@ -130,18 +130,28 @@ src/
 
 Prefer names that express responsibility, such as `ProgressBadgeProps` and `ReadingSummaryDto`. Do not use `I` or `T` prefixes solely to indicate an interface or type. Use local `types.ts` files when grouping related types improves readability; extracting types from components is optional. Do not create `index.ts` files solely to re-export everything.
 
+## Translation catalogs
+
+Keep renderer translation catalogs in `src/renderer/lib/i18n`, grouped by locale.
+Organize each JSON catalog with nested properties by feature or responsibility,
+rather than top-level properties containing dots. Translation calls use dotted
+paths to address leaf strings; for example, the fictional `t('reading.title')`
+resolves the `title` property inside the `reading` object. Derive valid paths from
+the reference catalog and verify that locale catalogs have matching leaf paths
+and interpolation placeholders.
+
 ## Aliases and imports
 
 Use these targets when configuring aliases:
 
-| Alias | Target |
-| --- | --- |
-| `@lib/*` | `src/renderer/lib/*` |
+| Alias           | Target                      |
+| --------------- | --------------------------- |
+| `@lib/*`        | `src/renderer/lib/*`        |
 | `@components/*` | `src/renderer/components/*` |
-| `@modules/*` | `src/renderer/modules/*` |
-| `@store/*` | `src/renderer/store/*` |
-| `@shared/*` | `src/shared/*` |
-| `@main/*` | `src/main/*` |
+| `@modules/*`    | `src/renderer/modules/*`    |
+| `@store/*`      | `src/renderer/store/*`      |
+| `@shared/*`     | `src/shared/*`              |
+| `@main/*`       | `src/main/*`                |
 
 This table defines mappings, not which aliases are enabled. Add aliases only for actual usage. Check the TypeScript and consuming process's Vite configuration before using an alias, and keep their resolution aligned. An alias never authorizes a dependency that violates process boundaries.
 

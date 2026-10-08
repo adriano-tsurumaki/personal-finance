@@ -1,13 +1,11 @@
 import type { OdometerMoneyProps } from './types';
+import { formatCurrency } from '@lib/format/currency';
 
 export default function OdometerMoney({
   value,
   absolute = false,
 }: OdometerMoneyProps) {
-  const formatted = new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(absolute ? Math.abs(value) : value);
+  const formatted = formatCurrency(absolute ? Math.abs(value) : value);
 
   return (
     <span className="inline-flex items-baseline">

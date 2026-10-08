@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@components/ui/dialog';
 import { Spinner } from '@components/ui/spinner';
+import { t } from '@lib/i18n';
 
 export interface ConfirmationDialogProps {
   open: boolean;
@@ -30,9 +31,9 @@ export default function ConfirmationDialog({
   title,
   description,
   onConfirm,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
-  pendingLabel = 'Confirming...',
+  confirmLabel = t('common.confirm'),
+  cancelLabel = t('common.cancel'),
+  pendingLabel = t('common.confirming'),
   isConfirming = false,
   destructive = false,
 }: ConfirmationDialogProps) {

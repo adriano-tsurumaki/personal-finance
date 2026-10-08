@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { t } from '@lib/i18n';
 
 interface Point {
   date: string;
@@ -115,7 +116,7 @@ export default function BalanceSparkline({
       className="h-14 w-full"
       preserveAspectRatio="none"
       role="img"
-      aria-label="Line chart showing account balance trending upward over time"
+      aria-label={t('summary.chart')}
     >
       <defs>
         <linearGradient id="balance-fill" x1="0" y1="0" x2="0" y2="1">

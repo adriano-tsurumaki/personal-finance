@@ -3,9 +3,10 @@ import { formatSignedCurrency } from '@lib/format/currency';
 import type { TransactionDto } from '@shared/contracts/transaction';
 import { Button } from '@components/ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
+import { categoryLabel, getLocale, t } from '@lib/i18n';
 
 function dayLabel(date: string): string {
-  return new Date(`${date}T00:00:00`).toLocaleDateString('en-US', {
+  return new Date(`${date}T00:00:00`).toLocaleDateString(getLocale(), {
     day: '2-digit',
     month: 'short',
   });
@@ -53,7 +54,7 @@ export default function TimelineEntryRow({
               </p>
               {entry.category?.name ? (
                 <span className="hidden shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-secondary-foreground sm:inline">
-                  {entry.category?.name}
+                  {categoryLabel(entry.category)}
                 </span>
               ) : null}
             </div>
@@ -78,8 +79,8 @@ export default function TimelineEntryRow({
                 variant="ghost"
                 size="icon-xs"
                 className="text-muted-foreground hover:bg-secondary"
-                aria-label={`Edit transaction: ${entry.name}`}
-                title="Edit transaction"
+                aria-label={t('transactions.editLabel', { name: entry.name })}
+                title={t('transactions.edit')}
                 onClick={onEdit}
                 disabled={disabled}
               >
@@ -90,8 +91,8 @@ export default function TimelineEntryRow({
                 variant="ghost"
                 size="icon-xs"
                 className="text-muted-foreground hover:bg-secondary hover:text-expense"
-                aria-label={`Remove transaction: ${entry.name}`}
-                title="Remove transaction"
+                aria-label={t('transactions.removeLabel', { name: entry.name })}
+                title={t('transactions.remove')}
                 onClick={onRemove}
                 disabled={disabled}
               >

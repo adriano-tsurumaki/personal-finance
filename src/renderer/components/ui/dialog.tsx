@@ -1,3 +1,4 @@
+import { t } from '@lib/i18n';
 import * as React from 'react';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { cn } from '@lib/utils';
@@ -71,7 +72,7 @@ function DialogContent({
                 size="icon-sm"
               >
                 <XIcon aria-hidden="true" />
-                <span className="sr-only">Close</span>
+                <span className="sr-only">{t('common.close')}</span>
               </Button>
             }
           />
@@ -112,7 +113,7 @@ function DialogFooter({
       {children}
       {showCloseButton && (
         <DialogPrimitive.Close
-          render={<Button variant="outline">Close</Button>}
+          render={<Button variant="outline">{t('common.close')}</Button>}
         />
       )}
     </div>

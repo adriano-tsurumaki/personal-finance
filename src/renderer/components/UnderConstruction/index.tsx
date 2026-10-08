@@ -1,4 +1,5 @@
 import { Construction } from 'lucide-react';
+import { t } from '@lib/i18n';
 
 export default function UnderConstruction({ title }: { title: string }) {
   return (
@@ -9,7 +10,7 @@ export default function UnderConstruction({ title }: { title: string }) {
           aria-hidden="true"
         />
         <h2 className="text-sm font-medium text-foreground">{title}</h2>
-        <p className="text-xs text-muted-foreground">Under construction</p>
+        <p className="text-xs text-muted-foreground">{t('sections.pending')}</p>
       </div>
     </div>
   );

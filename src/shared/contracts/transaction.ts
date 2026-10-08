@@ -11,6 +11,7 @@ export interface TransactionDto {
     id: number;
     name: string;
     icon_key: string;
+    catalog_key?: string | null;
   } | null;
 }
 

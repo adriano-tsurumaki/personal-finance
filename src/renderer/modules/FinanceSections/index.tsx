@@ -3,12 +3,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
 import UnderConstruction from '@components/UnderConstruction';
 import TimelineTransaction from '@modules/TimelineTransaction';
 import { useAppStore } from '@store/transaction';
+import { t } from '@lib/i18n';
 
 const deferredSections = [
-  { id: 'installments', label: 'Installments', icon: CreditCard },
-  { id: 'weekly', label: 'Weekly Goals', icon: Target },
-  { id: 'recurring', label: 'Recurring', icon: Repeat },
-];
+  { id: 'installments', label: 'sections.installments', icon: CreditCard },
+  { id: 'weekly', label: 'sections.weekly', icon: Target },
+  { id: 'recurring', label: 'sections.recurring', icon: Repeat },
+] as const;
 
 export default function FinanceSections() {
   const transactionCount = useAppStore((state) => state.transactions.length);
@@ -18,10 +19,10 @@ export default function FinanceSections() {
       <div className="bg-card">
         <div className="mx-auto max-w-3xl px-5 sm:px-8">
           <div className="overflow-x-auto">
-            <TabsList aria-label="Monthly finance sections" activateOnFocus>
+            <TabsList aria-label={t('sections.label')} activateOnFocus>
               <TabsTrigger value="timelines">
                 <Wallet aria-hidden="true" />
-                Timelines
+                {t('sections.timeline')}
                 <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
                   {transactionCount}
                 </span>
@@ -29,7 +30,7 @@ export default function FinanceSections() {
               {deferredSections.map(({ id, label, icon: Icon }) => (
                 <TabsTrigger key={id} value={id}>
                   <Icon aria-hidden="true" />
-                  {label}
+                  {t(label)}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -41,7 +42,7 @@ export default function FinanceSections() {
       </TabsContent>
       {deferredSections.map(({ id, label }) => (
         <TabsContent key={id} value={id}>
-          <UnderConstruction title={label} />
+          <UnderConstruction title={t(label)} />
         </TabsContent>
       ))}
     </Tabs>

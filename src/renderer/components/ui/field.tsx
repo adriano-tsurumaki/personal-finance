@@ -1,6 +1,8 @@
 import { useId, useMemo, useState } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { format } from 'date-fns';
+import { enUS, ptBR } from 'date-fns/locale';
+import { getLocale, t } from '@lib/i18n';
 import { ChevronDownIcon } from 'lucide-react';
 import { cn } from '@lib/utils';
 
@@ -150,7 +152,13 @@ function FieldDatePicker({
               className="h-auto w-full justify-between rounded-md border-input px-3 py-2 text-left font-normal leading-normal focus-visible:ring-2 focus-visible:ring-ring data-[empty=true]:text-muted-foreground"
             >
               <span className="truncate">
-                {value ? format(value, 'PPP') : placeholder}
+                {value
+                  ? value.toLocaleDateString(getLocale(), {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })
+                  : placeholder}
               </span>
               <ChevronDownIcon
                 className="text-muted-foreground"
@@ -165,6 +173,7 @@ function FieldDatePicker({
           className="w-auto max-w-[calc(100vw-2rem)] overflow-auto rounded-md border border-border p-0 shadow-none ring-0 data-open:animate-none data-closed:animate-none"
         >
           <Calendar
+            locale={getLocale() === 'pt-BR' ? ptBR : enUS}
             mode="single"
             selected={value}
             defaultMonth={value}
@@ -236,12 +245,16 @@ function FieldMoney({
   const formattedMoney = Number.isFinite(money)
     ? money.toFixed(2).replace('.', decimalSeparator)
     : '';
-  const displayValue = draft?.money === money ? draft.text : formattedMoney;
+  const displayValue =
+    draft && Object.is(draft.money, money) ? draft.text : formattedMoney;
+  const invalidInput = !Number.isFinite(money);
+  const inputError =
+    error ?? (invalidInput ? t('transactions.invalidAmount') : undefined);
   const describedBy =
     [
       showCurrencySymbol && currencySymbol ? `${inputId}-currency` : null,
       description ? `${inputId}-description` : null,
-      error ? `${inputId}-error` : null,
+      inputError ? `${inputId}-error` : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -250,14 +263,14 @@ function FieldMoney({
     <Field
       className={className}
       data-disabled={disabled}
-      data-invalid={!!error}
+      data-invalid={!!inputError}
     >
       <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
       <div
         className={cn(
           'flex min-w-0 items-center gap-2 rounded-md border border-input bg-background px-3 focus-within:ring-2 focus-within:ring-ring',
           disabled && 'cursor-not-allowed opacity-50',
-          error && 'border-destructive focus-within:ring-destructive',
+          inputError && 'border-destructive focus-within:ring-destructive',
         )}
       >
         {showCurrencySymbol && currencySymbol && (
@@ -276,17 +289,24 @@ function FieldMoney({
           disabled={disabled}
           readOnly={readOnly}
           aria-describedby={describedBy}
-          aria-invalid={!!error}
+          aria-invalid={!!inputError}
           className="rounded-none border-0 bg-transparent px-0 font-mono tabular-nums focus-visible:ring-0 disabled:opacity-100 aria-invalid:focus-visible:ring-0"
           onChange={(event) => {
             const text = event.target.value;
 
             // Preserve partial decimal input without reformatting the caret position.
-            if (!/^-?\d*(?:[.,]\d{0,2})?$/.test(text)) {
+            const pattern =
+              decimalSeparator === ','
+                ? /^-?\d*(?:,\d{0,2})?$/
+                : /^-?\d*(?:\.\d{0,2})?$/;
+
+            if (!pattern.test(text)) {
+              setDraft({ text, money: Number.NaN });
+              onMoneyChange(Number.NaN);
               return;
             }
 
-            const normalized = text.replace(',', '.');
+            const normalized = text.replace(decimalSeparator, '.');
             const nextMoney = ['', '-', '.', '-.'].includes(normalized)
               ? 0
               : Number(normalized);
@@ -298,7 +318,11 @@ function FieldMoney({
             setDraft({ text, money: nextMoney });
             onMoneyChange(nextMoney);
           }}
-          onBlur={() => setDraft(null)}
+          onBlur={() => {
+            if (!invalidInput) {
+              setDraft(null);
+            }
+          }}
         />
       </div>
       {name && (
@@ -314,7 +338,9 @@ function FieldMoney({
           {description}
         </FieldDescription>
       )}
-      {error && <FieldError id={`${inputId}-error`}>{error}</FieldError>}
+      {inputError && (
+        <FieldError id={`${inputId}-error`}>{inputError}</FieldError>
+      )}
     </Field>
   );
 }

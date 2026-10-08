@@ -1,3 +1,4 @@
+import { t } from '@lib/i18n';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -37,8 +38,8 @@ export default function MenuOptionsTransaction({
     } catch (error) {
       console.error('Failed to load transaction:', error);
       toast.add({
-        title: 'Error',
-        description: 'Could not load the transaction. Please try again.',
+        title: t('common.errorTitle'),
+        description: t('transactions.loadError'),
       });
     }
   };
@@ -52,9 +53,9 @@ export default function MenuOptionsTransaction({
 
     try {
       const confirmed = await confirmation.confirm({
-        title: 'Remove this transaction?',
-        description: 'This action cannot be undone.',
-        confirmLabel: 'Remove',
+        title: t('transactions.confirmRemove'),
+        description: t('transactions.irreversible'),
+        confirmLabel: t('common.remove'),
         destructive: true,
       });
 
@@ -74,21 +75,20 @@ export default function MenuOptionsTransaction({
           error,
         );
         toast.add({
-          title: 'Transaction removed',
-          description:
-            'Could not refresh the timeline. Reload it to see the changes.',
+          title: t('transactions.removedTitle'),
+          description: t('transactions.refreshError'),
         });
         return;
       }
       toast.add({
-        title: 'Success',
-        description: 'Transaction removed successfully.',
+        title: t('common.success'),
+        description: t('transactions.removed'),
       });
     } catch (error) {
       console.error('Failed to remove transaction:', error);
       toast.add({
-        title: 'Error',
-        description: 'Could not remove the transaction. Please try again.',
+        title: t('common.errorTitle'),
+        description: t('transactions.removeError'),
       });
     } finally {
       isRemoving.current = false;
@@ -99,7 +99,7 @@ export default function MenuOptionsTransaction({
     <ContextMenu>
       <ContextMenuTrigger
         render={<li />}
-        className="group/transaction mb-4 rounded-lg transition-colors duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-secondary/40 motion-reduce:transition-none"
+        className="group/transaction mb-4 rounded-lg transition-colors duration-150 ease-in-out hover:bg-secondary/40 motion-reduce:transition-none"
       >
         {children({
           onEdit: handleEdit,
@@ -109,12 +109,11 @@ export default function MenuOptionsTransaction({
       </ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem onClick={handleEdit} disabled={isSubmitting}>
-          Edit
+          {t('common.edit')}
         </ContextMenuItem>
         <ContextMenuItem onClick={handleRemove} disabled={isSubmitting}>
-          Remove
+          {t('common.remove')}
         </ContextMenuItem>
-        <ContextMenuItem>Make a copy</ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
   );

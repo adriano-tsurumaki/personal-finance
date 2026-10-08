@@ -33,28 +33,21 @@ import { format, parseISO } from 'date-fns';
 import { useDialogTransactionStore } from '@store/dialog-transaction';
 import type { CreateResult } from '@shared/contracts/result';
 import { useAppStore } from '@store/transaction';
-
-const types = [
-  { value: null, label: 'Select type' },
-  { value: 1, label: 'Income' },
-  { value: 2, label: 'Expense' },
-];
-
-const categories = [
-  { value: null, label: 'Select category' },
-  { value: 1, label: 'Groceries' },
-  { value: 2, label: 'Rent' },
-  { value: 3, label: 'Salary' },
-  { value: 4, label: 'Entertainment' },
-  { value: 5, label: 'Utilities' },
-  { value: 6, label: 'Transportation' },
-  { value: 7, label: 'Healthcare' },
-  { value: 8, label: 'Education' },
-  { value: 9, label: 'Travel' },
-  { value: 10, label: 'Miscellaneous' },
-];
+import { getLocale, t } from '@lib/i18n';
 
 export default function AddTransaction() {
+  const types = [
+    { value: null, label: t('transactions.selectType') },
+    { value: 1, label: t('transactions.income') },
+    { value: 2, label: t('transactions.expense') },
+  ];
+  const categories = [
+    { value: null, label: t('transactions.selectCategory') },
+    { value: 1, label: t('categories.food') },
+    { value: 2, label: t('categories.housing') },
+    { value: 3, label: t('categories.salary') },
+    { value: 4, label: t('categories.other') },
+  ];
   const {
     openDialogTransaction,
     closeDialogTransaction,
@@ -114,8 +107,8 @@ export default function AddTransaction() {
       if (type !== 1 && type !== 2) {
         console.error('Invalid transaction type:', type);
         toast.add({
-          title: 'Error',
-          description: 'Invalid transaction type. Please select a valid type.',
+          title: t('common.errorTitle'),
+          description: t('transactions.invalidType'),
         });
         return;
       }
@@ -126,8 +119,8 @@ export default function AddTransaction() {
       ) {
         console.error('Invalid category:', category_id);
         toast.add({
-          title: 'Error',
-          description: 'Invalid category. Please select a valid category.',
+          title: t('common.errorTitle'),
+          description: t('transactions.invalidCategory'),
         });
         return;
       }
@@ -135,13 +128,25 @@ export default function AddTransaction() {
       if (!reference_date) {
         console.error('Invalid reference date:', reference_date);
         toast.add({
-          title: 'Error',
-          description: 'Please select a valid reference date.',
+          title: t('common.errorTitle'),
+          description: t('transactions.invalidDate'),
         });
         return;
       }
 
       const formattedDate = format(parseISO(reference_date), 'yyyy-MM-dd');
+
+      if (
+        !Number.isSafeInteger(amount_cents) ||
+        amount_cents <= 0 ||
+        !name.trim()
+      ) {
+        toast.add({
+          title: t('common.errorTitle'),
+          description: t('transactions.saveError'),
+        });
+        return;
+      }
 
       const transactionInput = {
         amount_cents: Math.round(amount_cents),
@@ -166,14 +171,17 @@ export default function AddTransaction() {
         );
       } else {
         toast.add({
-          title: 'Error',
-          description: 'Something went wrong. Please try again.',
+          title: t('common.errorTitle'),
+          description: t('common.error'),
         });
         return;
       }
 
       if (!result.ok) {
-        toast.add({ title: 'Error', description: result.error.message });
+        toast.add({
+          title: t('common.errorTitle'),
+          description: t('transactions.saveError'),
+        });
         return;
       }
 
@@ -187,25 +195,22 @@ export default function AddTransaction() {
           error,
         );
         toast.add({
-          title: 'Transaction saved',
-          description:
-            'Could not refresh the timeline. Reload it to see the changes.',
+          title: t('transactions.saved'),
+          description: t('transactions.refreshError'),
         });
         return;
       }
 
       toast.add({
-        title: 'Success',
+        title: t('common.success'),
         description:
-          mode === 'add'
-            ? 'Transaction added successfully.'
-            : 'Transaction updated successfully.',
+          mode === 'add' ? t('transactions.added') : t('transactions.updated'),
       });
     } catch (error) {
       console.error('Failed to create transaction:', error);
       toast.add({
-        title: 'Error',
-        description: 'Could not save the transaction. Please try again.',
+        title: t('common.errorTitle'),
+        description: t('transactions.saveError'),
       });
     } finally {
       finishSubmission(saved);
@@ -229,30 +234,30 @@ export default function AddTransaction() {
       }}
       open={isOpen}
     >
-      <DialogTrigger aria-label="Add transaction" title="Add transaction">
-        <div className="flex items-center gap-2 bg-primary rounded-full p-1 text-black shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer">
-          <Plus className="size-4" aria-hidden="true" />
-        </div>
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <Button type="button">
+            <Plus aria-hidden="true" />
+            {t('transactions.add')}
+          </Button>
+        }
+      />
       <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="size-4 text-primary" aria-hidden="true" />
-            {mode === 'add' ? 'Add Transaction' : 'Edit Transaction'}
+            {t(mode === 'add' ? 'transactions.add' : 'transactions.edit')}
           </DialogTitle>
-          <DialogDescription>
-            The reference date determines where this transaction appears on the
-            timeline.
-          </DialogDescription>
+          <DialogDescription>{t('transactions.description')}</DialogDescription>
         </DialogHeader>
         <FieldSet disabled={isSubmitting}>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="title">Title</FieldLabel>
+              <FieldLabel htmlFor="title">{t('transactions.name')}</FieldLabel>
               <Input
                 id="title"
                 autoComplete="off"
-                placeholder="e.g. Groceries, Rent, Salary"
+                placeholder={t('transactions.namePlaceholder')}
                 value={name}
                 onChange={(e) => handleTransaction('name', e.target.value)}
               />
@@ -260,17 +265,18 @@ export default function AddTransaction() {
             <div className="grid grid-cols-2 gap-4">
               <Field>
                 <FieldMoney
-                  label="Amount"
+                  label={t('transactions.amount')}
                   money={amount_cents / 100}
                   onMoneyChange={(amount) =>
                     handleTransaction('amount_cents', Math.round(amount * 100))
                   }
                   currencySymbol="R$"
+                  decimalSeparator={getLocale() === 'pt-BR' ? ',' : '.'}
                   showCurrencySymbol
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="type">Type</FieldLabel>
+                <FieldLabel htmlFor="type">{t('transactions.type')}</FieldLabel>
                 <Select<number>
                   items={types}
                   value={type}
@@ -293,7 +299,9 @@ export default function AddTransaction() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Field>
-                <FieldLabel htmlFor="category">Category</FieldLabel>
+                <FieldLabel htmlFor="category">
+                  {t('transactions.category')}
+                </FieldLabel>
                 <Select
                   items={categories}
                   value={category_id}
@@ -318,7 +326,7 @@ export default function AddTransaction() {
               <Field>
                 <FieldDatePicker
                   id="date"
-                  label="Reference date"
+                  label={t('transactions.date')}
                   value={reference_date ? parseISO(reference_date) : undefined}
                   onValueChange={(value) =>
                     handleTransaction(
@@ -326,12 +334,12 @@ export default function AddTransaction() {
                       value ? format(value, 'yyyy-MM-dd') : '',
                     )
                   }
-                  placeholder="e.g. 2024-01-01"
+                  placeholder={t('transactions.pickDate')}
                 />
               </Field>
             </div>
             <Field>
-              <FieldLabel htmlFor="note">Note</FieldLabel>
+              <FieldLabel htmlFor="note">{t('transactions.note')}</FieldLabel>
               <Input
                 id="note"
                 value={note ?? ''}
@@ -339,7 +347,7 @@ export default function AddTransaction() {
                   handleTransaction('note', event.target.value)
                 }
                 autoComplete="off"
-                placeholder="Optional - e.g. Groceries for the week"
+                placeholder={t('transactions.notePlaceholder')}
               />
             </Field>
           </FieldGroup>
@@ -354,16 +362,16 @@ export default function AddTransaction() {
                 disabled={isSubmitting}
               >
                 <X aria-hidden="true" />
-                Cancel
+                {t('common.cancel')}
               </Button>
             }
           />
           <Button onClick={handleSubmit} type="submit" disabled={isSubmitting}>
             {isSubmitting
-              ? 'Adding...'
+              ? t('transactions.saving')
               : mode === 'add'
-                ? 'Add transaction'
-                : 'Update transaction'}
+                ? t('transactions.add')
+                : t('transactions.update')}
             {isSubmitting && <Spinner data-icon="inline-start" />}
           </Button>
         </DialogFooter>
