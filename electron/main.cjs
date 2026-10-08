@@ -164,7 +164,9 @@ ipcMain.handle('window:minimize', (event) => {
 ipcMain.handle('window:toggle-maximize', (event) => {
   const window = BrowserWindow.fromWebContents(event.sender);
 
-  if (!window) return false;
+  if (!window) {
+    return false;
+  }
 
   if (window.isMaximized()) {
     window.unmaximize();

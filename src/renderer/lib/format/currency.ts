@@ -12,7 +12,10 @@ export function formatCurrency(value: number): string {
 }
 
 export function formatSignedCurrency(value: number, kind: EntryKind): string {
-  if (kind === 'milestone' || !value) return '';
+  if (kind === 'milestone' || !value) {
+    return '';
+  }
+
   const sign = kind === 'income' ? '+' : '\u2212';
   return `${sign}${currencyFormatter.format(value)}`;
 }

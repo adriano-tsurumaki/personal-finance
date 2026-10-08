@@ -7,7 +7,10 @@ import { sql } from 'drizzle-orm';
 export type AppDatabase = ReturnType<typeof drizzle>;
 
 export function initDb(dbPath: string, migrationsFolder: string): AppDatabase {
-  if (dbPath !== ':memory:') mkdirSync(dirname(dbPath), { recursive: true });
+  if (dbPath !== ':memory:') {
+    mkdirSync(dirname(dbPath), { recursive: true });
+  }
+
   const db = drizzle(dbPath);
   try {
     db.run(sql`PRAGMA journal_mode = WAL`);

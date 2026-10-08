@@ -280,13 +280,21 @@ function FieldMoney({
           className="rounded-none border-0 bg-transparent px-0 font-mono tabular-nums focus-visible:ring-0 disabled:opacity-100 aria-invalid:focus-visible:ring-0"
           onChange={(event) => {
             const text = event.target.value;
+
             // Preserve partial decimal input without reformatting the caret position.
-            if (!/^-?\d*(?:[.,]\d{0,2})?$/.test(text)) return;
+            if (!/^-?\d*(?:[.,]\d{0,2})?$/.test(text)) {
+              return;
+            }
+
             const normalized = text.replace(',', '.');
             const nextMoney = ['', '-', '.', '-.'].includes(normalized)
               ? 0
               : Number(normalized);
-            if (!Number.isFinite(nextMoney)) return;
+
+            if (!Number.isFinite(nextMoney)) {
+              return;
+            }
+
             setDraft({ text, money: nextMoney });
             onMoneyChange(nextMoney);
           }}

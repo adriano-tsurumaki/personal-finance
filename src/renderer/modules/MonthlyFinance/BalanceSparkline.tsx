@@ -37,7 +37,9 @@ export default function BalanceSparkline({
   };
 
   useEffect(() => {
-    if (data.length < 2) return;
+    if (data.length < 2) {
+      return;
+    }
 
     const nextPoints = calculatePoints(data);
 
