@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('api', {
   updateProfileLocale: (locale) =>
     ipcRenderer.invoke('profiles:update-locale', locale),
   getTransactions: (month) => ipcRenderer.invoke('transactions:list', month),
+  getMonthlyStatement: (month) =>
+    ipcRenderer.invoke('statements:monthly', month),
   getTransaction: (id) => ipcRenderer.invoke('transactions:get', id),
   createTransaction: (input) =>
     ipcRenderer.invoke('transactions:create', input),

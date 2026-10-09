@@ -68,7 +68,8 @@
     "saved": "Economizado",
     "net": "Líquido {amount}",
     "chart": "Gráfico do fluxo de caixa mensal",
-    "pending": "O resumo mensal está em preparação. Suas transações estão disponíveis abaixo."
+    "loading": "Carregando fluxo de caixa mensal...",
+    "failed": "Não foi possível carregar o fluxo de caixa mensal."
   },
   "sections": {
     "label": "Seções das finanças mensais",

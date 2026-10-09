@@ -68,7 +68,8 @@
     "saved": "Saved",
     "net": "Net {amount}",
     "chart": "Monthly cash-flow chart",
-    "pending": "Monthly summary is being prepared. Your transactions are available below."
+    "loading": "Loading monthly cash flow...",
+    "failed": "Unable to load monthly cash flow."
   },
   "sections": {
     "label": "Monthly finance sections",

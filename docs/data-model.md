@@ -178,4 +178,35 @@ A R$250 purchase made on August 20 appears in the August timeline. If its invoic
 - Schema constraints and transaction operations are covered by SQLite integration tests.
 - Schema changes use versioned Drizzle migrations; see [Database development](database-development.md).
 - Cascade deletion behavior remains scheduled for review.
-- The schema does not yet generate invoices, recurrences, installments, or summary queries.
+- The schema does not yet generate invoices, recurrences, or installments.
+
+## Monthly cash-flow summaries
+
+The monthly statement API derives ownership from the active profile. Direct
+entries with a direct payment method (`payments.type = 1`) contribute only in
+their `payment_date` month. Invoice-linked and credit-method entries are excluded
+from direct cash flow. Paid invoices contribute their stored `amount_cents` in
+their `paid_at` month, once, through the owning card. Pending entries and unpaid
+invoices do not contribute. Reference dates remain timeline dates.
+
+One SQL query groups receipts, direct expenses, and invoice payments by settlement
+day. Totals are calculated in integer cents and converted to BRL units for the
+DTO. The daily series includes every day of the selected month. Opening cash flow
+is zero and closing cash flow equals income minus expenses; neither represents
+an account balance. The savings rate is net divided by income, or zero when
+there is no income. The event count includes direct settlements and invoice
+payments, rather than every purchase inside an invoice. Summaries are computed;
+their reserved DTO identifier is zero.
+
+Composite indexes support transaction lookups by profile and payment date, card
+lookups by profile, and invoice lookups by card and payment date. Date predicates
+use a half-open month range without applying functions to indexed columns.
+
+The main process keeps up to 24 statements in an LRU memory cache keyed by profile
+and month. Each request checks SQLite `total_changes()` for writes on its own
+connection and `PRAGMA data_version` for commits on other connections, within
+the same read transaction as aggregation. A changed revision clears the whole
+cache, including after transaction edits, deletion, invoice changes, and external
+writes. This conservative policy also invalidates on unrelated database writes.
+Cache hits avoid aggregation but still perform the lightweight revision check.
+Restarting discards the cache; no persistent aggregate table is maintained.

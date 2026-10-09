@@ -15,9 +15,12 @@ import { eq, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { initDb } from '../db';
 import { createTransactionService } from '../transactions';
+import { createMonthlyStatementService } from '../monthly-statement';
 import { createProfileService, initializeProfile } from '../profiles';
 import {
   categoriesTable,
+  creditCardsTable,
+  creditCardInvoicesTable,
   installmentsTable,
   paymentsTable,
   recurrenceVersionsTable,
@@ -591,6 +594,248 @@ test('legacy database adoption and later migrations preserve data and run only o
     );
     check.$client.close();
   } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('monthly cash flow aggregates settlement dates, isolates profiles and invalidates cached totals', () => {
+  const db = initDb(':memory:', migrationsFolder);
+  let aggregateQueries = 0;
+  const observedDb = drizzle({
+    client: db.$client,
+    logger: {
+      logQuery(query) {
+        if (query.includes('GROUP BY date')) {
+          aggregateQueries++;
+        }
+      },
+    },
+  });
+  const profiles = createProfileService(db);
+  const statements = createMonthlyStatementService(observedDb, () =>
+    profiles.requireActive(),
+  );
+  const transactions = createTransactionService(db, () =>
+    profiles.requireActive(),
+  );
+
+  try {
+    assert.throws(() => statements.get('2026-10'), /No active profile/);
+    const first = profiles.create({
+      name: 'Cash flow',
+      email: 'flow@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(first.ok);
+    assert.throws(() => statements.get('2026-13'), /Invalid month/);
+    assert.throws(
+      () => statements.get(null as unknown as string),
+      /Invalid month/,
+    );
+    const options = profiles.options();
+    const direct = options.payments.find(
+      (payment) => payment.catalog_key === 'pix',
+    )!.id;
+    const credit = options.payments.find(
+      (payment) => payment.catalog_key === 'credit',
+    )!.id;
+    const input = {
+      name: 'Receipt',
+      type: 1 as const,
+      amount_cents: 10000,
+      payment_id: direct,
+      category_id: null,
+      user_id: first.profile.id,
+      reference_date: '2026-09-15',
+      payment_date: '2026-10-01',
+    };
+    transactions.create(input);
+    transactions.create({
+      ...input,
+      name: 'Direct expense',
+      type: 2,
+      amount_cents: 2500,
+      payment_date: '2026-10-31',
+    });
+    transactions.create({
+      ...input,
+      name: 'Planned expense',
+      type: 2,
+      amount_cents: 90000,
+      payment_date: null,
+    });
+    transactions.create({
+      ...input,
+      name: 'Prior receipt',
+      payment_date: '2026-09-30',
+    });
+    transactions.create({
+      ...input,
+      name: 'Future receipt',
+      payment_date: '2026-11-01',
+    });
+    transactions.create({
+      ...input,
+      name: 'Unlinked card purchase',
+      type: 2,
+      payment_id: credit,
+      amount_cents: 80000,
+    });
+    const card = db
+      .insert(creditCardsTable)
+      .values({ name: 'Card', user_id: first.profile.id })
+      .returning()
+      .get();
+    const invoice = db
+      .insert(creditCardInvoicesTable)
+      .values({
+        credit_card_id: card.id,
+        amount_cents: 3000,
+        closing_date: '2026-09-30',
+        due_date: '2026-10-07',
+        paid_at: '2026-10-05',
+      })
+      .returning()
+      .get();
+    db.insert(creditCardInvoicesTable)
+      .values({
+        credit_card_id: card.id,
+        amount_cents: 7000,
+        closing_date: '2026-10-31',
+        due_date: '2026-11-07',
+        paid_at: null,
+      })
+      .run();
+    db.insert(transactionsTable)
+      .values({
+        ...input,
+        name: 'Invoiced purchase',
+        type: 2,
+        amount_cents: 3000,
+        payment_id: credit,
+        credit_card_invoice_id: invoice.id,
+      })
+      .run();
+    const statement = statements.get('2026-10');
+    assert.equal(statement.income, 100);
+    assert.equal(statement.expense, 55);
+    assert.equal(statement.net, 45);
+    assert.equal(statement.closingBalance, 45);
+    assert.equal(statement.openingBalance, 0);
+    assert.equal(statement.savingsRate, 0.45);
+    assert.equal(statement.transactionCount, 3);
+    assert.equal(statement.balanceSeries.length, 31);
+    assert.deepEqual(statement.balanceSeries[0], {
+      date: '2026-10-01',
+      balance: 100,
+    });
+    assert.deepEqual(statement.balanceSeries[4], {
+      date: '2026-10-05',
+      balance: 70,
+    });
+    assert.deepEqual(statement.balanceSeries[30], {
+      date: '2026-10-31',
+      balance: 45,
+    });
+    statements.get('2026-10');
+    assert.equal(aggregateQueries, 1);
+    statement.balanceSeries[0].balance = 999;
+    assert.equal(statements.get('2026-10').balanceSeries[0].balance, 100);
+    const receipt = db
+      .select()
+      .from(transactionsTable)
+      .where(eq(transactionsTable.name, 'Receipt'))
+      .get()!;
+    transactions.update(receipt.id, { ...input, amount_cents: 20000 });
+    assert.equal(statements.get('2026-10').income, 200);
+    assert.equal(aggregateQueries, 2);
+    transactions.create({ ...input, amount_cents: 500 });
+    assert.equal(statements.get('2026-10').income, 205);
+    transactions.remove(receipt.id);
+    assert.equal(statements.get('2026-10').income, 5);
+    db.update(creditCardInvoicesTable)
+      .set({ paid_at: '2026-11-05' })
+      .where(eq(creditCardInvoicesTable.id, invoice.id))
+      .run();
+    assert.equal(statements.get('2026-10').expense, 25);
+    assert.equal(statements.get('2026-11').expense, 30);
+    const second = profiles.create({
+      name: 'Other profile',
+      email: 'other-flow@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(second.ok);
+    assert.equal(statements.get('2026-10').net, 0);
+    assert.equal(statements.get('2024-02').balanceSeries.length, 29);
+    assert.equal(statements.get('2025-02').balanceSeries.length, 28);
+    profiles.enter(first.profile.id);
+    assert.equal(statements.get('2026-10').net, -20);
+    assert.equal(statements.get('2026-12').income, 0);
+    assert.equal(statements.get('2026-12').savingsRate, 0);
+  } finally {
+    db.$client.close();
+  }
+});
+
+test('monthly cache detects external commits and queries use settlement indexes', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'finance-statement-'));
+  const filename = join(directory, 'summary.db');
+  const db = initDb(filename, migrationsFolder);
+  const external = initDb(filename, migrationsFolder);
+
+  try {
+    const profiles = createProfileService(db);
+    const profile = profiles.create({
+      name: 'External writes',
+      email: 'external@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(profile.ok);
+    const statements = createMonthlyStatementService(db, () =>
+      profiles.requireActive(),
+    );
+    assert.equal(statements.get('2026-10').income, 0);
+    const payment = profiles
+      .options()
+      .payments.find((method) => method.catalog_key === 'cash')!;
+    external
+      .insert(transactionsTable)
+      .values({
+        name: 'External receipt',
+        type: 1,
+        amount_cents: 12345,
+        user_id: profile.profile.id,
+        payment_id: payment.id,
+        reference_date: '2026-10-08',
+        payment_date: '2026-10-08',
+      })
+      .run();
+    assert.equal(statements.get('2026-10').income, 123.45);
+    const plan = db.all<{ detail: string }>(sql`
+      EXPLAIN QUERY PLAN SELECT amount_cents FROM transactions
+      WHERE user_id = ${profile.profile.id} AND payment_date >= '2026-10-01' AND payment_date < '2026-11-01'
+    `);
+    assert.ok(
+      plan.some((row) =>
+        row.detail.includes('transactions_user_payment_date_idx'),
+      ),
+    );
+    const invoicePlan = db.all<{ detail: string }>(sql`
+      EXPLAIN QUERY PLAN SELECT i.amount_cents FROM credit_cards c
+      JOIN credit_card_invoice i ON i.credit_card_id = c.id
+      WHERE c.user_id = ${profile.profile.id} AND i.paid_at >= '2026-10-01' AND i.paid_at < '2026-11-01'
+    `);
+    assert.ok(
+      invoicePlan.some((row) =>
+        row.detail.includes('credit_card_invoice_card_paid_idx'),
+      ),
+    );
+    assert.ok(
+      invoicePlan.some((row) => row.detail.includes('credit_cards_user_idx')),
+    );
+  } finally {
+    external.$client.close();
+    db.$client.close();
     rmSync(directory, { recursive: true, force: true });
   }
 });

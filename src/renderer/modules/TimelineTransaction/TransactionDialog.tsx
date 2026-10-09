@@ -204,7 +204,9 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
       saved = true;
 
       try {
-        await useAppStore.getState().loadTransactions();
+        const { loadTransactions, loadMonthlyStatement } =
+          useAppStore.getState();
+        await Promise.all([loadTransactions(), loadMonthlyStatement()]);
       } catch (error) {
         if (!isCurrentSubmission(submissionId)) {
           return;

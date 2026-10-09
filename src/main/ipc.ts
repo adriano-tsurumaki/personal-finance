@@ -3,6 +3,7 @@ import { ipcMain } from 'electron';
 import type { IpcMainInvokeEvent, WebContents } from 'electron';
 import { createTransactionService } from './transactions';
 import { createProfileService } from './profiles';
+import { createMonthlyStatementService } from './monthly-statement';
 import type {
   TransactionInput,
   TransactionUpdateInput,
@@ -15,6 +16,9 @@ export function registerIpcHandlers(
 ): void {
   const profiles = createProfileService(db);
   const service = createTransactionService(db, () => profiles.requireActive());
+  const statements = createMonthlyStatementService(db, () =>
+    profiles.requireActive(),
+  );
 
   function authorize(event: IpcMainInvokeEvent) {
     if (
@@ -63,6 +67,11 @@ export function registerIpcHandlers(
   ipcMain.handle('transactions:list', (event, month: string) => {
     authorize(event);
     return service.list(month);
+  });
+
+  ipcMain.handle('statements:monthly', (event, month: string) => {
+    authorize(event);
+    return statements.get(month);
   });
 
   ipcMain.handle('transactions:get', (event, id: number) => {

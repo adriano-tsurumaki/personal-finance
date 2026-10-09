@@ -20,9 +20,13 @@ export default function MonthlyFinance(): React.JSX.Element {
   const monthlyStatement = useAppStore((s) => s.monthlyStatement);
   const monthKey = useAppStore((s) => s.monthKey);
   const setMonthKey = useAppStore((s) => s.setMonthKey);
+  const statementLoading = useAppStore((s) => s.statementLoading);
+  const statementFailed = useAppStore((s) => s.statementFailed);
+  const statementLoaded = useAppStore((s) => s.statementLoaded);
 
   const [year, month] = monthKey.split('-').map(Number);
-  const summaryAvailable = typeof window.api.getMonthlyStatement === 'function';
+  const summaryAvailable =
+    statementLoaded && !statementLoading && !statementFailed;
 
   return (
     <header className="border-b border-border bg-card">
@@ -65,12 +69,14 @@ export default function MonthlyFinance(): React.JSX.Element {
                 <OdometerMoney value={monthlyStatement.closingBalance} />
               </p>
             )}
-            <p className="mt-2 text-sm text-muted-foreground">
-              {t('summary.pending')}
-            </p>
+            {!summaryAvailable && (
+              <p className="mt-2 text-sm text-muted-foreground" role="status">
+                {t(statementFailed ? 'summary.failed' : 'summary.loading')}
+              </p>
+            )}
           </div>
 
-          {monthlyStatement.balanceSeries.length >= 2 ? (
+          {summaryAvailable && monthlyStatement.balanceSeries.length >= 2 ? (
             <div className="w-full max-w-60 shrink-0">
               <BalanceSparkline data={monthlyStatement.balanceSeries} />
               <p className="mt-2 text-right text-xs text-muted-foreground">

@@ -10,6 +10,9 @@ interface AppState {
   monthKey: string;
   transactions: TransactionDto[];
   monthlyStatement: MonthlyStatementDto;
+  statementLoading: boolean;
+  statementFailed: boolean;
+  statementLoaded: boolean;
   reset: () => void;
   transactionsLoading: boolean;
   transactionsFailed: boolean;
@@ -44,13 +47,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   transactionsLoading: false,
   transactionsFailed: false,
   monthlyStatement: emptyMonthlyStatement,
+  statementLoading: false,
+  statementFailed: false,
+  statementLoaded: false,
 
   init: async () => {
     const generation = sessionGeneration;
     const monthKey = get().monthKey;
 
     try {
-      await get().loadTransactions();
+      await get()
+        .loadTransactions()
+        .catch(() => undefined);
 
       if (generation !== sessionGeneration || get().monthKey !== monthKey) {
         return;
@@ -69,6 +77,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       monthKey: currentMonthKey(),
       monthlyStatement: emptyMonthlyStatement,
+      statementLoading: false,
+      statementFailed: false,
+      statementLoaded: false,
       transactions: [],
       transactionsLoading: false,
       transactionsFailed: false,
@@ -77,10 +88,19 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setMonthKey: async (monthKey) => {
     const generation = sessionGeneration;
-    set({ monthKey });
+    statementRequestId++;
+    set({
+      monthKey,
+      monthlyStatement: emptyMonthlyStatement,
+      statementLoaded: false,
+      statementLoading: true,
+      statementFailed: false,
+    });
 
     try {
-      await get().loadTransactions();
+      await get()
+        .loadTransactions()
+        .catch(() => undefined);
 
       if (generation !== sessionGeneration || get().monthKey !== monthKey) {
         return;
@@ -115,23 +135,29 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   loadMonthlyStatement: async () => {
-    if (!window.api.getMonthlyStatement) {
-      return;
-    }
-
     const requestId = ++statementRequestId;
+    set({ statementLoading: true, statementFailed: false });
     try {
       const { monthKey } = get();
       const statement = await window.api.getMonthlyStatement(monthKey);
 
       if (get().monthKey === monthKey && requestId === statementRequestId) {
-        set({ monthlyStatement: statement });
+        set({
+          monthlyStatement: statement,
+          statementLoading: false,
+          statementLoaded: true,
+        });
       }
     } catch (error) {
       if (requestId !== statementRequestId) {
         return;
       }
 
+      set({
+        statementLoading: false,
+        statementFailed: true,
+        statementLoaded: false,
+      });
       console.error('Failed to load monthly statement', error);
     }
   },

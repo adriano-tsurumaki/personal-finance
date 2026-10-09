@@ -27,9 +27,11 @@ The following items were checked against the working tree on 2026-09-18. They ar
       timeline already displays and filters by reference date.
 - Define an explicit direct-entry settlement workflow. Payment recording remains
   deferred; editing the reference date must not record or change settlement.
-- Implement the monthly statement IPC API already declared by the renderer.
-  Timeline mutations refresh their own entries; monthly financial indicators
-  cannot refresh until this API is implemented.
+- [x] Implement the monthly statement IPC API (verified 2026-10-08): preload and
+      main expose settled cash flow for the active profile. SQLite regression tests
+      verify settlement dates, invoice exclusion, profile isolation, indexed date
+      ranges, cache reuse, and invalidation after local and external writes. Existing
+      timeline mutation refreshes can now reload the monthly indicators.
 
 ### Profile and localization follow-up
 
@@ -92,7 +94,9 @@ Prevent duplicate category names for the same user regardless of case, while pre
 
 - [x] Add versioned schema migrations (verified 2026-09-21): Drizzle generates SQL and snapshots; startup applies pending migrations. Integration tests verify legacy adoption, subsequent schema changes, repeat runs, and failure rollback.
 - Keep shared types and database consumers aligned with schema changes.
-- Prevent queries from counting both card purchases and invoice payments as cash outflows.
+- [x] Prevent monthly cash-flow queries from counting both card purchases and
+      invoice payments (verified 2026-10-08): SQLite tests count invoice payment once
+      and exclude linked purchases and unlinked credit-method entries.
 - Generate installments and recurring occurrences idempotently.
 
 ## Discussed possibilities

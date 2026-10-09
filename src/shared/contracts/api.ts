@@ -30,5 +30,5 @@ export interface Api {
   ): Promise<CreateResult>;
   deleteTransaction(id: number): Promise<void>;
 
-  getMonthlyStatement?: (month: string) => Promise<MonthlyStatementDto>;
+  getMonthlyStatement(month: string): Promise<MonthlyStatementDto>;
 }

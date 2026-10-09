@@ -3,6 +3,7 @@ import {
   check,
   customType,
   integer,
+  index,
   sqliteTable,
   text,
   unique,
@@ -38,24 +39,37 @@ export const categoriesTable = sqliteTable('categories', {
     .references(() => usersTable.id),
 });
 
-export const creditCardsTable = sqliteTable('credit_cards', {
-  id: integer().primaryKey({ autoIncrement: true }),
-  name: text().notNull(),
-  user_id: integer()
-    .notNull()
-    .references(() => usersTable.id),
-});
+export const creditCardsTable = sqliteTable(
+  'credit_cards',
+  {
+    id: integer().primaryKey({ autoIncrement: true }),
+    name: text().notNull(),
+    user_id: integer()
+      .notNull()
+      .references(() => usersTable.id),
+  },
+  (table) => [index('credit_cards_user_idx').on(table.user_id)],
+);
 
-export const creditCardInvoicesTable = sqliteTable('credit_card_invoice', {
-  id: integer().primaryKey({ autoIncrement: true }),
-  amount_cents: integer().notNull(),
-  closing_date: date().notNull(),
-  due_date: date().notNull(),
-  paid_at: date(),
-  credit_card_id: integer()
-    .notNull()
-    .references(() => creditCardsTable.id),
-});
+export const creditCardInvoicesTable = sqliteTable(
+  'credit_card_invoice',
+  {
+    id: integer().primaryKey({ autoIncrement: true }),
+    amount_cents: integer().notNull(),
+    closing_date: date().notNull(),
+    due_date: date().notNull(),
+    paid_at: date(),
+    credit_card_id: integer()
+      .notNull()
+      .references(() => creditCardsTable.id),
+  },
+  (table) => [
+    index('credit_card_invoice_card_paid_idx').on(
+      table.credit_card_id,
+      table.paid_at,
+    ),
+  ],
+);
 
 export const recurrencesTable = sqliteTable(
   'recurrences',
@@ -148,6 +162,10 @@ export const transactionsTable = sqliteTable(
     installment_id: integer().references(() => installmentsTable.id),
   },
   (table) => [
+    index('transactions_user_payment_date_idx').on(
+      table.user_id,
+      table.payment_date,
+    ),
     unique('transactions_installment_number_unique').on(
       table.installment_id,
       table.installment_number,

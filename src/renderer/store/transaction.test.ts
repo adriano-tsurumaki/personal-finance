@@ -137,3 +137,70 @@ test('reset invalidates monthly responses and prevents previous load chains from
     }
   }
 });
+
+test('monthly summary tracks loading and failure, ignores stale months and loads despite timeline failures', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  const initialState = useAppStore.getState();
+  let resolveOld!: (statement: typeof initialState.monthlyStatement) => void;
+  const oldResponse = new Promise<typeof initialState.monthlyStatement>(
+    (resolve) => {
+      resolveOld = resolve;
+    },
+  );
+  let calls = 0;
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      api: {
+        getTransactions: async () => {
+          throw new Error('Timeline unavailable');
+        },
+        getMonthlyStatement: async () => {
+          calls++;
+          return calls === 1
+            ? oldResponse
+            : { ...initialState.monthlyStatement, month: 11, net: 12 };
+        },
+      },
+    },
+  });
+
+  try {
+    useAppStore.getState().reset();
+    useAppStore.setState({ monthKey: '2026-10' });
+    const loading = useAppStore.getState().loadMonthlyStatement();
+    assert.equal(useAppStore.getState().statementLoading, true);
+    await useAppStore.getState().setMonthKey('2026-11');
+    assert.equal(useAppStore.getState().statementLoaded, true);
+    assert.equal(useAppStore.getState().statementLoading, false);
+    assert.equal(useAppStore.getState().monthlyStatement.net, 12);
+    resolveOld({ ...initialState.monthlyStatement, month: 10, net: 999 });
+    await loading;
+    assert.equal(useAppStore.getState().monthlyStatement.net, 12);
+    window.api.getMonthlyStatement = async () => {
+      throw new Error('Statement unavailable');
+    };
+    await useAppStore.getState().loadMonthlyStatement();
+    assert.equal(useAppStore.getState().statementFailed, true);
+    assert.equal(useAppStore.getState().statementLoaded, false);
+    assert.equal(useAppStore.getState().statementLoading, false);
+    window.api.getMonthlyStatement = async () => ({
+      ...initialState.monthlyStatement,
+      month: 11,
+      net: 50,
+    });
+    await useAppStore.getState().loadMonthlyStatement();
+    assert.equal(useAppStore.getState().statementFailed, false);
+    assert.equal(useAppStore.getState().statementLoaded, true);
+    assert.equal(useAppStore.getState().monthlyStatement.net, 50);
+  } finally {
+    useAppStore.getState().reset();
+    useAppStore.setState(initialState);
+
+    if (descriptor) {
+      Object.defineProperty(globalThis, 'window', descriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, 'window');
+    }
+  }
+});
