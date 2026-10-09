@@ -10,6 +10,24 @@ export type CategoryIconKey =
   | 'health'
   | 'entertainment'
   | 'savings'
+  | 'education'
+  | 'travel'
+  | 'pets'
+  | 'groceries'
+  | 'dining'
+  | 'coffee'
+  | 'utilities'
+  | 'internet'
+  | 'phone'
+  | 'insurance'
+  | 'taxes'
+  | 'gifts'
+  | 'charity'
+  | 'family'
+  | 'beauty'
+  | 'sports'
+  | 'vehicle'
+  | 'work'
   | 'other';
 
 export interface CategoryOption {
@@ -29,6 +47,24 @@ export const categoryIconKeys: CategoryIconKey[] = [
   'health',
   'entertainment',
   'savings',
+  'education',
+  'travel',
+  'pets',
+  'groceries',
+  'dining',
+  'coffee',
+  'utilities',
+  'internet',
+  'phone',
+  'insurance',
+  'taxes',
+  'gifts',
+  'charity',
+  'family',
+  'beauty',
+  'sports',
+  'vehicle',
+  'work',
   'other',
 ];
 
