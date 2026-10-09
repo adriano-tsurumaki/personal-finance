@@ -77,3 +77,63 @@ test('timeline refresh applies the latest response and reports load failures', a
     }
   }
 });
+
+test('reset invalidates monthly responses and prevents previous load chains from starting new requests', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  const initialState = useAppStore.getState();
+  let resolveTimeline!: (entries: TransactionDto[]) => void;
+  let resolveStatement!: (
+    statement: typeof initialState.monthlyStatement,
+  ) => void;
+  let statementCalls = 0;
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      api: {
+        getTransactions: () =>
+          new Promise((resolve) => {
+            resolveTimeline = resolve;
+          }),
+        getMonthlyStatement: () => {
+          statementCalls++;
+          return new Promise((resolve) => {
+            resolveStatement = resolve;
+          });
+        },
+      },
+    },
+  });
+
+  try {
+    for (const action of [
+      () => useAppStore.getState().init(),
+      () => useAppStore.getState().setMonthKey('2026-10'),
+    ]) {
+      const loading = action();
+      useAppStore.getState().reset();
+      resolveTimeline([]);
+      await loading;
+      assert.equal(statementCalls, 0);
+    }
+
+    const loadingStatement = useAppStore.getState().loadMonthlyStatement();
+    useAppStore.getState().reset();
+    resolveStatement({
+      ...initialState.monthlyStatement,
+      net: 999,
+      balanceSeries: [{ date: '2026-10-08', balance: 999 }],
+    });
+    await loadingStatement;
+    assert.equal(useAppStore.getState().monthlyStatement.net, 0);
+    assert.deepEqual(useAppStore.getState().monthlyStatement.balanceSeries, []);
+  } finally {
+    useAppStore.getState().reset();
+    useAppStore.setState(initialState);
+
+    if (descriptor) {
+      Object.defineProperty(globalThis, 'window', descriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, 'window');
+    }
+  }
+});

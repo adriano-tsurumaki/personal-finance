@@ -33,6 +33,10 @@ The following items were checked against the working tree on 2026-09-18. They ar
 
 ### Profile and localization follow-up
 
+- [x] Clear financial UI state across profile sessions (verified 2026-10-08):
+      regression tests cover pending edits, submissions, confirmations, catalogs,
+      and locale responses, including reentry into the same profile.
+
 - Complete I18N-01 coverage for process-owned surfaces (including titlebar controls),
   calendar accessibility labels, and any remaining application-owned messages.
   Profile creation, entry, financial sections, transaction forms, timeline amounts,

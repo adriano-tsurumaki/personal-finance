@@ -76,8 +76,9 @@ test('submission locks the form and a failed save preserves its draft', async ()
     return transaction;
   });
   await store.getState().loadTransaction(1);
-  assert.equal(store.getState().startSubmission(), true);
-  assert.equal(store.getState().startSubmission(), false);
+  const firstSubmission = store.getState().startSubmission()!;
+  assert.ok(firstSubmission);
+  assert.equal(store.getState().startSubmission(), null);
   store.getState().openDialogTransaction();
   store.getState().closeDialogTransaction();
   store.getState().resetTransaction();
@@ -87,12 +88,59 @@ test('submission locks the form and a failed save preserves its draft', async ()
   assert.equal(store.getState().transactionId, 1);
   assert.equal(store.getState().transaction.name, 'Original');
   assert.equal(store.getState().isDialogTransactionOpen, true);
-  store.getState().finishSubmission(false);
+  store.getState().finishSubmission(false, firstSubmission);
   assert.equal(store.getState().isSubmitting, false);
   assert.equal(store.getState().transaction.name, 'Original');
-  assert.equal(store.getState().startSubmission(), true);
-  store.getState().finishSubmission(true);
+  const secondSubmission = store.getState().startSubmission()!;
+  assert.ok(secondSubmission);
+  store.getState().finishSubmission(true, secondSubmission);
   assert.equal(store.getState().isDialogTransactionOpen, false);
   assert.equal(store.getState().transactionId, null);
+  assert.equal(store.getState().transaction.name, '');
+});
+
+test('session reset clears drafts and invalidates pending edit successes and failures', async () => {
+  for (const failed of [false, true]) {
+    const pending = deferred();
+    const store = createDialogTransactionStore(() => pending.promise);
+    store.getState().openDialogTransaction();
+    store.getState().handleTransaction('name', 'Private draft');
+    const load = store.getState().loadTransaction(1);
+    store.getState().resetSession();
+
+    if (failed) {
+      pending.reject(new Error('Previous profile failed'));
+    } else {
+      pending.resolve(transaction);
+    }
+
+    await assert.doesNotReject(load);
+    assert.equal(store.getState().isDialogTransactionOpen, false);
+    assert.equal(store.getState().transactionId, null);
+    assert.equal(store.getState().transaction.name, '');
+    assert.equal(store.getState().transaction.user_id, 0);
+  }
+});
+
+test('a previous session submission cannot unlock or clear the next session form', () => {
+  const store = createDialogTransactionStore();
+  store.getState().openDialogTransaction();
+  store.getState().handleTransaction('name', 'Previous profile');
+  const previousSubmission = store.getState().startSubmission()!;
+  store.getState().resetSession();
+  assert.equal(store.getState().isSubmitting, false);
+  assert.equal(store.getState().isCurrentSubmission(previousSubmission), false);
+  store.getState().openDialogTransaction();
+  store.getState().handleTransaction('name', 'Next profile');
+  const currentSubmission = store.getState().startSubmission()!;
+
+  for (const saved of [false, true]) {
+    store.getState().finishSubmission(saved, previousSubmission);
+    assert.equal(store.getState().transaction.name, 'Next profile');
+    assert.equal(store.getState().isSubmitting, true);
+    assert.equal(store.getState().isCurrentSubmission(currentSubmission), true);
+  }
+
+  store.getState().finishSubmission(true, currentSubmission);
   assert.equal(store.getState().transaction.name, '');
 });

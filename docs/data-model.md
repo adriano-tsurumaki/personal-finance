@@ -43,6 +43,12 @@ rejected rather than reinterpreted. Credit selection records a planned entry;
 invoice association and all settlement workflows remain deferred. Selecting a
 method does not set a payment date.
 
+Leaving or activating a profile resets the renderer's financial state, transaction
+draft, submission lock, and pending confirmation. Session changes invalidate
+pending edit, catalog, locale, and financial-load responses. Older mutation
+completions cannot clear a new draft, refresh another session, or show stale
+notifications. Notification providers are recreated when the active profile changes.
+
 ### A transaction is one financial entry
 
 `transactions` is the smallest financial unit in the domain: a purchase, salary, bonus, or individual installment. It does not represent every product on a receipt.

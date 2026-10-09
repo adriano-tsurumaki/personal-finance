@@ -34,7 +34,7 @@ export default function App(): React.JSX.Element {
   }, [locale]);
 
   return (
-    <Toaster>
+    <Toaster key={profile?.id ?? 'profiles'}>
       <main className="flex-1 min-h-0 overflow-y-auto">
         {profile ? <FinanceHome key={profile.id} /> : <Profiles />}
       </main>

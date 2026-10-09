@@ -68,6 +68,7 @@ export default function AddTransaction() {
     isSubmitting,
     startSubmission,
     finishSubmission,
+    isCurrentSubmission,
   } = useDialogTransactionStore((state) => ({
     openDialogTransaction: state.openDialogTransaction,
     closeDialogTransaction: state.closeDialogTransaction,
@@ -78,6 +79,7 @@ export default function AddTransaction() {
     isSubmitting: state.isSubmitting,
     startSubmission: state.startSubmission,
     finishSubmission: state.finishSubmission,
+    isCurrentSubmission: state.isCurrentSubmission,
   }));
 
   const {
@@ -104,7 +106,9 @@ export default function AddTransaction() {
   }));
 
   const handleSubmit = async () => {
-    if (!startSubmission()) {
+    const submissionId = startSubmission();
+
+    if (submissionId === null) {
       return;
     }
 
@@ -195,6 +199,10 @@ export default function AddTransaction() {
         return;
       }
 
+      if (!isCurrentSubmission(submissionId)) {
+        return;
+      }
+
       if (!result.ok) {
         toast.add({
           title: t('common.errorTitle'),
@@ -208,6 +216,10 @@ export default function AddTransaction() {
       try {
         await useAppStore.getState().loadTransactions();
       } catch (error) {
+        if (!isCurrentSubmission(submissionId)) {
+          return;
+        }
+
         console.error(
           'Saved the transaction but failed to refresh the timeline:',
           error,
@@ -219,19 +231,27 @@ export default function AddTransaction() {
         return;
       }
 
+      if (!isCurrentSubmission(submissionId)) {
+        return;
+      }
+
       toast.add({
         title: t('common.success'),
         description:
           mode === 'add' ? t('transactions.added') : t('transactions.updated'),
       });
     } catch (error) {
+      if (!isCurrentSubmission(submissionId)) {
+        return;
+      }
+
       console.error('Failed to create transaction:', error);
       toast.add({
         title: t('common.errorTitle'),
         description: t('transactions.saveError'),
       });
     } finally {
-      finishSubmission(saved);
+      finishSubmission(saved, submissionId);
     }
   };
 

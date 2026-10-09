@@ -12,8 +12,10 @@ interface State {
   modeDialogTransaction: 'add' | 'edit';
   transaction: TransactionInput;
   isSubmitting: boolean;
-  startSubmission: () => boolean;
-  finishSubmission: (saved: boolean) => void;
+  startSubmission: () => number | null;
+  isCurrentSubmission: (submissionId: number) => boolean;
+  finishSubmission: (saved: boolean, submissionId: number) => void;
+  resetSession: () => void;
 
   openDialogTransaction: () => void;
   closeDialogTransaction: () => void;
@@ -52,16 +54,32 @@ export function createDialogTransactionStore(
     modeDialogTransaction: 'add',
     transaction: emptyTransaction,
     isSubmitting: false,
+    resetSession: () => {
+      requestId++;
+      set({
+        transactionId: null,
+        isDialogTransactionOpen: false,
+        modeDialogTransaction: 'add',
+        transaction: { ...emptyTransaction },
+        isSubmitting: false,
+      });
+    },
     startSubmission: () => {
       if (get().isSubmitting) {
-        return false;
+        return null;
       }
 
       requestId++;
       set({ isSubmitting: true });
-      return true;
+      return requestId;
     },
-    finishSubmission: (saved) => {
+    isCurrentSubmission: (submissionId) =>
+      submissionId === requestId && get().isSubmitting,
+    finishSubmission: (saved, submissionId) => {
+      if (!get().isCurrentSubmission(submissionId)) {
+        return;
+      }
+
       set(
         saved
           ? {
@@ -166,8 +184,8 @@ export function createDialogTransactionStore(
   }));
 }
 
-const store = createDialogTransactionStore();
+export const dialogTransactionStore = createDialogTransactionStore();
 
 export function useDialogTransactionStore<T>(selector: (state: State) => T): T {
-  return useStore(store, useShallow(selector));
+  return useStore(dialogTransactionStore, useShallow(selector));
 }

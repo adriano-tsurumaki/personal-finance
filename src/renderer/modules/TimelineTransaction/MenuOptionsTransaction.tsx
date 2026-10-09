@@ -9,6 +9,7 @@ import { useDialogTransactionStore } from '@store/dialog-transaction';
 import { toast } from '@components/ui/toast';
 import { confirmation } from '@store/confirmation';
 import { useAppStore } from '@store/transaction';
+import { useProfileStore } from '@store/profile';
 import { useRef } from 'react';
 
 interface TransactionActions {
@@ -33,9 +34,15 @@ export default function MenuOptionsTransaction({
   );
 
   const handleEdit = async () => {
+    const sessionVersion = useProfileStore.getState().sessionVersion;
+
     try {
       await loadTransaction(transactionId);
     } catch (error) {
+      if (useProfileStore.getState().sessionVersion !== sessionVersion) {
+        return;
+      }
+
       console.error('Failed to load transaction:', error);
       toast.add({
         title: t('common.errorTitle'),
@@ -50,6 +57,9 @@ export default function MenuOptionsTransaction({
     }
 
     isRemoving.current = true;
+    const sessionVersion = useProfileStore.getState().sessionVersion;
+    const isCurrentSession = () =>
+      useProfileStore.getState().sessionVersion === sessionVersion;
 
     try {
       const confirmed = await confirmation.confirm({
@@ -59,17 +69,25 @@ export default function MenuOptionsTransaction({
         destructive: true,
       });
 
-      if (!confirmed) {
+      if (!confirmed || !isCurrentSession()) {
         return;
       }
 
       await window.api.deleteTransaction(transactionId);
+
+      if (!isCurrentSession()) {
+        return;
+      }
 
       const { loadTransactions, loadMonthlyStatement } = useAppStore.getState();
 
       try {
         await Promise.all([loadTransactions(), loadMonthlyStatement()]);
       } catch (error) {
+        if (!isCurrentSession()) {
+          return;
+        }
+
         console.error(
           'Removed the transaction but failed to refresh the timeline:',
           error,
@@ -80,11 +98,20 @@ export default function MenuOptionsTransaction({
         });
         return;
       }
+
+      if (!isCurrentSession()) {
+        return;
+      }
+
       toast.add({
         title: t('common.success'),
         description: t('transactions.removed'),
       });
     } catch (error) {
+      if (!isCurrentSession()) {
+        return;
+      }
+
       console.error('Failed to remove transaction:', error);
       toast.add({
         title: t('common.errorTitle'),

@@ -22,6 +22,7 @@ interface AppState {
 
 let transactionsRequestId = 0;
 let statementRequestId = 0;
+let sessionGeneration = 0;
 
 const emptyMonthlyStatement: MonthlyStatementDto = {
   id: 0,
@@ -45,8 +46,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   monthlyStatement: emptyMonthlyStatement,
 
   init: async () => {
+    const generation = sessionGeneration;
+    const monthKey = get().monthKey;
+
     try {
       await get().loadTransactions();
+
+      if (generation !== sessionGeneration || get().monthKey !== monthKey) {
+        return;
+      }
+
       await get().loadMonthlyStatement();
     } catch (error) {
       console.error('Failed to init app state', error);
@@ -54,6 +63,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   reset: () => {
+    sessionGeneration++;
     transactionsRequestId++;
     statementRequestId++;
     set({
@@ -66,10 +76,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setMonthKey: async (monthKey) => {
+    const generation = sessionGeneration;
     set({ monthKey });
 
     try {
       await get().loadTransactions();
+
+      if (generation !== sessionGeneration || get().monthKey !== monthKey) {
+        return;
+      }
+
       await get().loadMonthlyStatement();
     } catch (error) {
       console.error('Failed to load the selected month', error);
@@ -88,10 +104,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ transactions, transactionsLoading: false });
       }
     } catch (error) {
-      if (requestId === transactionsRequestId) {
-        set({ transactionsLoading: false, transactionsFailed: true });
+      if (requestId !== transactionsRequestId) {
+        return;
       }
 
+      set({ transactionsLoading: false, transactionsFailed: true });
       console.error('Failed to load transactions', error);
       throw error;
     }
@@ -111,6 +128,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ monthlyStatement: statement });
       }
     } catch (error) {
+      if (requestId !== statementRequestId) {
+        return;
+      }
+
       console.error('Failed to load monthly statement', error);
     }
   },
