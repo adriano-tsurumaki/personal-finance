@@ -4,6 +4,7 @@ import type { IpcMainInvokeEvent, WebContents } from 'electron';
 import { createTransactionService } from './transactions';
 import { createProfileService } from './profiles';
 import { createMonthlyStatementService } from './monthly-statement';
+import { createCategoryService } from './categories';
 import type {
   TransactionInput,
   TransactionUpdateInput,
@@ -15,6 +16,7 @@ export function registerIpcHandlers(
   getContent: () => WebContents | undefined,
 ): void {
   const profiles = createProfileService(db);
+  const categories = createCategoryService(db, () => profiles.requireActive());
   const service = createTransactionService(db, () => profiles.requireActive());
   const statements = createMonthlyStatementService(db, () =>
     profiles.requireActive(),
@@ -28,6 +30,23 @@ export function registerIpcHandlers(
       throw new Error('Unauthorized request origin.');
     }
   }
+
+  ipcMain.handle('categories:list', (event) => {
+    authorize(event);
+    return categories.list();
+  });
+  ipcMain.handle('categories:create', (event, input) => {
+    authorize(event);
+    return categories.create(input);
+  });
+  ipcMain.handle('categories:update', (event, id, input) => {
+    authorize(event);
+    return categories.update(id, input);
+  });
+  ipcMain.handle('categories:archive', (event, id) => {
+    authorize(event);
+    return categories.archive(id);
+  });
 
   ipcMain.handle('profiles:list', (event) => {
     authorize(event);

@@ -12,8 +12,20 @@ import type {
   UserDto,
 } from './user';
 import type { ProfileOptionsDto } from './profile-catalog';
+import type {
+  CategoryDto,
+  CategoryInput,
+  CategoryMutationResult,
+} from './categories';
 
 export interface Api {
+  getCategories(): Promise<CategoryDto[]>;
+  createCategory(input: CategoryInput): Promise<CategoryMutationResult>;
+  updateCategory(
+    id: number,
+    input: CategoryInput,
+  ): Promise<CategoryMutationResult>;
+  archiveCategory(id: number): Promise<CategoryMutationResult>;
   listProfiles(): Promise<UserDto[]>;
   getActiveProfile(): Promise<UserDto | null>;
   createProfile(input: CreateProfileInput): Promise<CreateProfileResult>;

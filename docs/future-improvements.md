@@ -71,7 +71,12 @@ Review each relationship and choose whether to block deletion, archive records, 
 
 ### Case-insensitive category uniqueness
 
-Prevent duplicate category names for the same user regardless of case, while preserving the user's spelling for display. Application validation and the database uniqueness rule must use the same comparison, including accented characters. Existing duplicates must be resolved before adding the constraint.
+- [x] Prevent case-insensitive duplicate category names (verified 2026-10-09):
+      the service and SQLite unique index share Unicode NFC/lowercase normalization.
+      Integration tests verify accented case variants, canonical equivalence,
+      direct database rejection, profile isolation, and archived-name reservation.
+      Legacy databases must resolve conflicting names before applying this index;
+      migration failure rolls back rather than renaming or deleting history.
 
 ## Work needed for the first version
 

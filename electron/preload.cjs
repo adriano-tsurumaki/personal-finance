@@ -1,6 +1,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+  getCategories: () => ipcRenderer.invoke('categories:list'),
+  createCategory: (input) => ipcRenderer.invoke('categories:create', input),
+  updateCategory: (id, input) =>
+    ipcRenderer.invoke('categories:update', id, input),
+  archiveCategory: (id) => ipcRenderer.invoke('categories:archive', id),
   listProfiles: () => ipcRenderer.invoke('profiles:list'),
   getActiveProfile: () => ipcRenderer.invoke('profiles:current'),
   createProfile: (input) => ipcRenderer.invoke('profiles:create', input),

@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNull, lt, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import type {
   TransactionDto,
   TransactionInput,
@@ -101,6 +101,13 @@ export function createTransactionService(
               eq(categoriesTable.id, input.category_id),
               eq(categoriesTable.user_id, userId),
               isNull(categoriesTable.archived_at),
+              or(
+                eq(categoriesTable.transaction_type, 'both'),
+                eq(
+                  categoriesTable.transaction_type,
+                  input.type === 1 ? 'income' : 'expense',
+                ),
+              ),
             ),
           )
           .get())
@@ -145,6 +152,7 @@ export function createTransactionService(
               id: categoriesTable.id,
               name: categoriesTable.name,
               icon_key: categoriesTable.icon_key,
+              color: categoriesTable.color,
               catalog_key: categoriesTable.catalog_key,
             },
           })

@@ -17,6 +17,8 @@ import { initDb } from '../db';
 import { createTransactionService } from '../transactions';
 import { createMonthlyStatementService } from '../monthly-statement';
 import { createProfileService, initializeProfile } from '../profiles';
+import { createCategoryService } from '../categories';
+import type { CategoryInput } from '@shared/contracts/categories';
 import {
   categoriesTable,
   creditCardsTable,
@@ -33,6 +35,142 @@ const migrationsFolder = resolve('drizzle');
 const migrationCount = readdirSync(migrationsFolder, {
   withFileTypes: true,
 }).filter((entry) => entry.isDirectory()).length;
+
+test('category management persists Unicode names, metadata and history with profile isolation', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'finance-categories-'));
+  const filename = join(directory, 'categories.db');
+  let db = initDb(filename, migrationsFolder);
+  try {
+    let profiles = createProfileService(db);
+    const first = profiles.create({
+      name: 'First',
+      email: 'category-first@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(first.ok);
+    let categories = createCategoryService(db, () => profiles.requireActive());
+    const input: CategoryInput = {
+      name: '  EDUCAÇÃO  ',
+      color: '#123abc',
+      icon_key: 'investment',
+      description: ' Tuition ',
+      transaction_type: 'expense',
+    };
+    assert.deepEqual(categories.create(input), { ok: true });
+    let category = categories.list().find((row) => row.name === 'EDUCAÇÃO')!;
+    assert.equal(category.description, 'Tuition');
+    assert.deepEqual(
+      categories.create({ ...input, name: 'educac\u0327a\u0303o' }),
+      { ok: false, error: 'duplicate_name' },
+    );
+    assert.throws(() =>
+      db
+        .insert(categoriesTable)
+        .values({
+          name: 'educação',
+          color: '#123abc',
+          user_id: first.profile.id,
+        })
+        .run(),
+    );
+    assert.deepEqual(categories.create({ ...input, name: '  ' }), {
+      ok: false,
+      error: 'invalid_category',
+    });
+    assert.deepEqual(
+      categories.create({
+        ...input,
+        icon_key: 'unknown' as CategoryInput['icon_key'],
+      }),
+      { ok: false, error: 'invalid_category' },
+    );
+    assert.deepEqual(categories.create({ ...input, color: 'red' }), {
+      ok: false,
+      error: 'invalid_category',
+    });
+    assert.deepEqual(
+      categories.create({
+        ...input,
+        transaction_type: 'invalid' as CategoryInput['transaction_type'],
+      }),
+      { ok: false, error: 'invalid_category' },
+    );
+    const transactions = createTransactionService(db, () =>
+      profiles.requireActive(),
+    );
+    const entry = {
+      name: 'Tuition',
+      type: 2 as const,
+      amount_cents: 10000,
+      reference_date: '2026-10-09',
+      payment_date: null,
+      user_id: first.profile.id,
+      category_id: category.id,
+      payment_id: profiles.options().payments[0].id,
+    };
+    assert.throws(
+      () => transactions.create({ ...entry, type: 1 }),
+      /Invalid category/,
+    );
+    transactions.create(entry);
+    const transactionId = transactions.list('2026-10')[0].id;
+    assert.deepEqual(
+      categories.update(category.id, {
+        ...input,
+        name: 'Education',
+        description: ' ',
+      }),
+      { ok: true },
+    );
+    assert.equal(transactions.list('2026-10')[0].category?.name, 'Education');
+    assert.deepEqual(categories.archive(category.id), { ok: true });
+    assert.equal(transactions.get(transactionId).category_id, category.id);
+    assert.equal(transactions.list('2026-10')[0].category?.name, 'Education');
+    assert.ok(
+      !profiles.options().categories.some((row) => row.id === category.id),
+    );
+    assert.throws(() => transactions.create(entry), /Invalid category/);
+    assert.deepEqual(categories.create({ ...input, name: 'education' }), {
+      ok: false,
+      error: 'duplicate_name',
+    });
+    const second = profiles.create({
+      name: 'Second',
+      email: 'category-second@example.test',
+      locale: 'pt-BR',
+    });
+    assert.ok(second.ok);
+    assert.ok(!categories.list().some((row) => row.id === category.id));
+    assert.deepEqual(categories.update(category.id, input), {
+      ok: false,
+      error: 'category_not_found',
+    });
+    assert.deepEqual(categories.archive(category.id), {
+      ok: false,
+      error: 'category_not_found',
+    });
+    assert.deepEqual(categories.create({ ...input, name: 'Education' }), {
+      ok: true,
+    });
+    db.$client.close();
+    db = initDb(filename, migrationsFolder);
+    profiles = createProfileService(db);
+    profiles.enter(first.profile.id);
+    categories = createCategoryService(db, () => profiles.requireActive());
+    category = categories.list().find((row) => row.id === category.id)!;
+    assert.equal(category.name, 'Education');
+    assert.equal(category.description, null);
+    assert.equal(category.color, '#123abc');
+    assert.equal(category.icon_key, 'investment');
+    assert.equal(category.transaction_type, 'expense');
+    assert.ok(category.archived_at);
+    profiles.leave();
+    assert.throws(() => categories.list(), /No active profile/);
+  } finally {
+    db.$client.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 test('profiles persist locale changes, initialize once and isolate financial records', () => {
   const directory = mkdtempSync(join(tmpdir(), 'finance-profiles-'));
@@ -591,6 +729,40 @@ test('legacy database adoption and later migrations preserve data and run only o
     assert.equal(
       check.all(sql`SELECT * FROM __drizzle_migrations`).length,
       migrationCount + 1,
+    );
+    check.$client.close();
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('category uniqueness migration rolls back when legacy names conflict', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'finance-category-conflict-'));
+  const filename = join(directory, 'legacy.db');
+  try {
+    const legacy = drizzle(filename);
+    legacy.$client.exec(
+      readFileSync(resolve('src/main/db/fixtures/legacy-schema.sql'), 'utf8'),
+    );
+    legacy.run(
+      sql`INSERT INTO user (id, name, email, password) VALUES (1, 'Legacy', 'legacy@example.test', 'preserved')`,
+    );
+    legacy.run(
+      sql`INSERT INTO categories (name, color, user_id) VALUES ('EDUCAÇÃO', '#808080', 1), ('educação', '#808080', 1)`,
+    );
+    legacy.$client.close();
+    assert.throws(() => initDb(filename, migrationsFolder));
+    const check = drizzle(filename);
+    assert.deepEqual(
+      check
+        .all<{ name: string }>(sql`SELECT name FROM categories ORDER BY id`)
+        .map((row) => row.name),
+      ['EDUCAÇÃO', 'educação'],
+    );
+    assert.ok(
+      !check
+        .all<{ name: string }>(sql`PRAGMA table_info(categories)`)
+        .some((column) => column.name === 'description'),
     );
     check.$client.close();
   } finally {

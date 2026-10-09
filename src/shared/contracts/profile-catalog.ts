@@ -7,6 +7,9 @@ export interface ProfileOptionsDto {
     name: string;
     catalog_key: string | null;
     icon_key: string;
+    description?: string | null;
+    transaction_type?: 'income' | 'expense' | 'both';
+    color?: string;
   }[];
   payments: { id: number; catalog_key: PaymentMethodKey }[];
 }

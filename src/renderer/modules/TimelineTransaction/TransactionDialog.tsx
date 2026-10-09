@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Spinner } from '@components/ui/spinner';
 import { Button } from '@components/ui/button';
 import {
@@ -39,6 +40,10 @@ import type { CreateResult } from '@shared/contracts/result';
 export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
   const profile = useProfileStore((state) => state.activeProfile);
   const options = useProfileStore((state) => state.options);
+  const selectedType = useDialogTransactionStore(
+    (state) => state.transaction.type,
+  );
+  const [categoryCleared, setCategoryCleared] = useState(false);
   const types = [
     { value: null, label: t('transactions.selectType') },
     { value: 1, label: t('transactions.income') },
@@ -46,10 +51,19 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
   ];
   const categories = [
     { value: null, label: t('transactions.selectCategory') },
-    ...options.categories.map((category) => ({
-      value: category.id,
-      label: categoryLabel(category),
-    })),
+    ...options.categories
+      .filter(
+        (category) =>
+          !selectedType ||
+          !category.transaction_type ||
+          category.transaction_type === 'both' ||
+          category.transaction_type ===
+            (selectedType === 1 ? 'income' : 'expense'),
+      )
+      .map((category) => ({
+        value: category.id,
+        label: categoryLabel(category),
+      })),
   ];
   const payments = [
     { value: null, label: t('transactions.selectPayment') },
@@ -95,6 +109,33 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
     payment_id: state.transaction.payment_id,
     reference_date: state.transaction.reference_date,
   }));
+
+  useEffect(() => {
+    if (
+      mode === 'add' &&
+      category_id !== null &&
+      !categories.some((category) => category.value === category_id)
+    ) {
+      handleTransaction('category_id', null);
+      setCategoryCleared(true);
+    }
+
+    if (
+      !isOpen ||
+      (category_id !== null &&
+        categories.some((category) => category.value === category_id))
+    ) {
+      setCategoryCleared(false);
+    }
+    // Recheck persisted compatibility whenever the type or available catalog changes.
+  }, [
+    selectedType,
+    category_id,
+    options.categories,
+    mode,
+    isOpen,
+    handleTransaction,
+  ]);
 
   const handleSubmit = async () => {
     const submissionId = startSubmission();
@@ -376,6 +417,22 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                       </SelectGroup>
                     </SelectContent>
                   </Select>
+                  {categoryCleared && (
+                    <p role="status" className="text-xs text-muted-foreground">
+                      {t('categoryManager.incompatible')}
+                    </p>
+                  )}
+                  {options.categories.find(
+                    (category) => category.id === category_id,
+                  )?.description && (
+                    <p className="text-xs text-muted-foreground">
+                      {
+                        options.categories.find(
+                          (category) => category.id === category_id,
+                        )?.description
+                      }
+                    </p>
+                  )}
                 </Field>
               )}
               <Field>

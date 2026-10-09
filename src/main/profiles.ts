@@ -108,6 +108,12 @@ export function initializeProfile(
             catalog_key: key,
             icon_key: key,
             color: '#808080',
+            transaction_type:
+              key === 'salary'
+                ? 'income'
+                : key === 'other'
+                  ? 'both'
+                  : 'expense',
           })
           .run();
       }
@@ -248,6 +254,9 @@ export function createProfileService(db: AppDatabase) {
             name: categoriesTable.name,
             catalog_key: categoriesTable.catalog_key,
             icon_key: categoriesTable.icon_key,
+            description: categoriesTable.description,
+            transaction_type: categoriesTable.transaction_type,
+            color: categoriesTable.color,
           })
           .from(categoriesTable)
           .where(

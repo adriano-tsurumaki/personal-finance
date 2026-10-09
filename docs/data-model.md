@@ -124,9 +124,34 @@ render the `other` icon. Transaction responses expose category details as
 
 The Drizzle schema gives new categories an `other` default. The prototype seed
 assigns icons explicitly. Existing icons from the previous initializer are preserved.
-Renaming a category does not change its stored icon. There is currently no category
-editing API or icon picker; a future category editor should validate `icon_key`
-against the supported identifiers before persisting it.
+Renaming a category does not change its stored icon. Category management has its
+own tab, with profile-owned listing, creation, editing and archival through IPC.
+The icon picker persists supported keys; main validates names, six-digit hex
+colors, icons and compatibility before writing. Names are trimmed and limited to
+100 characters. Descriptions are optional, limited to 500 characters, trimmed,
+and stored as `NULL` when blank.
+
+`transaction_type` is `income`, `expense` or `both`. Existing categories migrate
+to `both` to preserve their previous use. Newly initialized salary categories
+support income, food and housing support expenses, and other supports both.
+New transactions require an active category compatible with their type; the
+renderer and main enforce this. Historical transaction editing preserves the
+original category even after archival or compatibility changes, without
+revalidating or replacing that association. Category metadata edits apply to
+existing entries because they retain the category ID.
+
+Removal always archives the category, including unused categories. Archived
+categories remain visible in management and readable through historical joins,
+but disappear from new transaction options. Their names remain reserved. A
+category edit never clears its catalog identity, so initialization does not
+recreate an edited or archived default.
+
+Names are unique per profile, including archived categories. Both application
+validation and the SQLite expression index use `categoryNameKey`: trim, Unicode
+NFC normalization and Unicode lowercase. Accents are preserved (`café` differs
+from `cafe`), while accented case variants and canonically equivalent spellings
+compare equally. The database connection registers the deterministic
+`category_name_key` function before applying migrations.
 
 ### `recurrences` and `recurrences_versions`
 

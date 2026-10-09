@@ -7,6 +7,7 @@ import {
   sqliteTable,
   text,
   unique,
+  uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 
 // Keep the existing SQLite DATE affinity; values cross IPC as YYYY-MM-DD strings.
@@ -27,17 +28,35 @@ export const paymentsTable = sqliteTable('payments', {
   catalog_key: text().unique(),
 });
 
-export const categoriesTable = sqliteTable('categories', {
-  id: integer().primaryKey({ autoIncrement: true }),
-  name: text().notNull(),
-  color: text().notNull(),
-  icon_key: text().notNull().default('other'),
-  archived_at: date(),
-  catalog_key: text(),
-  user_id: integer()
-    .notNull()
-    .references(() => usersTable.id),
-});
+export const categoriesTable = sqliteTable(
+  'categories',
+  {
+    id: integer().primaryKey({ autoIncrement: true }),
+    name: text().notNull(),
+    color: text().notNull(),
+    icon_key: text().notNull().default('other'),
+    description: text(),
+    transaction_type: text()
+      .$type<'income' | 'expense' | 'both'>()
+      .notNull()
+      .default('both'),
+    archived_at: date(),
+    catalog_key: text(),
+    user_id: integer()
+      .notNull()
+      .references(() => usersTable.id),
+  },
+  (table) => [
+    uniqueIndex('categories_user_name_unique').on(
+      table.user_id,
+      sql`category_name_key(${table.name})`,
+    ),
+    check(
+      'categories_transaction_type_check',
+      sql`${table.transaction_type} IN ('income', 'expense', 'both')`,
+    ),
+  ],
+);
 
 export const creditCardsTable = sqliteTable(
   'credit_cards',

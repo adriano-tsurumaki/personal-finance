@@ -29,6 +29,15 @@ export default function TimelineEntryRow({
     ? 'border-income/30 bg-income/10 text-income'
     : 'border-border bg-secondary text-muted-foreground';
   const amountClass = isIncome ? 'text-income' : 'text-expense';
+  const categoryColor = entry.category?.color;
+  const nodeStyle =
+    categoryColor && /^#[0-9a-f]{6}$/i.test(categoryColor)
+      ? {
+          color: categoryColor,
+          borderColor: categoryColor,
+          backgroundColor: `${categoryColor}1a`,
+        }
+      : undefined;
 
   return (
     <div className="relative flex gap-4 py-2 pl-1 pr-2">
@@ -39,6 +48,7 @@ export default function TimelineEntryRow({
         />
         <span
           className={`relative z-10 flex size-9 items-center justify-center rounded-full border ${nodeClass}`}
+          style={nodeStyle}
           aria-hidden="true"
         >
           <Icon className="size-4" />

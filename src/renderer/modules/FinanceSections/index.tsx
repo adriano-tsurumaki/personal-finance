@@ -1,4 +1,5 @@
-import { CreditCard, Repeat, Target, Wallet } from 'lucide-react';
+import { CreditCard, Repeat, Tags, Target, Wallet } from 'lucide-react';
+import Categories from '@modules/Categories';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
 import UnderConstruction from '@components/UnderConstruction';
 import TimelineTransaction from '@modules/TimelineTransaction';
@@ -27,6 +28,10 @@ export default function FinanceSections() {
                   {transactionCount}
                 </span>
               </TabsTrigger>
+              <TabsTrigger value="categories">
+                <Tags aria-hidden="true" />
+                {t('categoryManager.title')}
+              </TabsTrigger>
               {deferredSections.map(({ id, label, icon: Icon }) => (
                 <TabsTrigger key={id} value={id}>
                   <Icon aria-hidden="true" />
@@ -39,6 +44,9 @@ export default function FinanceSections() {
       </div>
       <TabsContent value="timelines">
         <TimelineTransaction />
+      </TabsContent>
+      <TabsContent value="categories">
+        <Categories />
       </TabsContent>
       {deferredSections.map(({ id, label }) => (
         <TabsContent key={id} value={id}>
