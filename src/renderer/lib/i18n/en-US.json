@@ -90,6 +90,7 @@
     "editLabel": "Edit transaction: {name}",
     "removeLabel": "Remove transaction: {name}",
     "description": "The reference date determines where this transaction appears on the timeline.",
+    "editDescription": "Edit the transaction details. Category, payment method and settlement date are preserved.",
     "name": "Title",
     "namePlaceholder": "e.g. Groceries, Rent, Salary",
     "amount": "Amount",

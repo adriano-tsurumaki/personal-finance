@@ -43,7 +43,7 @@ rejected rather than reinterpreted. Credit selection records a planned entry;
 invoice association and all settlement workflows remain deferred. Selecting a
 method does not set a payment date.
 
-Transaction updates change only the description,
+Creation and editing use separate dialogs. Editing changes only the description,
 note, entry type, amount, and reference date. Main preserves category, payment
 method, owner, and settlement date regardless of extra fields supplied through
 IPC. This also allows editing entries with archived categories or legacy payment

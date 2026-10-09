@@ -1,4 +1,5 @@
 import AddTransaction from './AddTransaction';
+import EditTransaction from './EditTransaction';
 import TimelineEntryRow from './TimelineEntryRow';
 import MenuOptionsTransaction from './MenuOptionsTransaction';
 import { useAppStore } from '@store/transaction';
@@ -27,6 +28,7 @@ export default function TimelineTransaction() {
           </p>
         </div>
         <AddTransaction />
+        <EditTransaction />
       </div>
 
       {loading ? (

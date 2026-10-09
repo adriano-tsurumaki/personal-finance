@@ -90,6 +90,7 @@
     "editLabel": "Editar transação: {name}",
     "removeLabel": "Remover transação: {name}",
     "description": "A data de referência determina onde esta transação aparece na linha do tempo.",
+    "editDescription": "Edite os detalhes do lançamento. Categoria, método de pagamento e data de pagamento são preservados.",
     "name": "Título",
     "namePlaceholder": "Ex.: Supermercado, Aluguel, Salário",
     "amount": "Valor",
