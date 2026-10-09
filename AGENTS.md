@@ -30,6 +30,21 @@ update their status only after verifying the completion criteria. Do not perform
 unrelated migrations just to close pending items.
 For financial data rules, consult [Data model](docs/data-model.md).
 
+## Versioning and release impact
+
+Before implementing changes or preparing a release, consult
+[Versioning and releases](docs/versioning.md) and follow its conventions.
+Assess the change's compatibility and release impact, including existing user
+data, supported upgrade paths, and public behavior. Keep required migrations,
+tests, contracts, and documentation with the change they support.
+
+Update the `Unreleased` section of `CHANGELOG.md` when it exists and the change
+has meaningful application impact. Report material release impact and required
+upgrade actions when completing the task. Increment `package.json` only when
+preparing a release, not for each implementation commit. A request to implement
+changes or create commits does not itself authorize a release, tag, push, or
+publication.
+
 ## Conditional formatting
 
 Always use braces for control-flow bodies, including single-statement `if`
