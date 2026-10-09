@@ -8,7 +8,8 @@ The main screen presents a monthly cash-flow summary and a timeline of financial
 
 The first version uses these rules:
 
-- Inflows are receipts completed during the month.
+- Inflows are direct income entries. An explicit receipt date determines the
+  month; without one, the reference date is treated as the receipt date.
 - Outflows are direct expenses and invoices paid during the month.
 - Monthly balance is inflows minus outflows; it is not an account balance.
 - Credit-card purchases may appear as a separate indicator and must not be counted again as cash outflows.
@@ -41,7 +42,10 @@ Monetary entry accepts digits and the profile's decimal separator, with up to tw
 decimal places; grouping separators and currency-prefixed paste are currently
 rejected rather than reinterpreted. Credit selection records a planned entry;
 invoice association and all settlement workflows remain deferred. Selecting a
-method does not set a payment date.
+method does not set a payment date. Direct income is counted as received on its
+reference date when no explicit receipt date exists. Direct expenses remain
+pending until settlement; credit-method entries remain excluded from direct
+cash flow.
 
 Creation and editing use separate dialogs. Editing changes only the description,
 note, entry type, amount, and reference date. Main preserves category, payment
@@ -208,19 +212,24 @@ A R$250 purchase made on August 20 appears in the August timeline. If its invoic
 ## Monthly cash-flow summaries
 
 The monthly statement API derives ownership from the active profile. Direct
-entries with a direct payment method (`payments.type = 1`) contribute only in
-their `payment_date` month. Invoice-linked and credit-method entries are excluded
-from direct cash flow. Paid invoices contribute their stored `amount_cents` in
-their `paid_at` month, once, through the owning card. Pending entries and unpaid
-invoices do not contribute. Reference dates remain timeline dates.
+entries with a direct payment method (`payments.type = 1`) contribute in their
+`payment_date` month when it is present. Direct income (`transactions.type = 1`)
+without a payment date contributes in its `reference_date` month, so manually
+recorded receipts such as salaries appear immediately, including existing entries.
+This fallback does not write a settlement date or change stored history. An
+explicit payment date always takes precedence, preventing double counting.
+Invoice-linked and credit-method entries are excluded from direct cash flow.
+Paid invoices contribute their stored `amount_cents` in their `paid_at` month,
+once, through the owning card. Pending direct expenses and unpaid invoices do
+not contribute. Reference dates also remain timeline dates.
 
-One SQL query groups receipts, direct expenses, and invoice payments by settlement
-day. Totals are calculated in integer cents and converted to BRL units for the
+One SQL query groups receipts, direct expenses, and invoice payments by their
+effective cash-flow day. Totals are calculated in integer cents and converted to BRL units for the
 DTO. The daily series includes every day of the selected month. Opening cash flow
 is zero and closing cash flow equals income minus expenses; neither represents
 an account balance. The savings rate is net divided by income, or zero when
-there is no income. The event count includes direct settlements and invoice
-payments, rather than every purchase inside an invoice. Summaries are computed;
+there is no income. The event count includes direct receipts, settled direct
+expenses, and invoice payments, rather than every purchase inside an invoice. Summaries are computed;
 their reserved DTO identifier is zero.
 
 Composite indexes support transaction lookups by profile and payment date, card

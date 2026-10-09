@@ -24,11 +24,15 @@ The following items were checked against the working tree on 2026-09-18. They ar
 - [x] Use the reference date in the transaction form (verified 2026-10-08):
       the date picker and submitted input update `reference_date`. New entries have
       `payment_date: null`; editing preserves the existing settlement date. The
-      timeline already displays and filters by reference date.
-- Define an explicit direct-entry settlement workflow. Payment recording remains
-  deferred; editing the reference date must not record or change settlement.
+      timeline already displays and filters by reference date. Direct income
+      without a receipt date also contributes to the summary by reference date
+      (verified 2026-10-09 with SQLite regression tests).
+- Define an explicit direct-entry settlement workflow for pending expenses and
+  scheduled income. Direct income currently uses its reference date when there
+  is no explicit receipt date. Payment recording remains deferred; editing the
+  reference date must not record or change stored settlement.
 - [x] Implement the monthly statement IPC API (verified 2026-10-08): preload and
-      main expose settled cash flow for the active profile. SQLite regression tests
+      main expose monthly cash flow for the active profile. SQLite regression tests
       verify settlement dates, invoice exclusion, profile isolation, indexed date
       ranges, cache reuse, and invalidation after local and external writes. Existing
       timeline mutation refreshes can now reload the monthly indicators.

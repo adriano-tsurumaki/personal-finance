@@ -949,6 +949,114 @@ test('monthly cash flow aggregates settlement dates, isolates profiles and inval
   }
 });
 
+test('monthly income includes recorded salaries without settlement and preserves explicit receipt dates', () => {
+  const db = initDb(':memory:', migrationsFolder);
+  const profiles = createProfileService(db);
+  const transactions = createTransactionService(db, () =>
+    profiles.requireActive(),
+  );
+  const statements = createMonthlyStatementService(db, () =>
+    profiles.requireActive(),
+  );
+
+  try {
+    const profile = profiles.create({
+      name: 'Recorded income',
+      email: 'recorded-income@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(profile.ok);
+    const options = profiles.options();
+    const input = {
+      name: 'Salary',
+      type: 1 as const,
+      amount_cents: 12345,
+      reference_date: '2026-10-09',
+      payment_date: null,
+      payment_id: options.payments.find(
+        (payment) => payment.catalog_key === 'pix',
+      )!.id,
+      category_id: options.categories.find(
+        (category) => category.catalog_key === 'salary',
+      )!.id,
+      user_id: profile.profile.id,
+    };
+    // Entries saved before the fix must also contribute without rewriting history.
+    transactions.create(input);
+    const salary = transactions.list('2026-10')[0];
+    assert.equal(transactions.get(salary.id).payment_date, null);
+    const initial = statements.get('2026-10');
+    assert.equal(initial.income, 123.45);
+    assert.equal(initial.net, 123.45);
+    assert.equal(initial.closingBalance, 123.45);
+    assert.equal(initial.savingsRate, 1);
+    assert.equal(initial.transactionCount, 1);
+    assert.equal(initial.balanceSeries[7].balance, 0);
+    assert.equal(initial.balanceSeries[8].balance, 123.45);
+
+    for (const method of ['pix', 'cash'] as const) {
+      transactions.create({
+        ...input,
+        payment_id: options.payments.find(
+          (payment) => payment.catalog_key === method,
+        )!.id,
+        amount_cents: 100,
+      });
+    }
+
+    transactions.create({
+      ...input,
+      amount_cents: 500,
+      payment_date: '2026-11-01',
+    });
+    transactions.create({
+      ...input,
+      amount_cents: 700,
+      payment_date: '2026-10-10',
+    });
+    db.insert(transactionsTable)
+      .values({
+        ...input,
+        category_id: null,
+        payment_id: options.payments.find(
+          (payment) => payment.catalog_key === 'credit',
+        )!.id,
+      })
+      .run();
+    transactions.create({
+      ...input,
+      type: 2,
+      category_id: null,
+      amount_cents: 90000,
+    });
+    assert.equal(statements.get('2026-10').income, 132.45);
+    assert.equal(statements.get('2026-10').expense, 0);
+    assert.equal(statements.get('2026-10').transactionCount, 4);
+    assert.equal(statements.get('2026-11').income, 5);
+
+    transactions.update(salary.id, { ...input, amount_cents: 20000 });
+    assert.equal(statements.get('2026-10').income, 209);
+    transactions.update(salary.id, { ...input, reference_date: '2026-11-09' });
+    assert.equal(statements.get('2026-10').income, 9);
+    assert.equal(statements.get('2026-11').income, 128.45);
+    assert.equal(transactions.get(salary.id).payment_date, null);
+    transactions.remove(salary.id);
+    assert.equal(statements.get('2026-11').income, 5);
+
+    const other = profiles.create({
+      name: 'Other income profile',
+      email: 'other-income@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(other.ok);
+    assert.equal(statements.get('2026-10').income, 0);
+    profiles.enter(profile.profile.id);
+    assert.equal(statements.get('2026-10').income, 9);
+  } finally {
+    db.$client.close();
+  }
+});
+
 test('monthly cache detects external commits and queries use settlement indexes', () => {
   const directory = mkdtempSync(join(tmpdir(), 'finance-statement-'));
   const filename = join(directory, 'summary.db');

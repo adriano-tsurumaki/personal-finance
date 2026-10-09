@@ -9,7 +9,7 @@ interface DailyCashFlow {
   count: number;
 }
 
-/** Aggregates settled cash flow in cents; the DTO exposes BRL monetary units. */
+/** Aggregates monthly cash flow in cents; the DTO exposes BRL monetary units. */
 export function createMonthlyStatementService(
   db: AppDatabase,
   getActiveUser: () => { id: number },
@@ -69,6 +69,15 @@ export function createMonthlyStatementService(
             INNER JOIN payments p ON p.id = t.payment_id
             WHERE t.user_id = ${user.id}
               AND t.payment_date >= ${start} AND t.payment_date < ${end}
+              AND t.credit_card_invoice_id IS NULL AND p.type = 1
+            UNION ALL
+            SELECT t.reference_date AS date, t.amount_cents AS income,
+                   0 AS expense
+            FROM transactions t
+            INNER JOIN payments p ON p.id = t.payment_id
+            WHERE t.user_id = ${user.id} AND t.type = 1
+              AND t.payment_date IS NULL
+              AND t.reference_date >= ${start} AND t.reference_date < ${end}
               AND t.credit_card_invoice_id IS NULL AND p.type = 1
             UNION ALL
             SELECT i.paid_at AS date, 0 AS income, i.amount_cents AS expense
