@@ -238,7 +238,6 @@ test('CRUD preserves cents, category joins, month boundaries, ordering and seed 
     service.update(rows[1].id, {
       ...input,
       amount_cents: 999,
-      payment_date: '2027-01-02',
     });
     assert.equal(service.list('2026-12')[1].amount_cents, 999);
     service.remove(rows[0].id);
@@ -342,10 +341,8 @@ test('historical reads and updates preserve existing archived categories without
     assert.throws(() => service.create(input), /Invalid category/);
     service.create({ ...input, category_id: null });
     const uncategorized = service.list('2026-12')[0];
-    assert.throws(
-      () => service.update(uncategorized.id, input),
-      /Invalid category/,
-    );
+    service.update(uncategorized.id, input);
+    assert.equal(service.get(uncategorized.id).category_id, null);
     assert.throws(() => service.get(0), /Invalid identifier/);
     assert.throws(() => service.get(99999), /not found/);
   } finally {
@@ -368,6 +365,71 @@ test('changing the reference month preserves pending and settled payment dates',
       assert.equal(moved.reference_date, '2027-02-10');
       assert.equal(moved.payment_date, paymentDate);
     }
+  } finally {
+    db.$client.close();
+  }
+});
+
+test('editing legacy entries preserves classification, ownership and settlement despite extra IPC fields', () => {
+  const { db, service, input, user, category } = setup();
+
+  try {
+    const legacyMethod = db
+      .insert(paymentsTable)
+      .values({ name: 'Custom legacy method', type: 1 })
+      .returning()
+      .get()!;
+    const entry = db
+      .insert(transactionsTable)
+      .values({
+        ...input,
+        user_id: user.id,
+        payment_id: legacyMethod.id,
+        payment_date: '2027-01-02',
+      })
+      .returning()
+      .get()!;
+    db.update(categoriesTable)
+      .set({ archived_at: '2026-12-31' })
+      .where(eq(categoriesTable.id, category.id))
+      .run();
+    const maliciousInput = {
+      name: 'Corrected legacy entry',
+      note: 'Updated note',
+      amount_cents: 25000,
+      type: 2 as const,
+      reference_date: '2027-02-10',
+      category_id: null,
+      payment_id: 99999,
+      payment_date: null,
+      user_id: 99999,
+    };
+    service.update(entry.id, maliciousInput);
+    const updated = service.get(entry.id);
+    assert.equal(updated.name, maliciousInput.name);
+    assert.equal(updated.note, maliciousInput.note);
+    assert.equal(updated.amount_cents, 25000);
+    assert.equal(updated.reference_date, '2027-02-10');
+    assert.equal(updated.category_id, category.id);
+    assert.equal(updated.payment_id, legacyMethod.id);
+    assert.equal(updated.payment_date, '2027-01-02');
+    assert.equal(updated.user_id, user.id);
+
+    for (const patch of [
+      { amount_cents: 0 },
+      { reference_date: '2027-02-30' },
+      { name: '' },
+      { type: 3 },
+    ]) {
+      assert.throws(() =>
+        service.update(entry.id, {
+          ...maliciousInput,
+          ...patch,
+        } as typeof maliciousInput),
+      );
+    }
+
+    assert.equal(service.get(entry.id).name, maliciousInput.name);
   } finally {
     db.$client.close();
   }

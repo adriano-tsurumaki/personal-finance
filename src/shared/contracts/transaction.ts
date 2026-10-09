@@ -26,3 +26,9 @@ export interface TransactionInput {
   payment_id: number;
   category_id: number | null;
 }
+
+/** Editable details; ownership, classification, and settlement stay in main. */
+export type TransactionUpdateInput = Pick<
+  TransactionInput,
+  'name' | 'note' | 'type' | 'amount_cents' | 'reference_date'
+>;

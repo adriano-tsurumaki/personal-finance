@@ -3,7 +3,10 @@ import { ipcMain } from 'electron';
 import type { IpcMainInvokeEvent, WebContents } from 'electron';
 import { createTransactionService } from './transactions';
 import { createProfileService } from './profiles';
-import type { TransactionInput } from '@shared/contracts/transaction';
+import type {
+  TransactionInput,
+  TransactionUpdateInput,
+} from '@shared/contracts/transaction';
 import type { CreateResult } from '@shared/contracts/result';
 
 export function registerIpcHandlers(
@@ -77,7 +80,7 @@ export function registerIpcHandlers(
 
   ipcMain.handle(
     'transactions:update',
-    (event, id: number, input: TransactionInput): CreateResult => {
+    (event, id: number, input: TransactionUpdateInput): CreateResult => {
       authorize(event);
       return service.update(id, input);
     },

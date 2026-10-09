@@ -43,6 +43,12 @@ rejected rather than reinterpreted. Credit selection records a planned entry;
 invoice association and all settlement workflows remain deferred. Selecting a
 method does not set a payment date.
 
+Transaction updates change only the description,
+note, entry type, amount, and reference date. Main preserves category, payment
+method, owner, and settlement date regardless of extra fields supplied through
+IPC. This also allows editing entries with archived categories or legacy payment
+methods without replacing their historical associations.
+
 Leaving or activating a profile resets the renderer's financial state, transaction
 draft, submission lock, and pending confirmation. Session changes invalidate
 pending edit, catalog, locale, and financial-load responses. Older mutation

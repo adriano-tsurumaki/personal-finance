@@ -2,6 +2,7 @@ import { and, desc, eq, gte, inArray, isNull, lt, sql } from 'drizzle-orm';
 import type {
   TransactionDto,
   TransactionInput,
+  TransactionUpdateInput,
 } from '@shared/contracts/transaction';
 import type { AppDatabase } from './db';
 import { categoriesTable, paymentsTable, transactionsTable } from './db/schema';
@@ -22,11 +23,7 @@ export function createTransactionService(
     );
   }
 
-  function validate(
-    input: TransactionInput,
-    userId: number,
-    existingCategoryId?: number | null,
-  ) {
+  function validateDetails(input: TransactionUpdateInput) {
     if (
       !input ||
       typeof input.name !== 'string' ||
@@ -52,10 +49,23 @@ export function createTransactionService(
       throw new Error('Enter a positive amount in whole cents.');
     }
 
-    if (
-      !validDate(input.reference_date) ||
-      (input.payment_date !== null && !validDate(input.payment_date))
-    ) {
+    if (!validDate(input.reference_date)) {
+      throw new Error('Invalid date.');
+    }
+
+    return {
+      name: input.name.trim(),
+      note: input.note === undefined ? undefined : input.note?.trim() || null,
+      type: input.type,
+      amount_cents: input.amount_cents,
+      reference_date: input.reference_date,
+    };
+  }
+
+  function validate(input: TransactionInput, userId: number) {
+    const details = validateDetails(input);
+
+    if (input.payment_date !== null && !validDate(input.payment_date)) {
       throw new Error('Invalid date.');
     }
 
@@ -90,9 +100,7 @@ export function createTransactionService(
             and(
               eq(categoriesTable.id, input.category_id),
               eq(categoriesTable.user_id, userId),
-              input.category_id === existingCategoryId
-                ? undefined
-                : isNull(categoriesTable.archived_at),
+              isNull(categoriesTable.archived_at),
             ),
           )
           .get())
@@ -101,11 +109,7 @@ export function createTransactionService(
     }
 
     return {
-      name: input.name.trim(),
-      note: input.note === undefined ? undefined : input.note?.trim() || null,
-      type: input.type,
-      amount_cents: input.amount_cents,
-      reference_date: input.reference_date,
+      ...details,
       payment_date: input.payment_date,
       payment_id: input.payment_id,
       category_id: input.category_id,
@@ -217,28 +221,13 @@ export function createTransactionService(
       return { ok: true };
     },
 
-    update(id: number, input: TransactionInput): CreateResult {
+    update(id: number, input: TransactionUpdateInput): CreateResult {
       const user = getActiveUser();
       validateId(id);
 
-      const existing = db
-        .select({ category_id: transactionsTable.category_id })
-        .from(transactionsTable)
-        .where(
-          and(
-            eq(transactionsTable.id, id),
-            eq(transactionsTable.user_id, user.id),
-          ),
-        )
-        .get();
-
-      if (!existing) {
-        throw new Error('Transaction not found.');
-      }
-
       const result = db
         .update(transactionsTable)
-        .set(validate(input, user.id, existing.category_id))
+        .set(validateDetails(input))
         .where(
           and(
             eq(transactionsTable.id, id),

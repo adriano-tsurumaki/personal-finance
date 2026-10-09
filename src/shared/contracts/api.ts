@@ -1,6 +1,10 @@
 import type { MonthlyStatementDto } from './monthly-statement';
 import type { CreateResult } from './result';
-import type { TransactionDto, TransactionInput } from './transaction';
+import type {
+  TransactionDto,
+  TransactionInput,
+  TransactionUpdateInput,
+} from './transaction';
 import type {
   CreateProfileInput,
   CreateProfileResult,
@@ -20,7 +24,10 @@ export interface Api {
   getTransactions(month: string): Promise<TransactionDto[]>;
   getTransaction(id: number): Promise<TransactionInput>;
   createTransaction(input: TransactionInput): Promise<CreateResult>;
-  updateTransaction(id: number, input: TransactionInput): Promise<CreateResult>;
+  updateTransaction(
+    id: number,
+    input: TransactionUpdateInput,
+  ): Promise<CreateResult>;
   deleteTransaction(id: number): Promise<void>;
 
   getMonthlyStatement?: (month: string) => Promise<MonthlyStatementDto>;
