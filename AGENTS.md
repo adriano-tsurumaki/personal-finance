@@ -41,3 +41,30 @@ or between an `if` branch and its `else`. ESLint enforces these rules;
 ## Code reviews
 
 When performing a code review, follow [Code review guidelines](docs/code-review.md).
+
+## Creating commits
+
+When the user asks to create commits, inspect the recent Git history and follow
+its established message conventions instead of asking the user to repeat them.
+Use English messages with the existing `type(scope): imperative summary` style;
+choose the type and scope from the actual change and established repository usage,
+omitting the scope when appropriate to the historical convention.
+Use a body only when it helps explain a non-obvious reason or consequence.
+
+Group commits by coherent purpose, such as styling, business logic, migrations,
+features, bug fixes, or repository instructions. Do not combine unrelated work
+merely because it belongs to the same task or touches the same file. Keep the
+tests, contracts, and documentation needed for a change with that change, and
+order dependent commits so each commit remains coherent and buildable. Do not
+split changes mechanically by file extension or create artificial tiny commits.
+
+When a file mixes concerns, stage the relevant hunks or prepare an intermediate
+file version in the index so each commit contains only its intended changes.
+Preserve the final working tree and all user changes; never discard code to obtain
+a cleaner commit. Review each staged diff and run the checks appropriate to the
+changes before committing. Avoid blanket staging without inspecting every change.
+
+An explicit request to create commits authorizes the necessary local staging and
+commits. Create them without asking again for message or grouping confirmation.
+Report the resulting commit hashes and subjects. Do not push or rewrite existing
+history unless the user requests it.
