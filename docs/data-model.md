@@ -30,8 +30,13 @@ an active profile and derive ownership from it rather than renderer input.
 
 Default categories use the stable keys `food`, `housing`, `salary`, and `other`.
 Categories remain owned by their profile. The shared payment catalog uses `pix`,
-`debit`, `credit`, and `cash`; selection and main-process validation accept only
-these keys. `pix_credit` remains deferred until its financial rules are defined.
+`debit`, `credit`, `cash`, and `bank_transfer`. Income accepts only `pix`, `cash`,
+and `bank_transfer`; expenses accept only `pix`, `cash`, `debit`, and `credit`.
+The form filters methods by transaction type and clears an incompatible selection
+when the type changes. Main validates the same rule when creating entries or
+changing their type. `pix_credit` remains deferred until its financial rules are defined.
+Bank transfer is added idempotently when creating or entering a profile, including
+existing profiles, without a schema migration or manual upgrade action.
 Legacy methods retain their associations, and recognized legacy defaults acquire
 catalog keys without replacing their identifiers or customized records.
 
@@ -52,6 +57,10 @@ note, entry type, amount, and reference date. Main preserves category, payment
 method, owner, and settlement date regardless of extra fields supplied through
 IPC. This also allows editing entries with archived categories or legacy payment
 methods without replacing their historical associations.
+Changing the entry type requires the preserved payment method to support the new
+type. The edit dialog offers compatible types only; editing other details of an
+older entry preserves its method even if that combination is no longer available
+for creation.
 
 Leaving or activating a profile resets the renderer's financial state, transaction
 draft, submission lock, and pending confirmation. Session changes invalidate

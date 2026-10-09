@@ -106,7 +106,9 @@ test('category management persists Unicode names, metadata and history with prof
       payment_date: null,
       user_id: first.profile.id,
       category_id: category.id,
-      payment_id: profiles.options().payments[0].id,
+      payment_id: profiles
+        .options()
+        .payments.find((method) => method.catalog_key === 'pix')!.id,
     };
     assert.throws(
       () => transactions.create({ ...entry, type: 1 }),
@@ -198,14 +200,16 @@ test('profiles persist locale changes, initialize once and isolate financial rec
     assert.equal(options.categories.length, 4);
     assert.deepEqual(
       options.payments.map((method) => method.catalog_key).sort(),
-      ['cash', 'credit', 'debit', 'pix'],
+      ['bank_transfer', 'cash', 'credit', 'debit', 'pix'],
     );
     const input = {
       name: 'Private entry',
       type: 2 as const,
       amount_cents: 123456,
       user_id: 999,
-      payment_id: options.payments[0].id,
+      payment_id: options.payments.find(
+        (method) => method.catalog_key === 'pix',
+      )!.id,
       category_id: options.categories[0].id,
       reference_date: '2026-10-08',
       payment_date: null,
@@ -245,7 +249,7 @@ test('profiles persist locale changes, initialize once and isolate financial rec
     profiles.enter(first.profile.id);
     profiles.enter(first.profile.id);
     assert.equal(db.select().from(categoriesTable).all().length, 8);
-    assert.equal(db.select().from(paymentsTable).all().length, 5);
+    assert.equal(db.select().from(paymentsTable).all().length, 6);
     assert.equal(profiles.options().categories.length, 3);
     const preserved = db
       .select()
@@ -360,7 +364,7 @@ test('CRUD preserves cents, category joins, month boundaries, ordering and seed 
   try {
     initializeProfile(db, input.user_id);
     assert.equal(db.select().from(usersTable).all().length, 1);
-    assert.equal(db.select().from(paymentsTable).all().length, 4);
+    assert.equal(db.select().from(paymentsTable).all().length, 5);
     assert.equal(db.select().from(categoriesTable).all().length, 4);
     service.create(input);
     service.create({ ...input, name: 'Uncategorized', category_id: null });
@@ -994,7 +998,7 @@ test('monthly income includes recorded salaries without settlement and preserves
     assert.equal(initial.balanceSeries[7].balance, 0);
     assert.equal(initial.balanceSeries[8].balance, 123.45);
 
-    for (const method of ['pix', 'cash'] as const) {
+    for (const method of ['bank_transfer', 'cash'] as const) {
       transactions.create({
         ...input,
         payment_id: options.payments.find(
@@ -1052,6 +1056,107 @@ test('monthly income includes recorded salaries without settlement and preserves
     assert.equal(statements.get('2026-10').income, 0);
     profiles.enter(profile.profile.id);
     assert.equal(statements.get('2026-10').income, 9);
+  } finally {
+    db.$client.close();
+  }
+});
+
+test('payment methods enforce income and expense compatibility while preserving historical associations', () => {
+  const db = initDb(':memory:', migrationsFolder);
+  const profiles = createProfileService(db);
+  const service = createTransactionService(db, () => profiles.requireActive());
+
+  try {
+    const profile = profiles.create({
+      name: 'Methods',
+      email: 'methods@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(profile.ok);
+    const options = profiles.options();
+    const input = {
+      name: 'Method check',
+      amount_cents: 10000,
+      reference_date: '2026-10-09',
+      payment_date: null,
+      user_id: profile.profile.id,
+      category_id: null,
+    };
+
+    for (const method of options.payments) {
+      for (const type of [1, 2] as const) {
+        const entry = { ...input, type, payment_id: method.id };
+        const allowed =
+          type === 1
+            ? ['pix', 'cash', 'bank_transfer'].includes(method.catalog_key)
+            : ['pix', 'cash', 'debit', 'credit'].includes(method.catalog_key);
+
+        if (allowed) {
+          service.create(entry);
+          const saved = service.list('2026-10')[0];
+          const changed = { ...entry, type: (type === 1 ? 2 : 1) as 1 | 2 };
+
+          if (method.catalog_key === 'pix' || method.catalog_key === 'cash') {
+            service.update(saved.id, changed);
+            assert.equal(service.get(saved.id).type, changed.type);
+          } else {
+            assert.throws(
+              () => service.update(saved.id, changed),
+              /Invalid payment/,
+            );
+            assert.equal(service.get(saved.id).type, type);
+          }
+        } else {
+          assert.throws(() => service.create(entry), /Invalid payment/);
+        }
+      }
+    }
+
+    const debit = options.payments.find(
+      (method) => method.catalog_key === 'debit',
+    )!;
+    const historical = db
+      .insert(transactionsTable)
+      .values({ ...input, type: 1, payment_id: debit.id })
+      .returning()
+      .get();
+    service.update(historical.id, {
+      ...input,
+      type: 1,
+      name: 'Historical receipt',
+    });
+    assert.equal(service.get(historical.id).payment_id, debit.id);
+    assert.equal(service.get(historical.id).name, 'Historical receipt');
+
+    // Entering an existing profile adds the new catalog method once.
+    const bank = options.payments.find(
+      (method) => method.catalog_key === 'bank_transfer',
+    )!;
+    db.delete(transactionsTable)
+      .where(eq(transactionsTable.payment_id, bank.id))
+      .run();
+    db.delete(paymentsTable).where(eq(paymentsTable.id, bank.id)).run();
+    profiles.enter(profile.profile.id);
+    profiles.enter(profile.profile.id);
+    const methods = profiles.options().payments;
+    assert.equal(methods.length, 5);
+    assert.equal(
+      methods.filter((method) => method.catalog_key === 'bank_transfer').length,
+      1,
+    );
+    assert.equal(
+      methods.find((method) => method.catalog_key === 'debit')!.id,
+      debit.id,
+    );
+    const bankId = methods.find(
+      (method) => method.catalog_key === 'bank_transfer',
+    )!.id;
+    const statements = createMonthlyStatementService(db, () =>
+      profiles.requireActive(),
+    );
+    const priorIncome = statements.get('2026-10').income;
+    service.create({ ...input, type: 1, payment_id: bankId });
+    assert.equal(statements.get('2026-10').income, priorIncome + 100);
   } finally {
     db.$client.close();
   }

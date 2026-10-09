@@ -57,7 +57,8 @@
     "pix": "PIX",
     "debit": "Cartão de débito",
     "credit": "Cartão de crédito",
-    "cash": "Dinheiro"
+    "cash": "Dinheiro",
+    "bank_transfer": "Transferência bancária"
   },
   "summary": {
     "previous": "Mês anterior",

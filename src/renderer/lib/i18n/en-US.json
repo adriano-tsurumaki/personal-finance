@@ -57,7 +57,8 @@
     "pix": "PIX",
     "debit": "Debit card",
     "credit": "Credit card",
-    "cash": "Cash"
+    "cash": "Cash",
+    "bank_transfer": "Bank transfer"
   },
   "summary": {
     "previous": "Previous month",

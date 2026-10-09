@@ -36,6 +36,7 @@ import { useAppStore } from '@store/transaction';
 import { useProfileStore } from '@store/profile';
 import { categoryLabel, getLocale, t } from '@lib/i18n';
 import type { CreateResult } from '@shared/contracts/result';
+import { paymentMethodsForType } from '@shared/lib/payment-method';
 
 export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
   const profile = useProfileStore((state) => state.activeProfile);
@@ -44,11 +45,6 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
     (state) => state.transaction.type,
   );
   const [categoryCleared, setCategoryCleared] = useState(false);
-  const types = [
-    { value: null, label: t('transactions.selectType') },
-    { value: 1, label: t('transactions.income') },
-    { value: 2, label: t('transactions.expense') },
-  ];
   const categories = [
     { value: null, label: t('transactions.selectCategory') },
     ...options.categories
@@ -67,10 +63,14 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
   ];
   const payments = [
     { value: null, label: t('transactions.selectPayment') },
-    ...options.payments.map((payment) => ({
-      value: payment.id,
-      label: t(`payments.${payment.catalog_key}`),
-    })),
+    ...options.payments
+      .filter((payment) =>
+        paymentMethodsForType(selectedType).includes(payment.catalog_key),
+      )
+      .map((payment) => ({
+        value: payment.id,
+        label: t(`payments.${payment.catalog_key}`),
+      })),
   ];
   const {
     openDialogTransaction,
@@ -109,6 +109,37 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
     payment_id: state.transaction.payment_id,
     reference_date: state.transaction.reference_date,
   }));
+  const selectedPayment = options.payments.find(
+    (payment) => payment.id === payment_id,
+  );
+  const types = [
+    { value: null, label: t('transactions.selectType') },
+    { value: 1 as const, label: t('transactions.income') },
+    { value: 2 as const, label: t('transactions.expense') },
+  ].filter(
+    (entry) =>
+      mode === 'add' ||
+      entry.value === selectedType ||
+      (entry.value !== null &&
+        selectedPayment &&
+        paymentMethodsForType(entry.value).includes(
+          selectedPayment.catalog_key,
+        )),
+  );
+
+  useEffect(() => {
+    if (
+      mode === 'add' &&
+      payment_id !== 0 &&
+      !options.payments.some(
+        (payment) =>
+          payment.id === payment_id &&
+          paymentMethodsForType(selectedType).includes(payment.catalog_key),
+      )
+    ) {
+      handleTransaction('payment_id', 0);
+    }
+  }, [mode, payment_id, selectedType, options.payments, handleTransaction]);
 
   useEffect(() => {
     if (
@@ -183,7 +214,11 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
       if (
         !profile ||
         (mode === 'add' &&
-          !options.payments.some((payment) => payment.id === payment_id))
+          !options.payments.some(
+            (payment) =>
+              payment.id === payment_id &&
+              paymentMethodsForType(type).includes(payment.catalog_key),
+          ))
       ) {
         toast.add({
           title: t('common.errorTitle'),

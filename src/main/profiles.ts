@@ -19,6 +19,7 @@ const paymentCatalog: { key: PaymentMethodKey; name: string; type: number }[] =
     { key: 'debit', name: 'Debit card', type: 1 },
     { key: 'credit', name: 'Credit card', type: 2 },
     { key: 'cash', name: 'Cash', type: 1 },
+    { key: 'bank_transfer', name: 'Bank transfer', type: 1 },
   ];
 
 /** Seeds records by stable identifiers; existing names and archived rows are preserved. */

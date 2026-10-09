@@ -7,6 +7,7 @@ import type {
 import type { AppDatabase } from './db';
 import { categoriesTable, paymentsTable, transactionsTable } from './db/schema';
 import type { CreateResult } from '@shared/contracts/result';
+import { paymentMethodsForType } from '@shared/lib/payment-method';
 
 export function createTransactionService(
   db: AppDatabase,
@@ -77,12 +78,10 @@ export function createTransactionService(
         .where(
           and(
             eq(paymentsTable.id, input.payment_id),
-            inArray(paymentsTable.catalog_key, [
-              'pix',
-              'debit',
-              'credit',
-              'cash',
-            ]),
+            inArray(
+              paymentsTable.catalog_key,
+              paymentMethodsForType(input.type),
+            ),
           ),
         )
         .get()
@@ -232,10 +231,44 @@ export function createTransactionService(
     update(id: number, input: TransactionUpdateInput): CreateResult {
       const user = getActiveUser();
       validateId(id);
+      const details = validateDetails(input);
+      const existing = db
+        .select()
+        .from(transactionsTable)
+        .where(
+          and(
+            eq(transactionsTable.id, id),
+            eq(transactionsTable.user_id, user.id),
+          ),
+        )
+        .get();
+
+      if (!existing) {
+        throw new Error('Transaction not found.');
+      }
+
+      if (
+        existing.type !== input.type &&
+        !db
+          .select({ id: paymentsTable.id })
+          .from(paymentsTable)
+          .where(
+            and(
+              eq(paymentsTable.id, existing.payment_id),
+              inArray(
+                paymentsTable.catalog_key,
+                paymentMethodsForType(input.type),
+              ),
+            ),
+          )
+          .get()
+      ) {
+        throw new Error('Invalid payment method for this transaction type.');
+      }
 
       const result = db
         .update(transactionsTable)
-        .set(validateDetails(input))
+        .set(details)
         .where(
           and(
             eq(transactionsTable.id, id),

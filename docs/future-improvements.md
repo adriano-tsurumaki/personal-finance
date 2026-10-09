@@ -21,6 +21,11 @@ The following items were checked against the working tree on 2026-09-18. They ar
       the form loads persisted profile options through IPC, submits the active profile,
       and selects catalog methods. Main derives ownership from the active profile;
       database tests verify cross-profile isolation and catalog validation.
+- [x] Filter payment methods by transaction type (verified 2026-10-09): income
+      accepts PIX, cash, and bank transfer; expenses accept PIX, cash, debit, and
+      credit. The form clears incompatible selections. SQLite tests cover main
+      validation on creation and type changes, historical associations, automatic
+      catalog initialization for existing profiles, and bank-transfer summaries.
 - [x] Use the reference date in the transaction form (verified 2026-10-08):
       the date picker and submitted input update `reference_date`. New entries have
       `payment_date: null`; editing preserves the existing settlement date. The
