@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import type { AppDatabase } from './db';
 import type { MonthlyStatementDto } from '@shared/contracts/monthly-statement';
+import { getDaysInMonth } from '@shared/lib/calendar';
 
 interface DailyCashFlow {
   date: string;
@@ -89,22 +90,7 @@ export function createMonthlyStatementService(
           GROUP BY date ORDER BY date
         `);
         const days = new Map(rows.map((row) => [row.date, row]));
-        const leapYear =
-          year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
-        const dayCount = [
-          31,
-          leapYear ? 29 : 28,
-          31,
-          30,
-          31,
-          30,
-          31,
-          31,
-          30,
-          31,
-          30,
-          31,
-        ][month - 1];
+        const dayCount = getDaysInMonth(year, month);
         let income = 0;
         let expense = 0;
         let transactionCount = 0;
