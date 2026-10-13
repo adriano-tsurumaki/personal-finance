@@ -89,7 +89,7 @@ export default function TimelineEntryRow({
                 variant="ghost"
                 size="icon-xs"
                 className="text-muted-foreground hover:bg-secondary"
-                aria-label={t('transactions.editLabel', { name: entry.name })}
+                aria-label={t('transactions.edit_label', { name: entry.name })}
                 title={t('transactions.edit')}
                 onClick={onEdit}
                 disabled={disabled}
@@ -101,7 +101,7 @@ export default function TimelineEntryRow({
                 variant="ghost"
                 size="icon-xs"
                 className="text-muted-foreground hover:bg-secondary hover:text-expense"
-                aria-label={t('transactions.removeLabel', { name: entry.name })}
+                aria-label={t('transactions.remove_label', { name: entry.name })}
                 title={t('transactions.remove')}
                 onClick={onRemove}
                 disabled={disabled}

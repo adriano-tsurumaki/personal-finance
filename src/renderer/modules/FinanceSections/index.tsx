@@ -30,7 +30,7 @@ export default function FinanceSections() {
               </TabsTrigger>
               <TabsTrigger value="categories">
                 <Tags aria-hidden="true" />
-                {t('categoryManager.title')}
+                {t('category_manager.title')}
               </TabsTrigger>
               {deferredSections.map(({ id, label, icon: Icon }) => (
                 <TabsTrigger key={id} value={id}>

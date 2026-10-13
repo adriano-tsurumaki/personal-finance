@@ -134,7 +134,11 @@ Prefer names that express responsibility, such as `ProgressBadgeProps` and `Read
 
 Keep renderer translation catalogs in `src/renderer/lib/i18n`, grouped by locale.
 Organize each JSON catalog with nested properties by feature or responsibility,
-rather than top-level properties containing dots. Translation calls use dotted
+rather than top-level properties containing dots. Every property name must
+use lowercase `snake_case`, including namespace keys and plural suffixes. For
+example, use `reading.empty_state` rather than `reading.emptyState`.
+Keep action labels distinct from history-event labels when their meanings differ.
+Translation calls use dotted
 paths to address leaf strings; for example, the fictional `t('reading.title')`
 resolves the `title` property inside the `reading` object. Derive valid paths from
 the reference catalog and verify that locale catalogs have matching leaf paths

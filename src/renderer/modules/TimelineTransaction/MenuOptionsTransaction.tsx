@@ -45,8 +45,8 @@ export default function MenuOptionsTransaction({
 
       console.error('Failed to load transaction:', error);
       toast.add({
-        title: t('common.errorTitle'),
-        description: t('transactions.loadError'),
+        title: t('common.error_title'),
+        description: t('transactions.load_error'),
       });
     }
   };
@@ -63,7 +63,7 @@ export default function MenuOptionsTransaction({
 
     try {
       const confirmed = await confirmation.confirm({
-        title: t('transactions.confirmRemove'),
+        title: t('transactions.confirm_remove'),
         description: t('transactions.irreversible'),
         confirmLabel: t('common.remove'),
         destructive: true,
@@ -93,8 +93,8 @@ export default function MenuOptionsTransaction({
           error,
         );
         toast.add({
-          title: t('transactions.removedTitle'),
-          description: t('transactions.refreshError'),
+          title: t('transactions.removed_title'),
+          description: t('transactions.refresh_error'),
         });
         return;
       }
@@ -114,8 +114,8 @@ export default function MenuOptionsTransaction({
 
       console.error('Failed to remove transaction:', error);
       toast.add({
-        title: t('common.errorTitle'),
-        description: t('transactions.removeError'),
+        title: t('common.error_title'),
+        description: t('transactions.remove_error'),
       });
     } finally {
       isRemoving.current = false;

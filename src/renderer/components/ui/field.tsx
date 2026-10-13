@@ -249,7 +249,7 @@ function FieldMoney({
     draft && Object.is(draft.money, money) ? draft.text : formattedMoney;
   const invalidInput = !Number.isFinite(money);
   const inputError =
-    error ?? (invalidInput ? t('transactions.invalidAmount') : undefined);
+    error ?? (invalidInput ? t('transactions.invalid_amount') : undefined);
   const describedBy =
     [
       showCurrencySymbol && currencySymbol ? `${inputId}-currency` : null,

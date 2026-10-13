@@ -46,7 +46,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
   );
   const [categoryCleared, setCategoryCleared] = useState(false);
   const categories = [
-    { value: null, label: t('transactions.selectCategory') },
+    { value: null, label: t('transactions.select_category') },
     ...options.categories
       .filter(
         (category) =>
@@ -62,7 +62,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
       })),
   ];
   const payments = [
-    { value: null, label: t('transactions.selectPayment') },
+    { value: null, label: t('transactions.select_payment') },
     ...options.payments
       .filter((payment) =>
         paymentMethodsForType(selectedType).includes(payment.catalog_key),
@@ -113,7 +113,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
     (payment) => payment.id === payment_id,
   );
   const types = [
-    { value: null, label: t('transactions.selectType') },
+    { value: null, label: t('transactions.select_type') },
     { value: 1 as const, label: t('transactions.income') },
     { value: 2 as const, label: t('transactions.expense') },
   ].filter(
@@ -181,8 +181,8 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
       if (type !== 1 && type !== 2) {
         console.error('Invalid transaction type:', type);
         toast.add({
-          title: t('common.errorTitle'),
-          description: t('transactions.invalidType'),
+          title: t('common.error_title'),
+          description: t('transactions.invalid_type'),
         });
         return;
       }
@@ -194,8 +194,8 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
       ) {
         console.error('Invalid category:', category_id);
         toast.add({
-          title: t('common.errorTitle'),
-          description: t('transactions.invalidCategory'),
+          title: t('common.error_title'),
+          description: t('transactions.invalid_category'),
         });
         return;
       }
@@ -203,8 +203,8 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
       if (!reference_date) {
         console.error('Invalid reference date:', reference_date);
         toast.add({
-          title: t('common.errorTitle'),
-          description: t('transactions.invalidDate'),
+          title: t('common.error_title'),
+          description: t('transactions.invalid_date'),
         });
         return;
       }
@@ -221,8 +221,8 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
           ))
       ) {
         toast.add({
-          title: t('common.errorTitle'),
-          description: t('transactions.invalidPayment'),
+          title: t('common.error_title'),
+          description: t('transactions.invalid_payment'),
         });
         return;
       }
@@ -233,8 +233,8 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
         !name.trim()
       ) {
         toast.add({
-          title: t('common.errorTitle'),
-          description: t('transactions.saveError'),
+          title: t('common.error_title'),
+          description: t('transactions.save_error'),
         });
         return;
       }
@@ -271,8 +271,8 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
 
       if (!result.ok) {
         toast.add({
-          title: t('common.errorTitle'),
-          description: t('transactions.saveError'),
+          title: t('common.error_title'),
+          description: t('transactions.save_error'),
         });
         return;
       }
@@ -294,7 +294,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
         );
         toast.add({
           title: t('transactions.saved'),
-          description: t('transactions.refreshError'),
+          description: t('transactions.refresh_error'),
         });
         return;
       }
@@ -315,8 +315,8 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
 
       console.error('Failed to create transaction:', error);
       toast.add({
-        title: t('common.errorTitle'),
-        description: t('transactions.saveError'),
+        title: t('common.error_title'),
+        description: t('transactions.save_error'),
       });
     } finally {
       finishSubmission(saved, submissionId);
@@ -368,7 +368,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
             {t(
               mode === 'add'
                 ? 'transactions.description'
-                : 'transactions.editDescription',
+                : 'transactions.edit_description',
             )}
           </DialogDescription>
         </DialogHeader>
@@ -379,7 +379,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
               <Input
                 id="title"
                 autoComplete="off"
-                placeholder={t('transactions.namePlaceholder')}
+                placeholder={t('transactions.name_placeholder')}
                 value={name}
                 onChange={(e) => handleTransaction('name', e.target.value)}
               />
@@ -454,7 +454,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                   </Select>
                   {categoryCleared && (
                     <p role="status" className="text-xs text-muted-foreground">
-                      {t('categoryManager.incompatible')}
+                      {t('category_manager.incompatible')}
                     </p>
                   )}
                   {options.categories.find(
@@ -481,7 +481,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                       value ? format(value, 'yyyy-MM-dd') : '',
                     )
                   }
-                  placeholder={t('transactions.pickDate')}
+                  placeholder={t('transactions.pick_date')}
                 />
               </Field>
             </div>
@@ -513,7 +513,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                 {options.payments.find((payment) => payment.id === payment_id)
                   ?.catalog_key === 'credit' && (
                   <p className="text-xs text-muted-foreground">
-                    {t('transactions.creditHint')}
+                    {t('transactions.credit_hint')}
                   </p>
                 )}
               </Field>
@@ -527,7 +527,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                   handleTransaction('note', event.target.value)
                 }
                 autoComplete="off"
-                placeholder={t('transactions.notePlaceholder')}
+                placeholder={t('transactions.note_placeholder')}
               />
             </Field>
           </FieldGroup>

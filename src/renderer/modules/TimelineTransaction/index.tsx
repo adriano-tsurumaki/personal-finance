@@ -60,7 +60,7 @@ export default function TimelineTransaction() {
         <div className="rounded-lg border border-dashed border-border p-6 text-center">
           <h3 className="text-sm font-medium">{t('transactions.empty')}</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            {t('transactions.emptyHint')}
+            {t('transactions.empty_hint')}
           </p>
         </div>
       ) : (

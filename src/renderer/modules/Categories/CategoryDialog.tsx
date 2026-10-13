@@ -54,7 +54,7 @@ export default function CategoryDialog({
     'both',
   ].map((value) => ({
     value: value as CategoryTransactionType,
-    label: t(`categoryManager.${value as CategoryTransactionType}`),
+    label: t(`category_manager.${value as CategoryTransactionType}`),
   }));
   const previewName =
     category && input.name === category.name
@@ -78,9 +78,11 @@ export default function CategoryDialog({
       <DialogContent size="lg" showCloseButton={!busy} finalFocus={returnFocus}>
         <DialogHeader>
           <DialogTitle>
-            {t(category ? 'categoryManager.edit' : 'categoryManager.add')}
+            {t(category ? 'category_manager.edit' : 'category_manager.add')}
           </DialogTitle>
-          <DialogDescription>{t('categoryManager.formHint')}</DialogDescription>
+          <DialogDescription>
+            {t('category_manager.form_hint')}
+          </DialogDescription>
         </DialogHeader>
         <form
           onSubmit={(event) => {
@@ -92,7 +94,7 @@ export default function CategoryDialog({
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="category-name">
-                  {t('categoryManager.name')}
+                  {t('category_manager.name')}
                 </FieldLabel>
                 <Input
                   id="category-name"
@@ -103,12 +105,12 @@ export default function CategoryDialog({
                   onChange={(event) =>
                     setInput({ ...input, name: event.target.value })
                   }
-                  placeholder={t('categoryManager.namePlaceholder')}
+                  placeholder={t('category_manager.name_placeholder')}
                 />
               </Field>
               <Field>
                 <FieldLabel htmlFor="category-description">
-                  {t('categoryManager.description')}
+                  {t('category_manager.description')}
                 </FieldLabel>
                 <Input
                   id="category-description"
@@ -117,13 +119,13 @@ export default function CategoryDialog({
                   onChange={(event) =>
                     setInput({ ...input, description: event.target.value })
                   }
-                  placeholder={t('categoryManager.descriptionPlaceholder')}
+                  placeholder={t('category_manager.description_placeholder')}
                 />
               </Field>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field>
                   <FieldLabel htmlFor="category-color">
-                    {t('categoryManager.color')}
+                    {t('category_manager.color')}
                   </FieldLabel>
                   <Input
                     id="category-color"
@@ -140,7 +142,7 @@ export default function CategoryDialog({
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="category-type">
-                    {t('categoryManager.type')}
+                    {t('category_manager.type')}
                   </FieldLabel>
                   <Select
                     items={types}
@@ -165,11 +167,11 @@ export default function CategoryDialog({
                 </Field>
               </div>
               <Field>
-                <FieldLabel>{t('categoryManager.icon')}</FieldLabel>
+                <FieldLabel>{t('category_manager.icon')}</FieldLabel>
                 <div
                   className="grid grid-cols-4 gap-2 sm:grid-cols-6"
                   role="group"
-                  aria-label={t('categoryManager.icon')}
+                  aria-label={t('category_manager.icon')}
                 >
                   {categoryIconKeys.map((key) => {
                     const OptionIcon = getCategoryIcon(key);
@@ -180,8 +182,8 @@ export default function CategoryDialog({
                         size="icon"
                         variant="outline"
                         className={`w-full ${input.icon_key === key ? 'border-primary bg-primary/10 text-primary' : 'text-muted-foreground'}`}
-                        aria-label={t(`categoryManager.icons.${key}`)}
-                        title={t(`categoryManager.icons.${key}`)}
+                        aria-label={t(`category_manager.icons.${key}`)}
+                        title={t(`category_manager.icons.${key}`)}
                         aria-pressed={input.icon_key === key}
                         onClick={() => setInput({ ...input, icon_key: key })}
                       >
@@ -193,7 +195,7 @@ export default function CategoryDialog({
               </Field>
               <div
                 className="flex items-center gap-3 rounded-lg border border-border bg-background p-4"
-                aria-label={t('categoryManager.preview')}
+                aria-label={t('category_manager.preview')}
               >
                 <span
                   className="flex size-9 shrink-0 items-center justify-center rounded-full border"
@@ -207,10 +209,10 @@ export default function CategoryDialog({
                 </span>
                 <div className="min-w-0">
                   <p className="wrap-break-words text-sm font-medium">
-                    {previewName.trim() || t('categoryManager.preview')}
+                    {previewName.trim() || t('category_manager.preview')}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {t(`categoryManager.${input.transaction_type}`)}
+                    {t(`category_manager.${input.transaction_type}`)}
                   </p>
                 </div>
               </div>
@@ -226,7 +228,7 @@ export default function CategoryDialog({
               {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={busy || !input.name.trim()}>
-              {t(busy ? 'transactions.saving' : 'categoryManager.save')}
+              {t(busy ? 'transactions.saving' : 'category_manager.save')}
             </Button>
           </DialogFooter>
         </form>

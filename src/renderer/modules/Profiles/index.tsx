@@ -142,15 +142,15 @@ export default function Profiles() {
               >
                 {t(
                   screen === 'create'
-                    ? 'profiles.createTitle'
-                    : 'profiles.signInTitle',
+                    ? 'profiles.create_title'
+                    : 'profiles.sign_in_title',
                 )}
               </h1>
               <p className="mt-2 text-sm text-pretty text-muted-foreground">
                 {t(
                   screen === 'create'
-                    ? 'profiles.createDescription'
-                    : 'profiles.signInDescription',
+                    ? 'profiles.create_description'
+                    : 'profiles.sign_in_description',
                 )}
               </p>
             </div>
@@ -175,7 +175,7 @@ export default function Profiles() {
                         maxLength={100}
                         value={name}
                         onChange={(event) => setName(event.target.value)}
-                        placeholder={t('profiles.namePlaceholder')}
+                        placeholder={t('profiles.name_placeholder')}
                       />
                     </Field>
                     <Field>
@@ -190,7 +190,7 @@ export default function Profiles() {
                         maxLength={254}
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
-                        placeholder={t('profiles.emailPlaceholder')}
+                        placeholder={t('profiles.email_placeholder')}
                       />
                     </Field>
                     <fieldset aria-describedby="language-hint">
@@ -226,7 +226,7 @@ export default function Profiles() {
                         id="language-hint"
                         className="mt-2 text-xs text-pretty text-muted-foreground"
                       >
-                        {t('profiles.languageHint')}
+                        {t('profiles.language_hint')}
                       </p>
                     </fieldset>
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background/60 p-3">
@@ -240,7 +240,7 @@ export default function Profiles() {
                       </div>
                       <div className="text-right text-xs text-muted-foreground">
                         <p>BRL</p>
-                        <p className="mt-1">{t('profiles.currencyHint')}</p>
+                        <p className="mt-1">{t('profiles.currency_hint')}</p>
                       </div>
                     </div>
                     <div className="flex gap-2 text-xs text-muted-foreground">
@@ -253,7 +253,7 @@ export default function Profiles() {
                           {t('profiles.defaults')}
                         </p>
                         <p className="mt-1 text-pretty">
-                          {t('profiles.defaultsHint')}
+                          {t('profiles.defaults_hint')}
                         </p>
                       </div>
                     </div>
@@ -296,10 +296,10 @@ export default function Profiles() {
                 ) : (
                   <div className="rounded-lg border border-dashed border-border p-6 text-center">
                     <p className="text-sm font-medium">
-                      {t('profiles.noProfiles')}
+                      {t('profiles.no_profiles')}
                     </p>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      {t('profiles.noProfilesHint')}
+                      {t('profiles.no_profiles_hint')}
                     </p>
                   </div>
                 )}
@@ -343,7 +343,7 @@ export default function Profiles() {
                     disabled={pending}
                   >
                     <ArrowLeft aria-hidden="true" />
-                    {t('profiles.signIn')}
+                    {t('profiles.sign_in')}
                   </Button>
                 </>
               ) : (
@@ -361,7 +361,7 @@ export default function Profiles() {
         )}
       </div>
       <p className="text-center text-xs text-muted-foreground">
-        {t('profiles.localHint')}
+        {t('profiles.local_hint')}
       </p>
     </div>
   );

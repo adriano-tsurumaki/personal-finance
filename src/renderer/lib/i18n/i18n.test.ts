@@ -27,6 +27,10 @@ test('catalogs stay aligned and both locales display the same BRL amounts', () =
   );
 
   for (const [key, value] of englishEntries) {
+    for (const segment of key.split('.')) {
+      assert.match(segment, /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/);
+    }
+
     assert.ok(value.trim());
     assert.ok(portugueseEntries.get(key)!.trim());
     assert.deepEqual(

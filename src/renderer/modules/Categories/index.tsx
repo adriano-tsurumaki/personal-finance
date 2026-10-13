@@ -73,8 +73,8 @@ export default function Categories() {
 
       if (!result.ok) {
         toast.add({
-          title: t('common.errorTitle'),
-          description: t(`categoryManager.${result.error}`),
+          title: t('common.error_title'),
+          description: t(`category_manager.${result.error}`),
         });
         return;
       }
@@ -82,7 +82,7 @@ export default function Categories() {
       saved = true;
       toast.add({
         title: t('common.success'),
-        description: t('categoryManager.saved'),
+        description: t('category_manager.saved'),
       });
       try {
         const options = await window.api.getProfileOptions();
@@ -96,15 +96,15 @@ export default function Categories() {
       } catch {
         if (current()) {
           toast.add({
-            title: t('common.errorTitle'),
-            description: t('categoryManager.refreshError'),
+            title: t('common.error_title'),
+            description: t('category_manager.refresh_error'),
           });
         }
       }
     } catch {
       if (current()) {
         toast.add({
-          title: t('common.errorTitle'),
+          title: t('common.error_title'),
           description: t('common.error'),
         });
       }
@@ -123,11 +123,11 @@ export default function Categories() {
 
   async function archive(category: CategoryDto) {
     const confirmed = await confirmation.confirm({
-      title: t('categoryManager.confirmArchive', {
+      title: t('category_manager.confirm_archive', {
         name: categoryLabel(category),
       }),
-      description: t('categoryManager.archiveHint'),
-      confirmLabel: t('categoryManager.archive'),
+      description: t('category_manager.archive_hint'),
+      confirmLabel: t('category_manager.archive'),
     });
 
     if (confirmed && current()) {
@@ -146,7 +146,7 @@ export default function Categories() {
           className="flex items-center gap-2 text-sm font-medium text-primary"
         >
           <Tags className="size-4" aria-hidden="true" />
-          {t('categoryManager.title')}
+          {t('category_manager.title')}
         </h2>
         <Button
           disabled={busy}
@@ -156,11 +156,11 @@ export default function Categories() {
           }}
         >
           <Plus aria-hidden="true" />
-          {t('categoryManager.add')}
+          {t('category_manager.add')}
         </Button>
       </div>
       <p className="mb-5 text-sm text-muted-foreground">
-        {t('categoryManager.hint')}
+        {t('category_manager.hint')}
       </p>
       {loading && categories.length === 0 ? (
         <p role="status">{t('common.loading')}</p>
@@ -173,7 +173,7 @@ export default function Categories() {
         </div>
       ) : categories.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-          {t('categoryManager.empty')}
+          {t('category_manager.empty')}
         </p>
       ) : (
         <ul className="space-y-2">
@@ -199,9 +199,9 @@ export default function Categories() {
                     {categoryLabel(category)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {t(`categoryManager.${category.transaction_type}`)}
+                    {t(`category_manager.${category.transaction_type}`)}
                     {category.archived_at &&
-                      ` · ${t('categoryManager.archived')}`}
+                      ` · ${t('category_manager.archived')}`}
                   </p>
                   {category.description && (
                     <p className="mt-1 wrap-break-words text-xs text-muted-foreground">
@@ -213,7 +213,7 @@ export default function Categories() {
                   size="icon-sm"
                   variant="ghost"
                   disabled={busy}
-                  aria-label={t('categoryManager.editLabel', {
+                  aria-label={t('category_manager.edit_label', {
                     name: categoryLabel(category),
                   })}
                   onClick={(event) => {
@@ -228,7 +228,7 @@ export default function Categories() {
                     size="icon-sm"
                     variant="ghost"
                     disabled={busy}
-                    aria-label={t('categoryManager.archiveLabel', {
+                    aria-label={t('category_manager.archive_label', {
                       name: categoryLabel(category),
                     })}
                     onClick={() => void archive(category)}

@@ -101,7 +101,7 @@ export default function ProfileHeader() {
                     className="mt-2 flex w-full cursor-default items-center gap-2 rounded-md px-2 py-2 outline-none data-highlighted:bg-muted data-highlighted:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50"
                   >
                     <Globe className="size-4" aria-hidden="true" />
-                    {t('profiles.changeLanguage')}
+                    {t('profiles.change_language')}
                     <ChevronRight
                       className="ml-auto size-4"
                       aria-hidden="true"
@@ -154,7 +154,7 @@ export default function ProfileHeader() {
                   className="mt-2 flex cursor-default items-center gap-2 rounded-md px-2 py-2 outline-none data-highlighted:bg-muted data-highlighted:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50"
                 >
                   <LogOut className="size-4" aria-hidden="true" />
-                  {t('profiles.signOut')}
+                  {t('profiles.sign_out')}
                 </Menu.Item>
                 {error && (
                   <p
