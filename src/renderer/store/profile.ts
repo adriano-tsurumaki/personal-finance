@@ -6,6 +6,7 @@ import { useAppStore } from './transaction';
 import { dialogTransactionStore } from './dialog-transaction';
 import { confirmation } from './confirmation';
 import { toast } from '@components/ui/toast';
+import { creditCardStore } from './credit-cards';
 
 interface ProfileState {
   activeProfile: UserDto | null;
@@ -17,6 +18,7 @@ interface ProfileState {
 }
 
 function resetProfileData() {
+  creditCardStore.getState().reset();
   useAppStore.getState().reset();
   dialogTransactionStore.getState().resetSession();
   confirmation.respond(false);

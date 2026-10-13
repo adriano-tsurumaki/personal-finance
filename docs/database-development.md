@@ -56,6 +56,15 @@ for category changes. Legacy category names that conflict under this comparison
 must be corrected before migration; no names or associations are silently changed.
 The category migration adds columns in place to preserve foreign-key references.
 
+The card billing migration also adds columns in place. Existing card settings
+and invoice opening/inclusion metadata remain unknown (`NULL`); historical
+invoice amounts, dates, IDs, and associations are preserved. Legacy totals use
+the statement source and are never automatically replaced with item sums.
+A unique card/closing-date index rejects duplicate historical invoice periods.
+Review such conflicts before upgrading; migration failure rolls back and never
+merges or deletes invoices. Card correction snapshots are saved atomically with
+their financial mutations in `credit_card_history`.
+
 ## Existing databases
 
 The initial migration deliberately uses `CREATE TABLE IF NOT EXISTS` so that it

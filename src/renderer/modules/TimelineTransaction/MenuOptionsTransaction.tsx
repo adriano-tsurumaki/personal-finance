@@ -11,6 +11,8 @@ import { confirmation } from '@store/confirmation';
 import { useAppStore } from '@store/transaction';
 import { useProfileStore } from '@store/profile';
 import { useRef } from 'react';
+import { creditCardStore } from '@store/credit-cards';
+import { confirmCardCorrection } from '@lib/card-corrections';
 
 interface TransactionActions {
   onEdit: () => Promise<void>;
@@ -73,7 +75,20 @@ export default function MenuOptionsTransaction({
         return;
       }
 
-      await window.api.deleteTransaction(transactionId);
+      const plan = await window.api.previewTransactionDeletion(transactionId);
+
+      if (!isCurrentSession()) {
+        return;
+      }
+
+      if (
+        plan.changes.length &&
+        (!(await confirmCardCorrection(plan)) || !isCurrentSession())
+      ) {
+        return;
+      }
+
+      await window.api.deleteTransaction(transactionId, plan.token);
 
       if (!isCurrentSession()) {
         return;
@@ -82,7 +97,11 @@ export default function MenuOptionsTransaction({
       const { loadTransactions, loadMonthlyStatement } = useAppStore.getState();
 
       try {
-        await Promise.all([loadTransactions(), loadMonthlyStatement()]);
+        await Promise.all([
+          loadTransactions(),
+          loadMonthlyStatement(),
+          creditCardStore.getState().refresh(),
+        ]);
       } catch (error) {
         if (!isCurrentSession()) {
           return;

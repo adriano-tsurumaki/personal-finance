@@ -1,3 +1,4 @@
+import { Checkbox } from '@components/ui/checkbox';
 import { useEffect, useState } from 'react';
 import { Spinner } from '@components/ui/spinner';
 import { Button } from '@components/ui/button';
@@ -9,11 +10,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@components/ui/dialog';
 import {
   Field,
   FieldDatePicker,
+  FieldContent,
+  FieldTitle,
+  FieldDescription,
   FieldGroup,
   FieldLabel,
   FieldMoney,
@@ -31,12 +34,22 @@ import {
 import { toast } from '@components/ui/toast';
 import { Pencil, Plus, X } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import { useDialogTransactionStore } from '@store/dialog-transaction';
+import {
+  dialogTransactionStore,
+  useDialogTransactionStore,
+} from '@store/dialog-transaction';
 import { useAppStore } from '@store/transaction';
 import { useProfileStore } from '@store/profile';
 import { categoryLabel, getLocale, t } from '@lib/i18n';
 import type { CreateResult } from '@shared/contracts/result';
 import { paymentMethodsForType } from '@shared/lib/payment-method';
+import { creditCardStore, useCreditCardStore } from '@store/credit-cards';
+import { cardDate, confirmCardCorrection } from '@lib/card-corrections';
+import CardDialog from '@modules/CreditCards/CardDialog';
+import type {
+  InvoiceDto,
+  InvoicePeriodDto,
+} from '@shared/contracts/credit-cards';
 
 export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
   const profile = useProfileStore((state) => state.activeProfile);
@@ -45,6 +58,22 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
     (state) => state.transaction.type,
   );
   const [categoryCleared, setCategoryCleared] = useState(false);
+  const cards = useCreditCardStore((state) => state.cards);
+  const [cardEditor, setCardEditor] = useState(false);
+  const [cardInvoices, setCardInvoices] = useState<InvoiceDto[]>([]);
+  const [suggestedPeriod, setSuggestedPeriod] =
+    useState<InvoicePeriodDto | null>(null);
+  const [cardLoading, setCardLoading] = useState(false);
+  const [cardFailed, setCardFailed] = useState(false);
+  const cardId = useDialogTransactionStore(
+    (state) => state.transaction.card_id ?? null,
+  );
+  const invoiceId = useDialogTransactionStore(
+    (state) => state.transaction.credit_card_invoice_id ?? null,
+  );
+  const historical_card = useDialogTransactionStore(
+    (state) => state.transaction.historical_card ?? false,
+  );
   const categories = [
     { value: null, label: t('transactions.select_category') },
     ...options.categories
@@ -112,8 +141,61 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
   const selectedPayment = options.payments.find(
     (payment) => payment.id === payment_id,
   );
+  const isCredit = selectedPayment?.catalog_key === 'credit';
+
+  useEffect(() => {
+    if (isOpen && mode === 'add') {
+      void creditCardStore.getState().refresh();
+    }
+  }, [isOpen, mode]);
+
+  useEffect(() => {
+    let active = true;
+    setCardInvoices([]);
+    setSuggestedPeriod(null);
+    setCardFailed(false);
+
+    if (isOpen && cardId !== null) {
+      setCardLoading(true);
+      void Promise.all([
+        window.api.getCardInvoices(cardId),
+        reference_date
+          ? window.api
+              .suggestInvoicePeriod(cardId, reference_date)
+              .catch(() => null)
+          : null,
+      ])
+        .then(([rows, period]) => {
+          if (active) {
+            setCardInvoices(rows);
+            setSuggestedPeriod(period);
+          }
+        })
+        .catch(() => {
+          if (active) {
+            setCardFailed(true);
+          }
+        })
+        .finally(() => {
+          if (active) {
+            setCardLoading(false);
+          }
+        });
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [isOpen, cardId, reference_date]);
+
+  useEffect(() => {
+    if (isOpen && mode === 'add' && !isCredit && cardId !== null) {
+      handleTransaction('card_id', null);
+      handleTransaction('credit_card_invoice_id', null);
+      handleTransaction('historical_card', false);
+    }
+  }, [isOpen, isCredit, mode, cardId, handleTransaction]);
   const types = [
-    { value: null, label: t('transactions.select_type') },
     { value: 1 as const, label: t('transactions.income') },
     { value: 2 as const, label: t('transactions.expense') },
   ].filter(
@@ -129,6 +211,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
 
   useEffect(() => {
     if (
+      isOpen &&
       mode === 'add' &&
       payment_id !== 0 &&
       !options.payments.some(
@@ -139,10 +222,18 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
     ) {
       handleTransaction('payment_id', 0);
     }
-  }, [mode, payment_id, selectedType, options.payments, handleTransaction]);
+  }, [
+    isOpen,
+    mode,
+    payment_id,
+    selectedType,
+    options.payments,
+    handleTransaction,
+  ]);
 
   useEffect(() => {
     if (
+      isOpen &&
       mode === 'add' &&
       category_id !== null &&
       !categories.some((category) => category.value === category_id)
@@ -250,19 +341,62 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
       let result: CreateResult;
 
       if (mode === 'add') {
-        result = await window.api.createTransaction({
+        const input = {
           ...details,
           category_id,
           payment_id,
           user_id: profile.id,
           payment_date: null,
-        });
+          card_id: isCredit ? cardId : null,
+          credit_card_invoice_id: isCredit ? invoiceId : null,
+          historical_card,
+        };
+
+        if (isCredit) {
+          const plan = await window.api.previewTransactionCreation(input);
+
+          if (
+            !isCurrentSubmission(submissionId) ||
+            !plan ||
+            !(await confirmCardCorrection(plan)) ||
+            !isCurrentSubmission(submissionId)
+          ) {
+            return;
+          }
+
+          result = await window.api.createTransaction({
+            ...input,
+            correction_token: plan.token,
+          });
+        } else {
+          result = await window.api.createTransaction(input);
+        }
       } else {
         if (transactionId === null) {
           throw new Error('No transaction selected for editing.');
         }
 
-        result = await window.api.updateTransaction(transactionId, details);
+        if (invoiceId !== null) {
+          const plan = await window.api.previewTransactionUpdate(
+            transactionId,
+            details,
+          );
+
+          if (
+            !isCurrentSubmission(submissionId) ||
+            !(await confirmCardCorrection(plan)) ||
+            !isCurrentSubmission(submissionId)
+          ) {
+            return;
+          }
+
+          result = await window.api.updateTransaction(transactionId, {
+            ...details,
+            correction_token: plan.token,
+          });
+        } else {
+          result = await window.api.updateTransaction(transactionId, details);
+        }
       }
 
       if (!isCurrentSubmission(submissionId)) {
@@ -282,7 +416,11 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
       try {
         const { loadTransactions, loadMonthlyStatement } =
           useAppStore.getState();
-        await Promise.all([loadTransactions(), loadMonthlyStatement()]);
+        await Promise.all([
+          loadTransactions(),
+          loadMonthlyStatement(),
+          creditCardStore.getState().refresh(),
+        ]);
       } catch (error) {
         if (!isCurrentSubmission(submissionId)) {
           return;
@@ -344,17 +482,14 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
       }}
       open={isOpen}
     >
-      {mode === 'add' && (
-        <DialogTrigger
-          render={
-            <Button type="button">
-              <Plus aria-hidden="true" />
-              {t('transactions.add')}
-            </Button>
-          }
-        />
-      )}
-      <DialogContent size="lg">
+      <DialogContent
+        size="lg"
+        showCloseButton={!isSubmitting}
+        finalFocus={() => {
+          const target = dialogTransactionStore.getState().returnFocus;
+          return target?.isConnected ? target : false;
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {mode === 'add' ? (
@@ -374,6 +509,134 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
         </DialogHeader>
         <FieldSet disabled={isSubmitting}>
           <FieldGroup>
+            {mode === 'add' && isCredit && (
+              <>
+                <FieldLabel>
+                  <Field orientation="horizontal">
+                    <Checkbox
+                      id="transaction-historical"
+                      disabled={isSubmitting}
+                      checked={historical_card}
+                      onCheckedChange={(checked) => {
+                        handleTransaction('historical_card', checked);
+
+                        if (
+                          !checked &&
+                          cards.find((card) => card.id === cardId)?.archived_at
+                        ) {
+                          handleTransaction('card_id', null);
+                          handleTransaction('credit_card_invoice_id', null);
+                        }
+                      }}
+                    />
+                    <FieldContent>
+                      <FieldTitle>{t('cards.historical')}</FieldTitle>
+                    </FieldContent>
+                  </Field>
+                </FieldLabel>
+                <Field>
+                  <FieldLabel htmlFor="transaction-card">
+                    {t('cards.card')}
+                  </FieldLabel>
+
+                  <Select<number>
+                    items={cards.map((card) => ({
+                      value: card.id,
+                      label: card.name,
+                    }))}
+                    value={cardId}
+                    onValueChange={(value) => {
+                      handleTransaction('card_id', Number(value) || null);
+                      handleTransaction('credit_card_invoice_id', null);
+                    }}
+                  >
+                    <SelectTrigger id="transaction-card">
+                      <SelectValue placeholder={t('cards.select_card')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {cards
+                          .filter(
+                            (card) => historical_card || !card.archived_at,
+                          )
+                          .map((card) => (
+                            <SelectItem key={card.id} value={card.id}>
+                              {card.name}
+                              {card.archived_at
+                                ? ` (${t('cards.archived')})`
+                                : ''}
+                            </SelectItem>
+                          ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCardEditor(true)}
+                >
+                  {t('cards.new_card')}
+                </Button>
+                {cardId !== null && (
+                  <Field>
+                    <FieldLabel htmlFor="transaction-invoice">
+                      {t('cards.invoice')}
+                    </FieldLabel>
+                    <Select<number>
+                      items={[
+                        { value: null, label: t('cards.automatic') },
+                        ...cardInvoices.map((invoice) => ({
+                          value: invoice.id,
+                          label: `${cardDate(invoice.closing_date)} · #${invoice.id}`,
+                        })),
+                      ]}
+                      value={invoiceId}
+                      onValueChange={(value) => {
+                        handleTransaction(
+                          'credit_card_invoice_id',
+                          Number(value) || null,
+                        );
+                      }}
+                    >
+                      <SelectTrigger id="transaction-invoice">
+                        <SelectValue placeholder={t('cards.automatic')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value={null}>
+                            {t('cards.automatic')}
+                          </SelectItem>
+                          {cardInvoices.map((invoice) => (
+                            <SelectItem key={invoice.id} value={invoice.id}>
+                              {cardDate(invoice.closing_date)} · #{invoice.id}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+
+                    <FieldDescription>
+                      {t('cards.override_hint')}
+                    </FieldDescription>
+                  </Field>
+                )}
+                {suggestedPeriod && invoiceId === null && (
+                  <p className="text-xs text-muted-foreground">
+                    {t('cards.preview')}:{' '}
+                    {cardDate(suggestedPeriod.opening_date)} →{' '}
+                    {cardDate(suggestedPeriod.closing_date)}
+                  </p>
+                )}
+                {cardLoading && <p role="status">{t('common.loading')}</p>}
+                {cardFailed && <p role="alert">{t('cards.save_error')}</p>}
+              </>
+            )}
+            {mode === 'edit' && invoiceId !== null && (
+              <p className="text-xs text-muted-foreground">
+                {t('cards.date_correction')}
+              </p>
+            )}
             <Field>
               <FieldLabel htmlFor="title">{t('transactions.name')}</FieldLabel>
               <Input
@@ -405,7 +668,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                   onValueChange={(value) => handleTransaction('type', value)}
                 >
                   <SelectTrigger id="type">
-                    <SelectValue />
+                    <SelectValue placeholder={t('transactions.select_type')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
@@ -551,6 +814,17 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
           </Button>
         </DialogFooter>
       </DialogContent>
+      {cardEditor && (
+        <CardDialog
+          card="new"
+          onClose={() => setCardEditor(false)}
+          onSaved={async (id) => {
+            await creditCardStore.getState().refresh();
+            handleTransaction('card_id', id);
+            handleTransaction('credit_card_invoice_id', null);
+          }}
+        />
+      )}
     </Dialog>
   );
 }

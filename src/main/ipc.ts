@@ -5,6 +5,7 @@ import { createTransactionService } from './transactions';
 import { createProfileService } from './profiles';
 import { createMonthlyStatementService } from './monthly-statement';
 import { createCategoryService } from './categories';
+import { createCreditCardService } from './credit-cards';
 import type {
   TransactionInput,
   TransactionUpdateInput,
@@ -17,6 +18,7 @@ export function registerIpcHandlers(
 ): void {
   const profiles = createProfileService(db);
   const categories = createCategoryService(db, () => profiles.requireActive());
+  const cards = createCreditCardService(db, () => profiles.requireActive());
   const service = createTransactionService(db, () => profiles.requireActive());
   const statements = createMonthlyStatementService(db, () =>
     profiles.requireActive(),
@@ -30,6 +32,39 @@ export function registerIpcHandlers(
       throw new Error('Unauthorized request origin.');
     }
   }
+
+  function register<Args extends unknown[]>(
+    channel: string,
+    handler: (...args: Args) => unknown,
+  ) {
+    ipcMain.handle(channel, (event, ...args: Args) => {
+      authorize(event);
+      return handler(...args);
+    });
+  }
+
+  register('cards:list', cards.list);
+  register('cards:preview', cards.previewRegistration);
+  register('cards:create', cards.create);
+  register('cards:rename', cards.rename);
+  register('cards:archive', cards.archive);
+  register('invoices:period', cards.previewPeriod);
+  register('invoices:suggest', cards.suggestPeriod);
+  register('invoices:list', cards.invoices);
+  register('invoices:details', cards.details);
+  register('invoices:register', cards.registerInvoice);
+  register('invoices:preview-correction', cards.previewCorrection);
+  register('invoices:correct', cards.correctInvoice);
+  register('invoices:unlinked', cards.unlinked);
+  register(
+    'invoices:preview-association',
+    (id: number, input: Parameters<typeof cards.associate>[1]) =>
+      cards.associate(id, input),
+  );
+  register('invoices:associate', cards.associate);
+  register('transactions:preview-create', service.previewCreate);
+  register('transactions:preview-update', service.previewUpdate);
+  register('transactions:preview-delete', service.previewRemove);
 
   ipcMain.handle('categories:list', (event) => {
     authorize(event);
@@ -114,8 +149,8 @@ export function registerIpcHandlers(
     },
   );
 
-  ipcMain.handle('transactions:delete', (event, id: number) => {
+  ipcMain.handle('transactions:delete', (event, id: number, token?: string) => {
     authorize(event);
-    return service.remove(id);
+    return service.remove(id, token);
   });
 }

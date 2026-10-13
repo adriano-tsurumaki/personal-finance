@@ -18,6 +18,7 @@ import { createTransactionService } from '../transactions';
 import { createMonthlyStatementService } from '../monthly-statement';
 import { createProfileService, initializeProfile } from '../profiles';
 import { createCategoryService } from '../categories';
+import { createCreditCardService } from '../credit-cards';
 import type { CategoryInput } from '@shared/contracts/categories';
 import {
   categoriesTable,
@@ -850,13 +851,15 @@ test('monthly cash flow aggregates settlement dates, isolates profiles and inval
       name: 'Future receipt',
       payment_date: '2026-11-01',
     });
-    transactions.create({
-      ...input,
-      name: 'Unlinked card purchase',
-      type: 2,
-      payment_id: credit,
-      amount_cents: 80000,
-    });
+    db.insert(transactionsTable)
+      .values({
+        ...input,
+        name: 'Unlinked card purchase',
+        type: 2,
+        payment_id: credit,
+        amount_cents: 80000,
+      })
+      .run();
     const card = db
       .insert(creditCardsTable)
       .values({ name: 'Card', user_id: first.profile.id })
@@ -1092,7 +1095,23 @@ test('payment methods enforce income and expense compatibility while preserving 
             : ['pix', 'cash', 'debit', 'credit'].includes(method.catalog_key);
 
         if (allowed) {
-          service.create(entry);
+          if (method.catalog_key === 'credit') {
+            const cards = createCreditCardService(db, () =>
+              profiles.requireActive(),
+            );
+            const cardId = cards.create({
+              name: 'Payment validation',
+              closing_day: 20,
+              includes_closing_day: true,
+              due_days_after_closing: 7,
+            });
+            const creditEntry = { ...entry, card_id: cardId };
+            const plan = service.previewCreate(creditEntry)!;
+            service.create({ ...creditEntry, correction_token: plan.token });
+          } else {
+            service.create(entry);
+          }
+
           const saved = service.list('2026-10')[0];
           const changed = { ...entry, type: (type === 1 ? 2 : 1) as 1 | 2 };
 
@@ -1102,7 +1121,7 @@ test('payment methods enforce income and expense compatibility while preserving 
           } else {
             assert.throws(
               () => service.update(saved.id, changed),
-              /Invalid payment/,
+              /Invalid payment|invalid_credit_purchase/,
             );
             assert.equal(service.get(saved.id).type, type);
           }

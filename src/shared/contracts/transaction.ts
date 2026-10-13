@@ -7,6 +7,8 @@ export interface TransactionDto {
   reference_date: string;
   payment_date: string | null;
   payment_id: number;
+  credit_card_invoice_id?: number | null;
+  invoice_paid_at?: string | null;
   category: {
     id: number;
     name: string;
@@ -17,6 +19,10 @@ export interface TransactionDto {
 }
 
 export interface TransactionInput {
+  card_id?: number | null;
+  credit_card_invoice_id?: number | null;
+  historical_card?: boolean;
+  correction_token?: string;
   name: string;
   note?: string | null;
   type: 1 | 2; // 1: income, 2: expense
@@ -32,4 +38,4 @@ export interface TransactionInput {
 export type TransactionUpdateInput = Pick<
   TransactionInput,
   'name' | 'note' | 'type' | 'amount_cents' | 'reference_date'
->;
+> & { correction_token?: string };

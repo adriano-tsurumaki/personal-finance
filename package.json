@@ -20,7 +20,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/main/db/migrate.ts",
     "db:studio": "drizzle-kit studio",
-    "test:db": "tsx --test src/main/db/database.test.ts"
+    "test:db": "tsx --test src/main/db/database.test.ts src/main/db/credit-cards.test.ts src/shared/lib/calendar.test.ts"
   },
   "keywords": [],
   "author": {

@@ -10,12 +10,14 @@ import {
 } from '@components/ui/dialog';
 import { Spinner } from '@components/ui/spinner';
 import { t } from '@lib/i18n';
+import type { ReactNode } from 'react';
 
 export interface ConfirmationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   description?: string;
+  content?: ReactNode;
   /** The caller closes the dialog after the action succeeds and handles errors. */
   onConfirm: () => void;
   confirmLabel?: string;
@@ -30,6 +32,7 @@ export default function ConfirmationDialog({
   onOpenChange,
   title,
   description,
+  content,
   onConfirm,
   confirmLabel = t('common.confirm'),
   cancelLabel = t('common.cancel'),
@@ -46,12 +49,17 @@ export default function ConfirmationDialog({
         }
       }}
     >
-      <DialogContent size="sm" showCloseButton={false}>
+      <DialogContent size={content ? 'lg' : 'default'} showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
+          {description && (
+            <DialogDescription className="whitespace-pre-line">
+              {description}
+            </DialogDescription>
+          )}
         </DialogHeader>
-        <DialogFooter>
+        {content}
+        <DialogFooter className="flex-nowrap">
           <DialogClose
             render={
               <Button type="button" variant="ghost" disabled={isConfirming}>

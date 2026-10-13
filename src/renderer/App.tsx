@@ -7,6 +7,7 @@ import MonthlyFinance from '@modules/MonthlyFinance';
 import FinanceSections from '@modules/FinanceSections';
 import { Toaster } from '@components/ui/toast';
 import ConfirmationDialogHost from '@components/ConfirmationDialog/ConfirmationDialogHost';
+import TransactionDialog from '@modules/TimelineTransaction/TransactionDialog';
 
 function FinanceHome() {
   const init = useAppStore((state) => state.init);
@@ -20,6 +21,8 @@ function FinanceHome() {
     <>
       <MonthlyFinance />
       <FinanceSections />
+      <TransactionDialog mode="add" />
+      <TransactionDialog mode="edit" />
       <ConfirmationDialogHost />
     </>
   );

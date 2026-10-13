@@ -1,6 +1,35 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+  getCreditCards: () => ipcRenderer.invoke('cards:list'),
+  previewCreditCard: (input, month) =>
+    ipcRenderer.invoke('cards:preview', input, month),
+  suggestInvoicePeriod: (id, date) =>
+    ipcRenderer.invoke('invoices:suggest', id, date),
+  createCreditCard: (input) => ipcRenderer.invoke('cards:create', input),
+  renameCreditCard: (id, name) => ipcRenderer.invoke('cards:rename', id, name),
+  archiveCreditCard: (id) => ipcRenderer.invoke('cards:archive', id),
+  previewInvoicePeriod: (id, month) =>
+    ipcRenderer.invoke('invoices:period', id, month),
+  getCardInvoices: (id) => ipcRenderer.invoke('invoices:list', id),
+  getInvoiceDetails: (id) => ipcRenderer.invoke('invoices:details', id),
+  registerInvoice: (id, input) =>
+    ipcRenderer.invoke('invoices:register', id, input),
+  previewInvoiceCorrection: (id, input) =>
+    ipcRenderer.invoke('invoices:preview-correction', id, input),
+  correctInvoice: (id, input, token) =>
+    ipcRenderer.invoke('invoices:correct', id, input, token),
+  getUnlinkedCreditEntries: () => ipcRenderer.invoke('invoices:unlinked'),
+  previewInvoiceAssociation: (id, input) =>
+    ipcRenderer.invoke('invoices:preview-association', id, input),
+  associateInvoice: (id, input, token) =>
+    ipcRenderer.invoke('invoices:associate', id, input, token),
+  previewTransactionCreation: (input) =>
+    ipcRenderer.invoke('transactions:preview-create', input),
+  previewTransactionUpdate: (id, input) =>
+    ipcRenderer.invoke('transactions:preview-update', id, input),
+  previewTransactionDeletion: (id) =>
+    ipcRenderer.invoke('transactions:preview-delete', id),
   getCategories: () => ipcRenderer.invoke('categories:list'),
   createCategory: (input) => ipcRenderer.invoke('categories:create', input),
   updateCategory: (id, input) =>
@@ -22,7 +51,8 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('transactions:create', input),
   updateTransaction: (id, input) =>
     ipcRenderer.invoke('transactions:update', id, input),
-  deleteTransaction: (id) => ipcRenderer.invoke('transactions:delete', id),
+  deleteTransaction: (id, token) =>
+    ipcRenderer.invoke('transactions:delete', id, token),
 });
 
 contextBridge.exposeInMainWorld('desktopWindow', {

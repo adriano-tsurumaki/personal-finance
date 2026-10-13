@@ -1,4 +1,15 @@
 import type { MonthlyStatementDto } from './monthly-statement';
+import type {
+  CardCorrectionPreview,
+  CreditCardDto,
+  CreditCardInput,
+  InvoiceAssociationInput,
+  InvoiceDetailsDto,
+  InvoiceDto,
+  InvoiceInput,
+  InvoicePeriodDto,
+  UnlinkedCreditEntryDto,
+} from './credit-cards';
 import type { CreateResult } from './result';
 import type {
   TransactionDto,
@@ -19,6 +30,45 @@ import type {
 } from './categories';
 
 export interface Api {
+  getCreditCards(): Promise<CreditCardDto[]>;
+  previewCreditCard(
+    input: CreditCardInput,
+    month: string,
+  ): Promise<InvoicePeriodDto>;
+  suggestInvoicePeriod(cardId: number, date: string): Promise<InvoicePeriodDto>;
+  createCreditCard(input: CreditCardInput): Promise<number>;
+  renameCreditCard(id: number, name: string): Promise<void>;
+  archiveCreditCard(id: number): Promise<void>;
+  previewInvoicePeriod(
+    cardId: number,
+    month: string,
+  ): Promise<InvoicePeriodDto>;
+  getCardInvoices(cardId: number): Promise<InvoiceDto[]>;
+  getInvoiceDetails(id: number): Promise<InvoiceDetailsDto>;
+  registerInvoice(cardId: number, input: InvoiceInput): Promise<number>;
+  previewInvoiceCorrection(
+    id: number,
+    input: InvoiceInput,
+  ): Promise<CardCorrectionPreview>;
+  correctInvoice(id: number, input: InvoiceInput, token: string): Promise<void>;
+  getUnlinkedCreditEntries(): Promise<UnlinkedCreditEntryDto[]>;
+  previewInvoiceAssociation(
+    id: number,
+    input: InvoiceAssociationInput,
+  ): Promise<CardCorrectionPreview>;
+  associateInvoice(
+    id: number,
+    input: InvoiceAssociationInput,
+    token: string,
+  ): Promise<CardCorrectionPreview>;
+  previewTransactionCreation(
+    input: TransactionInput,
+  ): Promise<CardCorrectionPreview | null>;
+  previewTransactionUpdate(
+    id: number,
+    input: TransactionUpdateInput,
+  ): Promise<CardCorrectionPreview>;
+  previewTransactionDeletion(id: number): Promise<CardCorrectionPreview>;
   getCategories(): Promise<CategoryDto[]>;
   createCategory(input: CategoryInput): Promise<CategoryMutationResult>;
   updateCategory(
@@ -40,7 +90,7 @@ export interface Api {
     id: number,
     input: TransactionUpdateInput,
   ): Promise<CreateResult>;
-  deleteTransaction(id: number): Promise<void>;
+  deleteTransaction(id: number, token?: string): Promise<void>;
 
   getMonthlyStatement(month: string): Promise<MonthlyStatementDto>;
 }

@@ -12,6 +12,7 @@ interface State {
   modeDialogTransaction: 'add' | 'edit';
   transaction: TransactionInput;
   isSubmitting: boolean;
+  returnFocus: HTMLElement | null;
   startSubmission: () => number | null;
   isCurrentSubmission: (submissionId: number) => boolean;
   finishSubmission: (saved: boolean, submissionId: number) => void;
@@ -54,6 +55,7 @@ export function createDialogTransactionStore(
     modeDialogTransaction: 'add',
     transaction: emptyTransaction,
     isSubmitting: false,
+    returnFocus: null,
     resetSession: () => {
       requestId++;
       set({
@@ -62,6 +64,7 @@ export function createDialogTransactionStore(
         modeDialogTransaction: 'add',
         transaction: { ...emptyTransaction },
         isSubmitting: false,
+        returnFocus: null,
       });
     },
     startSubmission: () => {
@@ -100,6 +103,10 @@ export function createDialogTransactionStore(
 
       requestId++;
       set({
+        returnFocus:
+          typeof document === 'undefined'
+            ? null
+            : (document.activeElement as HTMLElement | null),
         isDialogTransactionOpen: true,
         modeDialogTransaction: 'add',
         transactionId: null,
@@ -123,6 +130,11 @@ export function createDialogTransactionStore(
       set({ modeDialogTransaction: mode });
     },
     loadTransaction: async (id) => {
+      const returnFocus =
+        typeof document === 'undefined'
+          ? null
+          : (document.activeElement as HTMLElement | null);
+
       if (get().isSubmitting) {
         return;
       }
@@ -151,6 +163,7 @@ export function createDialogTransactionStore(
 
       set({
         transactionId: id,
+        returnFocus,
         transaction,
         modeDialogTransaction: 'edit',
         isDialogTransactionOpen: true,

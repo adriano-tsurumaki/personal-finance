@@ -63,6 +63,10 @@ export const creditCardsTable = sqliteTable(
   {
     id: integer().primaryKey({ autoIncrement: true }),
     name: text().notNull(),
+    closing_day: integer(),
+    includes_closing_day: integer({ mode: 'boolean' }),
+    due_days_after_closing: integer(),
+    archived_at: date(),
     user_id: integer()
       .notNull()
       .references(() => usersTable.id),
@@ -78,6 +82,12 @@ export const creditCardInvoicesTable = sqliteTable(
     closing_date: date().notNull(),
     due_date: date().notNull(),
     paid_at: date(),
+    opening_date: date(),
+    includes_closing_day: integer({ mode: 'boolean' }),
+    total_source: text()
+      .$type<'calculated' | 'statement'>()
+      .notNull()
+      .default('statement'),
     credit_card_id: integer()
       .notNull()
       .references(() => creditCardsTable.id),
@@ -86,6 +96,10 @@ export const creditCardInvoicesTable = sqliteTable(
     index('credit_card_invoice_card_paid_idx').on(
       table.credit_card_id,
       table.paid_at,
+    ),
+    uniqueIndex('credit_card_invoice_card_closing_unique').on(
+      table.credit_card_id,
+      table.closing_date,
     ),
   ],
 );
@@ -185,6 +199,7 @@ export const transactionsTable = sqliteTable(
       table.user_id,
       table.payment_date,
     ),
+    index('transactions_invoice_idx').on(table.credit_card_invoice_id),
     unique('transactions_installment_number_unique').on(
       table.installment_id,
       table.installment_number,
@@ -195,3 +210,16 @@ export const transactionsTable = sqliteTable(
     ),
   ],
 );
+
+export const cardHistoryTable = sqliteTable('credit_card_history', {
+  id: integer().primaryKey({ autoIncrement: true }),
+  user_id: integer()
+    .notNull()
+    .references(() => usersTable.id),
+  credit_card_id: integer()
+    .notNull()
+    .references(() => creditCardsTable.id),
+  operation: text().notNull(),
+  created_at: text().notNull(),
+  changes_json: text().notNull(),
+});

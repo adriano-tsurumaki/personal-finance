@@ -5,14 +5,22 @@ import type {
   TransactionUpdateInput,
 } from '@shared/contracts/transaction';
 import type { AppDatabase } from './db';
-import { categoriesTable, paymentsTable, transactionsTable } from './db/schema';
+import {
+  categoriesTable,
+  creditCardInvoicesTable,
+  paymentsTable,
+  transactionsTable,
+} from './db/schema';
 import type { CreateResult } from '@shared/contracts/result';
 import { paymentMethodsForType } from '@shared/lib/payment-method';
+import { createCreditCardService } from './credit-cards';
+import type { CardCorrectionPreview } from '@shared/contracts/credit-cards';
 
 export function createTransactionService(
   db: AppDatabase,
   getActiveUser: () => { id: number },
 ) {
+  const cards = createCreditCardService(db, getActiveUser);
   function validDate(value: unknown): value is string {
     if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
       return false;
@@ -128,6 +136,78 @@ export function createTransactionService(
     }
   }
 
+  function createPurchase(
+    input: TransactionInput,
+    dryRun: boolean,
+  ): CardCorrectionPreview | null {
+    const rollback = {};
+    let plan: CardCorrectionPreview | null = null;
+    try {
+      db.transaction(() => {
+        const user = getActiveUser();
+        const details = validate(input, user.id);
+        const method = db
+          .select()
+          .from(paymentsTable)
+          .where(eq(paymentsTable.id, details.payment_id))
+          .get()!;
+        let invoiceId: number | null = null;
+
+        if (method.catalog_key === 'credit') {
+          if (!input.card_id || input.payment_date !== null) {
+            throw new Error('credit_card_required');
+          }
+
+          invoiceId = cards.resolveInvoice(
+            input.card_id,
+            details.reference_date,
+            input.credit_card_invoice_id ?? null,
+            input.historical_card === true,
+          ).id;
+        } else if (input.card_id || input.credit_card_invoice_id) {
+          throw new Error('invalid_credit_purchase');
+        }
+
+        const after = db
+          .insert(transactionsTable)
+          .values({
+            ...details,
+            user_id: user.id,
+            credit_card_invoice_id: invoiceId,
+          })
+          .returning()
+          .get()!;
+
+        if (invoiceId !== null) {
+          plan = cards.previewEntry(null, after);
+
+          if (!dryRun && input.correction_token !== plan.token) {
+            throw new Error('stale_correction');
+          }
+
+          const change = cards.reconcile(invoiceId);
+          cards.recordEntry(
+            'create_purchase',
+            null,
+            after,
+            change ? [change] : [],
+          );
+        }
+
+        if (dryRun) {
+          // Roll back preview inserts, including generated invoices and audit records.
+          throw rollback;
+        }
+      });
+    } catch (error) {
+      if (error !== rollback) {
+        throw error;
+      }
+    }
+
+    return plan;
+  }
+
   return {
     list(month: string): TransactionDto[] {
       const user = getActiveUser();
@@ -147,6 +227,8 @@ export function createTransactionService(
             reference_date: transactionsTable.reference_date,
             payment_date: transactionsTable.payment_date,
             payment_id: transactionsTable.payment_id,
+            credit_card_invoice_id: transactionsTable.credit_card_invoice_id,
+            invoice_paid_at: creditCardInvoicesTable.paid_at,
             category: {
               id: categoriesTable.id,
               name: categoriesTable.name,
@@ -159,6 +241,16 @@ export function createTransactionService(
           .innerJoin(
             paymentsTable,
             eq(paymentsTable.id, transactionsTable.payment_id),
+          )
+          .leftJoin(
+            creditCardInvoicesTable,
+            and(
+              eq(
+                creditCardInvoicesTable.id,
+                transactionsTable.credit_card_invoice_id,
+              ),
+              sql`EXISTS (SELECT 1 FROM credit_cards c WHERE c.id = ${creditCardInvoicesTable.credit_card_id} AND c.user_id = ${user.id})`,
+            ),
           )
           .leftJoin(
             categoriesTable,
@@ -202,104 +294,214 @@ export function createTransactionService(
         throw new Error('Transaction not found.');
       }
 
-      if (result.reference_date === null) {
-        throw new Error('The transaction has no reference date.');
-      }
-
       return {
         name: result.name,
         note: result.note,
         type: result.type,
         amount_cents: result.amount_cents,
-        reference_date: result.reference_date,
+        reference_date: result.reference_date ?? '',
         payment_date: result.payment_date,
         payment_id: result.payment_id,
         category_id: result.category_id,
         user_id: result.user_id,
+        ...(result.credit_card_invoice_id === null
+          ? {}
+          : {
+              credit_card_invoice_id: result.credit_card_invoice_id,
+              card_id: cards.invoice(result.credit_card_invoice_id)
+                .credit_card_id,
+            }),
       };
     },
 
     create(input: TransactionInput): CreateResult {
-      const user = getActiveUser();
-      db.insert(transactionsTable)
-        .values({ ...validate(input, user.id), user_id: user.id })
-        .run();
-
+      createPurchase(input, false);
       return { ok: true };
     },
+    previewCreate(input: TransactionInput): CardCorrectionPreview | null {
+      return createPurchase(input, true);
+    },
 
-    update(id: number, input: TransactionUpdateInput): CreateResult {
-      const user = getActiveUser();
-      validateId(id);
+    previewUpdate(id: number, input: TransactionUpdateInput) {
       const details = validateDetails(input);
-      const existing = db
+      const before = db
         .select()
         .from(transactionsTable)
         .where(
           and(
             eq(transactionsTable.id, id),
-            eq(transactionsTable.user_id, user.id),
+            eq(transactionsTable.user_id, getActiveUser().id),
           ),
         )
         .get();
 
-      if (!existing) {
+      if (!before) {
         throw new Error('Transaction not found.');
       }
 
-      if (
-        existing.type !== input.type &&
-        !db
-          .select({ id: paymentsTable.id })
-          .from(paymentsTable)
+      return cards.previewEntry(before, {
+        ...before,
+        ...details,
+        note: details.note === undefined ? before.note : details.note,
+      });
+    },
+    previewRemove(id: number) {
+      const before = db
+        .select()
+        .from(transactionsTable)
+        .where(
+          and(
+            eq(transactionsTable.id, id),
+            eq(transactionsTable.user_id, getActiveUser().id),
+          ),
+        )
+        .get();
+
+      if (!before) {
+        throw new Error('Transaction not found.');
+      }
+
+      return cards.previewEntry(before, null);
+    },
+    update(id: number, input: TransactionUpdateInput): CreateResult {
+      return db.transaction(() => {
+        const user = getActiveUser();
+        validateId(id);
+        const details = validateDetails(input);
+        const existing = db
+          .select()
+          .from(transactionsTable)
           .where(
             and(
-              eq(paymentsTable.id, existing.payment_id),
-              inArray(
-                paymentsTable.catalog_key,
-                paymentMethodsForType(input.type),
-              ),
+              eq(transactionsTable.id, id),
+              eq(transactionsTable.user_id, user.id),
             ),
           )
-          .get()
-      ) {
-        throw new Error('Invalid payment method for this transaction type.');
-      }
+          .get();
 
-      const result = db
-        .update(transactionsTable)
-        .set(details)
-        .where(
-          and(
-            eq(transactionsTable.id, id),
-            eq(transactionsTable.user_id, user.id),
-          ),
-        )
-        .run();
+        if (!existing) {
+          throw new Error('Transaction not found.');
+        }
 
-      if (!result.changes) {
-        throw new Error('Transaction not found.');
-      }
+        if (existing.credit_card_invoice_id !== null) {
+          if (input.type !== 2) {
+            throw new Error('invalid_credit_purchase');
+          }
 
-      return { ok: true };
+          const plan = cards.previewEntry(existing, {
+            ...existing,
+            ...details,
+            note: details.note === undefined ? existing.note : details.note,
+          });
+
+          if (input.correction_token !== plan.token) {
+            throw new Error('stale_correction');
+          }
+        }
+
+        if (
+          existing.type !== input.type &&
+          !db
+            .select({ id: paymentsTable.id })
+            .from(paymentsTable)
+            .where(
+              and(
+                eq(paymentsTable.id, existing.payment_id),
+                inArray(
+                  paymentsTable.catalog_key,
+                  paymentMethodsForType(input.type),
+                ),
+              ),
+            )
+            .get()
+        ) {
+          throw new Error('Invalid payment method for this transaction type.');
+        }
+
+        const result = db
+          .update(transactionsTable)
+          .set(details)
+          .where(
+            and(
+              eq(transactionsTable.id, id),
+              eq(transactionsTable.user_id, user.id),
+            ),
+          )
+          .run();
+
+        if (!result.changes) {
+          throw new Error('Transaction not found.');
+        }
+
+        if (existing.credit_card_invoice_id !== null) {
+          const after = db
+            .select()
+            .from(transactionsTable)
+            .where(eq(transactionsTable.id, id))
+            .get()!;
+          const change = cards.reconcile(existing.credit_card_invoice_id);
+          cards.recordEntry(
+            'update_purchase',
+            existing,
+            after,
+            change ? [change] : [],
+          );
+        }
+
+        return { ok: true };
+      });
     },
 
-    remove(id: number) {
-      const user = getActiveUser();
-      validateId(id);
-      const result = db
-        .delete(transactionsTable)
-        .where(
-          and(
-            eq(transactionsTable.id, id),
-            eq(transactionsTable.user_id, user.id),
-          ),
-        )
-        .run();
+    remove(id: number, token?: string) {
+      db.transaction(() => {
+        const user = getActiveUser();
+        validateId(id);
+        const before = db
+          .select()
+          .from(transactionsTable)
+          .where(
+            and(
+              eq(transactionsTable.id, id),
+              eq(transactionsTable.user_id, user.id),
+            ),
+          )
+          .get();
 
-      if (!result.changes) {
-        throw new Error('Transaction not found.');
-      }
+        if (!before) {
+          throw new Error('Transaction not found.');
+        }
+
+        if (
+          before.credit_card_invoice_id !== null &&
+          token !== cards.previewEntry(before, null).token
+        ) {
+          throw new Error('stale_correction');
+        }
+
+        const result = db
+          .delete(transactionsTable)
+          .where(
+            and(
+              eq(transactionsTable.id, id),
+              eq(transactionsTable.user_id, user.id),
+            ),
+          )
+          .run();
+
+        if (!result.changes) {
+          throw new Error('Transaction not found.');
+        }
+
+        if (before.credit_card_invoice_id !== null) {
+          const change = cards.reconcile(before.credit_card_invoice_id);
+          cards.recordEntry(
+            'delete_purchase',
+            before,
+            null,
+            change ? [change] : [],
+          );
+        }
+      });
     },
   };
 }

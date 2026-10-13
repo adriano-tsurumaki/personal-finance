@@ -45,9 +45,9 @@ remain as entered. Retrying initialization preserves existing defaults, includin
 archived categories. Both supported locales use BRL without changing stored cents.
 Monetary entry accepts digits and the profile's decimal separator, with up to two
 decimal places; grouping separators and currency-prefixed paste are currently
-rejected rather than reinterpreted. Credit selection records a planned entry;
-invoice association and all settlement workflows remain deferred. Selecting a
-method does not set a payment date. Direct income is counted as received on its
+rejected rather than reinterpreted. New credit expenses require a profile-owned
+card and are associated with a suggested or explicitly chosen invoice. Selecting a
+method does not set a payment date; settlement workflows remain deferred. Direct income is counted as received on its
 reference date when no explicit receipt date exists. Direct expenses remain
 pending until settlement; credit-method entries remain excluded from direct
 cash flow.
@@ -93,7 +93,15 @@ The first version pays an invoice in full through one event. `credit_card_invoic
 
 The payment does not create another expense transaction, and its date is not copied to every purchase on the invoice. Partial and multiple payments are outside the initial scope.
 
-Invoices close on the last day of the month and are due seven calendar days later. Closing, due, and payment dates remain separate. The application must calculate this rule; the current schema only stores concrete dates.
+Cards configure a closing day, whether closing-day purchases are included, and
+a positive number of calendar days after closing until the invoice is due.
+Short months clamp the closing day without changing the recurring rule. Opening
+follows the preceding period's last included purchase date. The due date is
+closing plus the configured day offset, without weekend or holiday adjustment.
+Each invoice preserves its concrete dates and applied closing-day policy.
+Changing existing recurring card rules remains deferred; invoice-specific
+corrections never change those general settings. Closing, due, and actual payment
+dates remain separate. Invoice payment UI is tracked in TX-04.
 
 ## Table responsibilities
 
@@ -118,7 +126,41 @@ Stores data shared by all installments: name, count, total amount, expected star
 
 ### `credit_cards` and `credit_card_invoice`
 
-`credit_cards` identifies a user's card. An invoice belongs to a card and stores its amount, closing date, due date, and payment date. Transactions join an invoice directly. If `amount_cents` remains stored instead of calculated, the application must update it atomically with invoice entries.
+`credit_cards` identifies a profile-owned card and retains initial closing rules
+and archival. Legacy cards have nullable rules rather than guessed settings;
+their invoices remain accessible through manually supplied dates and membership.
+Archived cards remain available for explicit historical entry and corrections.
+
+Invoices belong to a card, with one invoice per card and closing date. They retain
+opening, closing, due, and payment dates, an applied inclusion policy, and a
+`total_source` of `calculated` or `statement`. Calculated totals are updated in
+integer cents atomically with linked purchases. Statement totals preserve the
+recorded amount while incomplete purchase details are entered; responses show
+item totals and the difference separately. Legacy invoices migrate to statement
+totals, preserving amounts and dates; unknown period metadata stays null.
+
+Purchases retain their `reference_date`; invoice membership is persisted in
+`credit_card_invoice_id` and is independent of the selected timeline month.
+Changing a reference date preserves membership until the user explicitly
+reassigns the purchase. Main validates ownership across cards, invoices, and
+entries. Explicit out-of-period associations are displayed as manual overrides.
+
+Financial corrections use a before/after preview and a state-derived token that
+rejects stale proposals. Boundary corrections include affected adjacent periods
+and purchases. A boundary correction is rejected if its resulting known period
+overlaps another invoice after adjacent adjustments. Creation-only form
+normalization runs only while the creation dialog is active, preserving legacy
+card and invoice associations during editing.
+The same database transaction saves entry changes, totals, and
+`credit_card_history` snapshots. Historical paid invoices can be corrected
+without changing their actual payment date. Adding missing details to a paid
+statement invoice preserves its recorded cash outflow; changing its recorded
+total deliberately refreshes the historical payment month. Corrections do not
+copy payment dates onto purchases or create another expense transaction.
+
+Card/invoice navigation has its own selected period and profile-session request
+guards. The Cards section includes registration, archival, historical invoice
+entry, unlinked-purchase association, total reconciliation, and correction history.
 
 ### `payments`
 
@@ -216,7 +258,9 @@ A R$250 purchase made on August 20 appears in the August timeline. If its invoic
 - Schema constraints and transaction operations are covered by SQLite integration tests.
 - Schema changes use versioned Drizzle migrations; see [Database development](database-development.md).
 - Cascade deletion behavior remains scheduled for review.
-- The schema does not yet generate invoices, recurrences, or installments.
+- The service creates calculated invoices atomically when linking purchases.
+  Merely previewing a period does not create rows. Recurrence and installment
+  generation remain deferred.
 
 ## Monthly cash-flow summaries
 

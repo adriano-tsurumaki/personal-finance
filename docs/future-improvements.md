@@ -68,11 +68,19 @@ Invoices currently use one full payment in `credit_card_invoice.paid_at`. A futu
 
 Existing paid invoices could migrate to one historical payment record without duplicating cash outflows. Financing an outstanding balance would additionally require interest, fee, and billing rules.
 
-### Per-card closing and due-date rules
+### Card billing cycles and historical invoices
 
-The initial rule closes invoices on the last day of the month and makes them due seven calendar days later. A future version may store configurable rules in `credit_cards`.
-
-The design must cover fixed days, month lengths, purchases on the closing day, weekends, and holidays. Concrete dates should remain on each invoice so configuration changes do not rewrite history.
+- Initial per-card closing settings, closing-day inclusion, calendar-day due
+  offsets, historical invoice entry, independent navigation, statement totals,
+  and audited corrections are implemented in CARD-01. Verification includes
+  SQLite regression tests and isolated browser checks; see the data model.
+- Changing an existing card's recurring rules remains deferred to CARD-02.
+  Analyze effective boundaries and already-created future invoices first;
+  preserve existing history and distinguish rule changes from invoice corrections.
+- Full invoice settlement and payment corrections remain TX-04. Derive purchase
+  payment status from `paid_at` and count the invoice payment once.
+- Projected monthly indicators that include unpaid commitments remain SUM-02;
+  they must distinguish commitments from cash flow and avoid double counting.
 
 ### Cascade deletion review
 
@@ -93,12 +101,17 @@ Review each relationship and choose whether to block deletion, archive records, 
 
 - Require a reference date for every transaction.
 - Standardize stored dates and document each field's meaning.
-- Implement the closing and due-date rule, including purchases on the closing day.
+- [x] Implement closing and due-date rules, including purchases on the closing day
+      (verified 2026-10-09): card services and SQLite tests cover both inclusion
+      policies, adjacent-period corrections, short months, leap years, and rollover.
 - Define `transactions.type`, `payments.type`, and monetary sign conventions.
 
 ### Values and relationships
 
-- Decide whether invoice totals are stored or calculated. Update stored totals atomically.
+- [x] Define calculated and statement-recorded invoice totals (verified 2026-10-09):
+      tests verify atomic purchase reconciliation, preservation of incomplete paid
+      statements, stale-preview rejection, aggregate overflow, and rollback if audit
+      persistence fails.
 - Ensure installment numbers stay within the declared count and amounts add up to the purchase total.
 - Keep installment start and end dates consistent or derive them.
 - Ensure related categories, invoices, recurrences, and installment groups belong to the same user.

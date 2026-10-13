@@ -72,6 +72,12 @@ export default function TimelineEntryRow({
               <time dateTime={entry.reference_date}>
                 {dayLabel(entry.reference_date)}
               </time>
+              {entry.credit_card_invoice_id && (
+                <span className="ml-2 text-xs">
+                  {t('cards.invoice')} #{entry.credit_card_invoice_id} ·{' '}
+                  {t(entry.invoice_paid_at ? 'cards.paid' : 'cards.unpaid')}
+                </span>
+              )}
             </p>
           </div>
           <div className="shrink-0 text-right">
@@ -101,7 +107,9 @@ export default function TimelineEntryRow({
                 variant="ghost"
                 size="icon-xs"
                 className="text-muted-foreground hover:bg-secondary hover:text-expense"
-                aria-label={t('transactions.remove_label', { name: entry.name })}
+                aria-label={t('transactions.remove_label', {
+                  name: entry.name,
+                })}
                 title={t('transactions.remove')}
                 onClick={onRemove}
                 disabled={disabled}
