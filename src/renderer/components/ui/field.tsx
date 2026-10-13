@@ -268,7 +268,7 @@ function FieldMoney({
       <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
       <div
         className={cn(
-          'flex min-w-0 items-center gap-2 rounded-md border border-input bg-background px-3 transition-colors duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none hover:bg-muted has-[:disabled]:pointer-events-none focus-within:ring-2 focus-within:ring-ring',
+          'flex min-w-0 items-center gap-2 rounded-md border border-input bg-background px-3 transition-colors duration-150 ease-in-out motion-reduce:transition-none hover:bg-muted has-disabled:pointer-events-none focus-within:ring-2 focus-within:ring-ring',
           disabled && 'cursor-not-allowed opacity-50',
           inputError && 'border-destructive focus-within:ring-destructive',
         )}
@@ -366,7 +366,7 @@ function FieldLabel({
     <Label
       data-slot="field-label"
       className={cn(
-        'group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-data-checked:border-primary/30 has-data-checked:bg-primary/5 has-[>[data-slot=field]]:rounded-lg has-[>[data-slot=field]]:border has-[>[data-slot=field]]:not-has-[:disabled,[data-disabled]]:hover:bg-muted has-[>[data-slot=field]]:has-[:focus-visible]:border-ring has-[>[data-slot=field]]:has-[:focus-visible]:ring-3 has-[>[data-slot=field]]:has-[:focus-visible]:ring-ring/50 *:data-[slot=field]:p-3',
+        'group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-data-checked:border-primary/30 has-data-checked:bg-primary/5 has-[>[data-slot=field]]:rounded-lg has-[>[data-slot=field]]:border has-[>[data-slot=field]]:not-has-[:disabled,[data-disabled]]:hover:bg-muted has-[>[data-slot=field]]:has-focus-visible:border-ring has-[>[data-slot=field]]:has-focus-visible:ring-3 has-[>[data-slot=field]]:has-focus-visible:ring-ring/50 *:data-[slot=field]:p-3',
         'has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col',
         className,
       )}
