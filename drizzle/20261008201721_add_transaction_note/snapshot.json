@@ -2,9 +2,7 @@
   "version": "7",
   "dialect": "sqlite",
   "id": "33e48638-c615-48ab-a09d-475475ad0d52",
-  "prevIds": [
-    "982737df-c6be-4734-aae4-815f98f0586a"
-  ],
+  "prevIds": ["982737df-c6be-4734-aae4-815f98f0586a"],
   "ddl": [
     {
       "name": "categories",
@@ -623,13 +621,9 @@
       "table": "user"
     },
     {
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "tableTo": "user",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "nameExplicit": false,
@@ -638,13 +632,9 @@
       "table": "categories"
     },
     {
-      "columns": [
-        "credit_card_id"
-      ],
+      "columns": ["credit_card_id"],
       "tableTo": "credit_cards",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "nameExplicit": false,
@@ -653,13 +643,9 @@
       "table": "credit_card_invoice"
     },
     {
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "tableTo": "user",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "nameExplicit": false,
@@ -668,13 +654,9 @@
       "table": "credit_cards"
     },
     {
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "tableTo": "user",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "nameExplicit": false,
@@ -683,13 +665,9 @@
       "table": "installment"
     },
     {
-      "columns": [
-        "recurrence_id"
-      ],
+      "columns": ["recurrence_id"],
       "tableTo": "recurrences",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "nameExplicit": false,
@@ -698,13 +676,9 @@
       "table": "recurrences_versions"
     },
     {
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "tableTo": "user",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "nameExplicit": false,
@@ -713,13 +687,9 @@
       "table": "recurrences"
     },
     {
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "tableTo": "user",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "nameExplicit": false,
@@ -728,13 +698,9 @@
       "table": "transactions"
     },
     {
-      "columns": [
-        "payment_id"
-      ],
+      "columns": ["payment_id"],
       "tableTo": "payments",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "nameExplicit": false,
@@ -743,13 +709,9 @@
       "table": "transactions"
     },
     {
-      "columns": [
-        "category_id"
-      ],
+      "columns": ["category_id"],
       "tableTo": "categories",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "nameExplicit": false,
@@ -758,13 +720,9 @@
       "table": "transactions"
     },
     {
-      "columns": [
-        "recurrence_version_id"
-      ],
+      "columns": ["recurrence_version_id"],
       "tableTo": "recurrences_versions",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "nameExplicit": false,
@@ -773,13 +731,9 @@
       "table": "transactions"
     },
     {
-      "columns": [
-        "credit_card_invoice_id"
-      ],
+      "columns": ["credit_card_invoice_id"],
       "tableTo": "credit_card_invoice",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "nameExplicit": false,
@@ -788,13 +742,9 @@
       "table": "transactions"
     },
     {
-      "columns": [
-        "installment_id"
-      ],
+      "columns": ["installment_id"],
       "tableTo": "installment",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "nameExplicit": false,
@@ -803,110 +753,84 @@
       "table": "transactions"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "categories_pk",
       "table": "categories",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "credit_card_invoice_pk",
       "table": "credit_card_invoice",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "credit_cards_pk",
       "table": "credit_cards",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "installment_pk",
       "table": "installment",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "payments_pk",
       "table": "payments",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "recurrences_versions_pk",
       "table": "recurrences_versions",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "recurrences_pk",
       "table": "recurrences",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "transactions_pk",
       "table": "transactions",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "user_pk",
       "table": "user",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "recurrence_id",
-        "version"
-      ],
+      "columns": ["recurrence_id", "version"],
       "nameExplicit": true,
       "name": "recurrences_versions_recurrence_version_unique",
       "entityType": "uniques",
       "table": "recurrences_versions"
     },
     {
-      "columns": [
-        "installment_id",
-        "installment_number"
-      ],
+      "columns": ["installment_id", "installment_number"],
       "nameExplicit": true,
       "name": "transactions_installment_number_unique",
       "entityType": "uniques",
       "table": "transactions"
     },
     {
-      "columns": [
-        "email"
-      ],
+      "columns": ["email"],
       "nameExplicit": false,
       "name": "user_email_unique",
       "entityType": "uniques",

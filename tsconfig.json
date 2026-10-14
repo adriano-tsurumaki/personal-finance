@@ -18,10 +18,5 @@
       "@store/*": ["./src/renderer/store/*"]
     }
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "*.config.ts",
-    "forge.env.d.ts"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "*.config.ts", "forge.env.d.ts"]
 }
