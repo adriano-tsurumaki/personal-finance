@@ -150,12 +150,15 @@
   "summary": {
     "previous": "Previous month",
     "next": "Next month",
-    "balance": "Projected monthly balance",
+    "balance": "Projected closing balance",
     "income": "Income",
     "expenses": "Expenses",
     "saved": "Saved",
     "net": "Net {amount}",
-    "chart": "Projected monthly balance chart"
+    "chart": "Projected monthly balance chart",
+    "opening_balance": "Opening balance",
+    "loading_month": "Loading {month}…",
+    "load_error": "Could not load {month}. Displayed data has not been updated."
   },
   "sections": {
     "label": "Monthly finance sections",

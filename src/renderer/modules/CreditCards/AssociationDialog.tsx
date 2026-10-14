@@ -1,3 +1,7 @@
+import {
+  financialActionsBlocked,
+  useFinancialOperations,
+} from '@store/financial-operations';
 import { useEffect, useId, useState } from 'react';
 import {
   Dialog,
@@ -42,6 +46,7 @@ export default function AssociationDialog({
   onSaved: () => Promise<void>;
   returnFocus?: React.RefObject<HTMLElement | null>;
 }) {
+  const blocked = useFinancialOperations((state) => state.pending.size > 0);
   const id = useId();
   const [cardId, setCardId] = useState<number | null>(initialCard);
   const [invoiceId, setInvoiceId] = useState<number | null>(null);
@@ -88,10 +93,16 @@ export default function AssociationDialog({
   async function save(event: React.FormEvent) {
     event.preventDefault();
 
-    if (busy || cardId === null || invoiceId === null) {
+    if (
+      busy ||
+      financialActionsBlocked() ||
+      cardId === null ||
+      invoiceId === null
+    ) {
       return;
     }
 
+    const release = useFinancialOperations.getState().begin('mutation');
     setBusy(true);
     try {
       const input = { card_id: cardId, invoice_id: invoiceId };
@@ -115,6 +126,8 @@ export default function AssociationDialog({
         });
       }
     } finally {
+      release();
+
       if (current()) {
         setBusy(false);
       }
@@ -144,6 +157,7 @@ export default function AssociationDialog({
             <Field>
               <FieldLabel htmlFor={`${id}-card`}>{t('cards.card')}</FieldLabel>
               <Select<number>
+                disabled={busy || blocked}
                 items={cards.map((card) => ({
                   value: card.id,
                   label: card.name,
@@ -172,7 +186,13 @@ export default function AssociationDialog({
               </FieldLabel>
               <Select<number>
                 required
-                disabled={cardId === null || loading || !invoices.length}
+                disabled={
+                  busy ||
+                  blocked ||
+                  cardId === null ||
+                  loading ||
+                  !invoices.length
+                }
                 items={invoices.map((invoice) => ({
                   value: invoice.id,
                   label: `${cardDate(invoice.closing_date)} · #${invoice.id}`,
@@ -202,14 +222,14 @@ export default function AssociationDialog({
             <Button
               type="button"
               variant="outline"
-              disabled={busy}
+              disabled={busy || blocked}
               onClick={onClose}
             >
               {t('common.cancel')}
             </Button>
             <Button
               type="submit"
-              disabled={busy || loading || invoiceId === null}
+              disabled={busy || blocked || loading || invoiceId === null}
             >
               {t('cards.apply_changes')}
             </Button>

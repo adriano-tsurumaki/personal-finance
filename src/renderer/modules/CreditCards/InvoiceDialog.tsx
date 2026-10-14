@@ -1,3 +1,7 @@
+import {
+  financialActionsBlocked,
+  useFinancialOperations,
+} from '@store/financial-operations';
 import { useId, useState } from 'react';
 import {
   Dialog,
@@ -51,6 +55,7 @@ export default function InvoiceDialog({
   onSaved: (id: number) => Promise<void>;
   returnFocus?: React.RefObject<HTMLElement | null>;
 }) {
+  const blocked = useFinancialOperations((state) => state.pending.size > 0);
   const id = useId();
   const [input, setInput] = useState<InvoiceInput>({
     opening_date: invoice?.opening_date ?? '',
@@ -89,10 +94,11 @@ export default function InvoiceDialog({
   async function save(event: React.FormEvent) {
     event.preventDefault();
 
-    if (busy) {
+    if (busy || financialActionsBlocked()) {
       return;
     }
 
+    const release = useFinancialOperations.getState().begin('mutation');
     setBusy(true);
     try {
       let savedId: number;
@@ -125,6 +131,8 @@ export default function InvoiceDialog({
         });
       }
     } finally {
+      release();
+
       if (current()) {
         setBusy(false);
       }
@@ -154,7 +162,7 @@ export default function InvoiceDialog({
             </DialogTitle>
             <DialogDescription>{t('cards.preview_hint')}</DialogDescription>
           </DialogHeader>
-          <FieldSet disabled={busy}>
+          <FieldSet disabled={busy || blocked}>
             <FieldGroup className="py-4">
               <Button
                 type="button"
@@ -177,7 +185,7 @@ export default function InvoiceDialog({
                           : 'cards.due',
                     )}
                     value={input[key] ? parseISO(input[key]) : undefined}
-                    disabled={busy}
+                    disabled={busy || blocked}
                     placeholder={t('transactions.pick_date')}
                     onValueChange={(value) =>
                       setInput({
@@ -192,7 +200,7 @@ export default function InvoiceDialog({
                 <Field orientation="horizontal">
                   <Checkbox
                     id={`${id}-includes-closing`}
-                    disabled={busy}
+                    disabled={busy || blocked}
                     checked={input.includes_closing_day}
                     onCheckedChange={(checked) =>
                       setInput({ ...input, includes_closing_day: checked })
@@ -265,12 +273,12 @@ export default function InvoiceDialog({
             <Button
               type="button"
               variant="outline"
-              disabled={busy}
+              disabled={busy || blocked}
               onClick={onClose}
             >
               {t('common.cancel')}
             </Button>
-            <Button type="submit" disabled={busy}>
+            <Button type="submit" disabled={busy || blocked}>
               {t('common.save')}
             </Button>
           </DialogFooter>

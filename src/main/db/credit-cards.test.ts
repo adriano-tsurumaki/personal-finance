@@ -202,12 +202,10 @@ test('monthly summaries include unpaid invoices by due month and count settlemen
     assert.equal(due.expense, 100);
     assert.equal(due.net, -100);
     assert.equal(due.closingBalance, -100);
-    assert.equal(due.transactionCount, 1);
     assert.equal(due.balanceSeries[25].balance, 0);
     assert.equal(due.balanceSeries[26].balance, -100);
     f.purchase({ reference_date: '2026-10-22', amount_cents: 2500 });
     assert.equal(f.statements.get('2026-11').expense, 125);
-    assert.equal(f.statements.get('2026-11').transactionCount, 1);
 
     const update = { ...f.input, amount_cents: 15000 };
     const plan = f.transactions.previewUpdate(first.id, update)!;
@@ -248,7 +246,6 @@ test('monthly summaries include unpaid invoices by due month and count settlemen
       .run();
     assert.equal(f.statements.get('2026-11').expense, 0);
     assert.equal(f.statements.get('2026-12').expense, 25);
-    assert.equal(f.statements.get('2026-12').transactionCount, 1);
     f.db
       .update(creditCardInvoicesTable)
       .set({ paid_at: '2027-01-02' })

@@ -1,3 +1,5 @@
+import { useFinancialOperations } from '@store/financial-operations';
+import { useMonthlyStatementFeedback } from './use-monthly-statement-feedback';
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -24,7 +26,11 @@ export default function MonthlyFinance(): React.JSX.Element {
   const monthlyStatement = useAppStore((s) => s.monthlyStatement);
   const monthKey = useAppStore((s) => s.monthKey);
   const setMonthKey = useAppStore((s) => s.setMonthKey);
+  const blocked = useFinancialOperations((state) => state.pending.size > 0);
+  const loaded = useAppStore((s) => s.statementLoaded);
   const statementLoading = useAppStore((s) => s.statementLoading);
+
+  useMonthlyStatementFeedback();
 
   const [year, month] = monthKey.split('-').map(Number);
 
@@ -36,6 +42,7 @@ export default function MonthlyFinance(): React.JSX.Element {
         <div className="mt-6 flex items-center justify-between gap-4">
           <button
             type="button"
+            disabled={blocked}
             onClick={() => setMonthKey(shiftMonth(monthKey, -1))}
             aria-label={t('summary.previous')}
             className="flex size-9 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
@@ -51,6 +58,7 @@ export default function MonthlyFinance(): React.JSX.Element {
 
           <button
             type="button"
+            disabled={blocked}
             onClick={() => setMonthKey(shiftMonth(monthKey, 1))}
             aria-label={t('summary.next')}
             className="flex size-9 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
@@ -59,23 +67,40 @@ export default function MonthlyFinance(): React.JSX.Element {
           </button>
         </div>
 
-        <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div
+          aria-busy={statementLoading}
+          className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between"
+        >
           <div className="flex flex-col gap-1.5">
             <p className="text-sm text-muted-foreground">
               {t('summary.balance')}
             </p>
             <div className="relative" aria-busy={statementLoading}>
               <p className="font-mono text-4xl font-semibold tracking-tight text-foreground tabular-nums sm:text-5xl">
-                <OdometerMoney value={monthlyStatement.closingBalance} />
+                {loaded ? (
+                  <OdometerMoney value={monthlyStatement.closingBalance} />
+                ) : (
+                  '—'
+                )}
               </p>
             </div>
+            <p className="text-xs text-muted-foreground">
+              {t('summary.opening_balance')}{' '}
+              <span className="font-mono tabular-nums">
+                {loaded ? (
+                  <OdometerMoney value={monthlyStatement.openingBalance} />
+                ) : (
+                  '—'
+                )}
+              </span>
+            </p>
           </div>
 
           <div
             className="w-full max-w-60 shrink-0"
             style={{
               visibility:
-                monthlyStatement.balanceSeries.length >= 2
+                loaded && monthlyStatement.balanceSeries.length >= 2
                   ? 'visible'
                   : 'hidden',
             }}
@@ -86,18 +111,21 @@ export default function MonthlyFinance(): React.JSX.Element {
 
         <dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Stat
+            available={loaded}
             label={t('summary.income')}
             value={monthlyStatement.income}
             tone="income"
             icon={<ArrowUpRight className="size-4" aria-hidden="true" />}
           />
           <Stat
+            available={loaded}
             label={t('summary.expenses')}
             value={monthlyStatement.expense}
             tone="expense"
             icon={<ArrowDownRight className="size-4" aria-hidden="true" />}
           />
           <Stat
+            available={loaded}
             label={t('summary.saved')}
             value={monthlyStatement.savingsRate}
             formatValue={formatSavingsRate}
@@ -112,6 +140,7 @@ export default function MonthlyFinance(): React.JSX.Element {
 
 function Stat({
   label,
+  available,
   value,
   formatValue,
   tone,
@@ -119,6 +148,7 @@ function Stat({
   hint,
 }: {
   label: string;
+  available: boolean;
   value: number;
   formatValue?: (value: number) => string;
   tone: 'income' | 'expense' | 'neutral';
@@ -142,8 +172,12 @@ function Stat({
         className={`relative mt-1 font-mono text-lg font-semibold tabular-nums ${toneClass}`}
       >
         <span>
-          <OdometerMoney value={value} formatValue={formatValue} />
-          {hint ? (
+          {available ? (
+            <OdometerMoney value={value} formatValue={formatValue} />
+          ) : (
+            '—'
+          )}
+          {available && hint ? (
             <span className="ml-1.5 text-xs font-normal text-muted-foreground">
               {t('summary.net', { amount: hint })}
             </span>

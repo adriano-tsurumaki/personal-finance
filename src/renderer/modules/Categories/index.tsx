@@ -1,3 +1,7 @@
+import {
+  financialActionsBlocked,
+  useFinancialOperations,
+} from '@store/financial-operations';
 import { useEffect, useRef, useState } from 'react';
 import { Archive, Pencil, Plus, Tags } from 'lucide-react';
 import { Button } from '@components/ui/button';
@@ -57,10 +61,11 @@ export default function Categories() {
   }, [sessionVersion]);
 
   async function mutate(operation: () => Promise<CategoryMutationResult>) {
-    if (mutationPending.current) {
+    if (mutationPending.current || financialActionsBlocked()) {
       return;
     }
 
+    const release = useFinancialOperations.getState().begin('mutation');
     mutationPending.current = true;
     setBusy(true);
     let saved = false;
@@ -109,6 +114,7 @@ export default function Categories() {
         });
       }
     } finally {
+      release();
       mutationPending.current = false;
 
       if (current()) {

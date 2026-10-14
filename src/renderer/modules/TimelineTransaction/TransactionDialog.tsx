@@ -1,3 +1,4 @@
+import { useFinancialOperations } from '@store/financial-operations';
 import { Checkbox } from '@components/ui/checkbox';
 import { useEffect, useState } from 'react';
 import { Spinner } from '@components/ui/spinner';
@@ -52,6 +53,7 @@ import type {
 } from '@shared/contracts/credit-cards';
 
 export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
+  const blocked = useFinancialOperations((state) => state.pending.size > 0);
   const profile = useProfileStore((state) => state.activeProfile);
   const options = useProfileStore((state) => state.options);
   const selectedType = useDialogTransactionStore(
@@ -421,11 +423,9 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
       saved = true;
 
       try {
-        const { loadTransactions, loadMonthlyStatement } =
-          useAppStore.getState();
+        const { refreshMonth } = useAppStore.getState();
         await Promise.all([
-          loadTransactions(),
-          loadMonthlyStatement(),
+          refreshMonth(),
           creditCardStore.getState().refresh(),
         ]);
       } catch (error) {
@@ -514,7 +514,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
             )}
           </DialogDescription>
         </DialogHeader>
-        <FieldSet disabled={isSubmitting}>
+        <FieldSet disabled={isSubmitting || blocked}>
           <FieldGroup>
             {mode === 'add' && isCredit && (
               <>
@@ -522,7 +522,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                   <Field orientation="horizontal">
                     <Checkbox
                       id="transaction-historical"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || blocked}
                       checked={historical_card}
                       onCheckedChange={(checked) => {
                         handleTransaction('historical_card', checked);
@@ -805,13 +805,21 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
         <DialogFooter>
           <DialogClose
             render={
-              <Button variant="ghost" type="button" disabled={isSubmitting}>
+              <Button
+                variant="ghost"
+                type="button"
+                disabled={isSubmitting || blocked}
+              >
                 <X aria-hidden="true" />
                 {t('common.cancel')}
               </Button>
             }
           />
-          <Button onClick={handleSubmit} type="submit" disabled={isSubmitting}>
+          <Button
+            onClick={handleSubmit}
+            type="submit"
+            disabled={isSubmitting || blocked}
+          >
             {isSubmitting
               ? t('transactions.saving')
               : mode === 'add'

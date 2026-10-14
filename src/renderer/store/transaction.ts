@@ -1,4 +1,8 @@
 import { create } from 'zustand';
+import {
+  financialActionsBlocked,
+  useFinancialOperations,
+} from './financial-operations';
 import { currentMonthKey } from '@shared/lib/calc';
 import type { MonthlyStatementDto } from '@shared/contracts/monthly-statement';
 import type { TransactionDto } from '@shared/contracts/transaction';
@@ -15,12 +19,14 @@ interface AppState {
   statementLoaded: boolean;
   transactionsLoading: boolean;
   transactionsFailed: boolean;
+  pendingMonth: string | null;
+  failedMonth: string | null;
 
   reset: () => void;
   init: () => Promise<void>;
+  refreshMonth: () => Promise<void>;
   setMonthKey: (monthKey: string) => Promise<void>;
   loadTransactions: () => Promise<void>;
-  loadMonthlyStatement: () => Promise<void>;
 }
 
 let transactionsRequestId = 0;
@@ -28,12 +34,10 @@ let statementRequestId = 0;
 let sessionGeneration = 0;
 
 const emptyMonthlyStatement: MonthlyStatementDto = {
-  id: 0,
   expense: 0,
   income: 0,
   net: 0,
   savingsRate: 0,
-  transactionCount: 0,
   balanceSeries: [],
   closingBalance: 0,
   openingBalance: 0,
@@ -41,123 +45,145 @@ const emptyMonthlyStatement: MonthlyStatementDto = {
   month: Number(currentMonthKey().slice(5, 7)),
 };
 
-export const useAppStore = create<AppState>((set, get) => ({
-  monthKey: currentMonthKey(),
-  transactions: [],
-  transactionsLoading: false,
-  transactionsFailed: false,
-  monthlyStatement: emptyMonthlyStatement,
-  statementLoading: false,
-  statementFailed: false,
-  statementLoaded: false,
-
-  init: async () => {
+export const useAppStore = create<AppState>((set, get) => {
+  async function loadPeriod(monthKey: string, navigation: boolean) {
     const generation = sessionGeneration;
-    const monthKey = get().monthKey;
-
-    try {
-      await get()
-        .loadTransactions()
-        .catch(() => undefined);
-
-      if (generation !== sessionGeneration || get().monthKey !== monthKey) {
-        return;
-      }
-
-      await get().loadMonthlyStatement();
-    } catch (error) {
-      console.error('Failed to init app state', error);
-    }
-  },
-
-  reset: () => {
-    sessionGeneration++;
-    transactionsRequestId++;
-    statementRequestId++;
+    const timelineRequest = ++transactionsRequestId;
+    const summaryRequest = ++statementRequestId;
+    const release = useFinancialOperations.getState().begin('period');
     set({
-      monthKey: currentMonthKey(),
-      monthlyStatement: emptyMonthlyStatement,
-      statementLoading: false,
-      statementFailed: false,
-      statementLoaded: false,
-      transactions: [],
-      transactionsLoading: false,
-      transactionsFailed: false,
-    });
-  },
-
-  setMonthKey: async (monthKey) => {
-    const generation = sessionGeneration;
-    statementRequestId++;
-    set({
-      monthKey,
-      statementLoaded: false,
+      pendingMonth: monthKey,
+      failedMonth: null,
       statementLoading: true,
-      statementFailed: false,
+      transactionsLoading: true,
     });
 
     try {
-      await get()
-        .loadTransactions()
-        .catch(() => undefined);
+      const [timeline, summary] = await Promise.allSettled([
+        (async () => window.api.getTransactions(monthKey))(),
+        (async () => window.api.getMonthlyStatement(monthKey))(),
+      ]);
 
-      if (generation !== sessionGeneration || get().monthKey !== monthKey) {
+      if (
+        generation !== sessionGeneration ||
+        timelineRequest !== transactionsRequestId ||
+        summaryRequest !== statementRequestId
+      ) {
         return;
       }
 
-      await get().loadMonthlyStatement();
-    } catch (error) {
-      console.error('Failed to load the selected month', error);
-    }
-  },
-
-  loadTransactions: async () => {
-    const requestId = ++transactionsRequestId;
-    set({ transactionsLoading: true, transactionsFailed: false });
-
-    try {
-      const { monthKey } = get();
-      const transactions = await window.api.getTransactions(monthKey);
-
-      if (get().monthKey === monthKey && requestId === transactionsRequestId) {
-        set({ transactions, transactionsLoading: false });
-      }
-    } catch (error) {
-      if (requestId !== transactionsRequestId) {
-        return;
-      }
-
-      set({ transactionsLoading: false, transactionsFailed: true });
-      console.error('Failed to load transactions', error);
-      throw error;
-    }
-  },
-
-  loadMonthlyStatement: async () => {
-    const requestId = ++statementRequestId;
-    set({ statementLoading: true, statementFailed: false });
-    try {
-      const { monthKey } = get();
-      const statement = await window.api.getMonthlyStatement(monthKey);
-
-      if (get().monthKey === monthKey && requestId === statementRequestId) {
+      if (timeline.status === 'rejected' || summary.status === 'rejected') {
         set({
-          monthlyStatement: statement,
+          pendingMonth: null,
+          failedMonth: monthKey,
           statementLoading: false,
-          statementLoaded: true,
+          transactionsLoading: false,
+          ...(!navigation || !get().statementLoaded
+            ? {
+                statementLoaded: false,
+                statementFailed: true,
+                transactionsFailed: true,
+              }
+            : {}),
         });
-      }
-    } catch (error) {
-      if (requestId !== statementRequestId) {
         return;
       }
 
       set({
+        monthKey,
+        transactions: timeline.value,
+        monthlyStatement: summary.value,
+        pendingMonth: null,
+        failedMonth: null,
         statementLoading: false,
-        statementFailed: true,
-        statementLoaded: false,
+        statementFailed: false,
+        statementLoaded: true,
+        transactionsLoading: false,
+        transactionsFailed: false,
       });
-      console.error('Failed to load monthly statement', error);
+    } finally {
+      release();
     }
-  },
-}));
+  }
+
+  return {
+    monthKey: currentMonthKey(),
+    transactions: [],
+    transactionsLoading: false,
+    transactionsFailed: false,
+    monthlyStatement: emptyMonthlyStatement,
+    statementLoading: false,
+    statementFailed: false,
+    statementLoaded: false,
+    pendingMonth: null,
+    failedMonth: null,
+
+    init: async () => {
+      if (financialActionsBlocked()) {
+        return;
+      }
+
+      await loadPeriod(get().monthKey, false);
+    },
+    refreshMonth: () => loadPeriod(get().monthKey, false),
+
+    reset: () => {
+      sessionGeneration++;
+      useFinancialOperations.getState().reset();
+      transactionsRequestId++;
+      statementRequestId++;
+      set({
+        monthKey: currentMonthKey(),
+        monthlyStatement: emptyMonthlyStatement,
+        statementLoading: false,
+        statementFailed: false,
+        statementLoaded: false,
+        pendingMonth: null,
+        failedMonth: null,
+        transactions: [],
+        transactionsLoading: false,
+        transactionsFailed: false,
+      });
+    },
+
+    setMonthKey: async (monthKey) => {
+      if (financialActionsBlocked()) {
+        return;
+      }
+
+      await loadPeriod(monthKey, true);
+    },
+
+    loadTransactions: async () => {
+      if (get().pendingMonth !== null) {
+        return;
+      }
+
+      const release = useFinancialOperations.getState().begin('period');
+      const requestId = ++transactionsRequestId;
+      set({ transactionsLoading: true, transactionsFailed: false });
+
+      try {
+        const { monthKey } = get();
+        const transactions = await window.api.getTransactions(monthKey);
+
+        if (
+          get().monthKey === monthKey &&
+          requestId === transactionsRequestId
+        ) {
+          set({ transactions, transactionsLoading: false });
+        }
+      } catch (error) {
+        if (requestId !== transactionsRequestId) {
+          return;
+        }
+
+        set({ transactionsLoading: false, transactionsFailed: true });
+        console.error('Failed to load transactions', error);
+        throw error;
+      } finally {
+        release();
+      }
+    },
+  };
+});

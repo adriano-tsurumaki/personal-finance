@@ -4,7 +4,7 @@ This document records the goals, table responsibilities, and decisions for the f
 
 ## Main screen goal
 
-The main screen presents a projected monthly balance and a timeline of financial
+The main screen presents a projected cumulative closing balance and a timeline of financial
 events. The summary includes unpaid invoices in their due month; it does not
 represent confirmed available cash. A credit-card purchase remains in its
 reference-date timeline month, independent of its invoice's due or payment month.
@@ -18,7 +18,9 @@ The first version uses these rules:
   reference date.
 - Unpaid invoices contribute in their due month. Paid invoices use the actual
   payment month instead, even when it differs from the due month.
-- Monthly balance is inflows minus outflows; it is not an account balance.
+- Monthly net is inflows minus outflows. The projected closing balance adds the
+  cumulative opening balance from all earlier events; it is not a confirmed bank
+  account balance. History starts from zero before the first recorded event.
 - Credit-card purchases must not be counted again alongside their invoice total.
 
 Category analysis should count purchases and installments without counting the invoice payment as another consumption expense.
@@ -300,18 +302,54 @@ their recorded total even when purchase details are incomplete. Reference dates
 also remain timeline dates. The UI calls this a projected monthly balance because
 it includes commitments as well as recorded settlements.
 
-One SQL query groups receipts, direct expenses, and paid or due invoices by their
-effective cash-flow day. Totals are calculated in integer cents and converted to BRL units for the
-DTO. The daily series includes every day of the selected month. Opening cash flow
-is zero and closing cash flow equals income minus expenses; neither represents
-an account balance. The savings rate is net divided by income, or zero when
-there is no income. The event count includes direct receipts, direct
-expenses, and paid or due invoices, rather than every purchase inside an invoice. Summaries are computed;
-their reserved DTO identifier is zero.
+One SQL query aggregates receipts, direct expenses, and paid or due invoices before
+an exclusive month-end boundary. Earlier events are grouped into one opening row;
+events within the month are grouped by effective cash-flow day. No per-month query
+chain or individual historical entries cross IPC. Totals are calculated in integer
+cents and converted to BRL units for the DTO. Aggregates beyond exact JavaScript
+integer-cent precision are rejected rather than displayed with rounded values.
+
+The opening balance is cumulative income minus expenses before the month. Monthly
+`net` remains income minus expenses only within the selected month, while
+`closingBalance` adds that net to `openingBalance`. The daily series includes every
+day of the month and carries the opening balance into each day. Empty months retain
+the previous closing balance, including negative balances and year transitions.
+The savings rate remains monthly net divided by monthly income, or zero when
+there is no income. Computed summaries expose no identifier or transaction count.
+The timeline count remains separate because its reference-date entries differ
+from cash-flow events.
+
+The cumulative projection starts from zero before the first recorded event. It
+includes unpaid commitments under the same rules as monthly flow, so it does not
+represent confirmed available cash. An explicit opening cash adjustment or account
+tracking would require a separate persisted financial rule. Recurrence and
+installment occurrence generation remain deferred; future occurrences must be
+generated idempotently for the requested horizon before aggregation, without
+counting a card purchase and its invoice twice.
+
+Month navigation loads the timeline and summary together and publishes the month
+and both results in one store update after both requests succeed. While pending,
+the confirmed month stays visible. A non-dismissible loading toast appears at the
+bottom center and disappears immediately when the state changes, without a success
+notification. A failed navigation keeps the confirmed period and shows a dismissible
+error toast with a retry for the failed target. These notifications do not occupy
+space in the summary. Initial failures
+and failed refreshes mark amounts unavailable instead of presenting zero or stale
+values as valid. Session and request generations discard obsolete responses.
+Financial mutation refreshes use the same coordinated loading path.
+
+A renderer-owned operation store tracks independently released tokens for period
+loading, financial mutations, and transaction detail loading. Navigation and
+conflicting financial actions are disabled while these operations are pending;
+profile controls remain available. Form submission guards also enforce the lock.
+Session reset clears pending tokens, and older completions cannot unlock a newer
+operation. This coordination is transient UI state, not a persisted financial lock.
 
 Composite indexes support transaction lookups by profile and payment date, card
 lookups by profile, and invoice lookups by card and payment date. Date predicates
-use a half-open month range without applying functions to indexed columns.
+use an exclusive upper bound without applying functions to indexed columns.
+Existing profile/payment-date and card/payment-date indexes are reused; the
+reference-date fallback also constrains profile and null payment date.
 
 The main process keeps up to 24 statements in an LRU memory cache keyed by profile
 and month. Each request checks SQLite `total_changes()` for writes on its own
@@ -321,3 +359,9 @@ cache, including after transaction edits, deletion, invoice changes, and externa
 writes. This conservative policy also invalidates on unrelated database writes.
 Cache hits avoid aggregation but still perform the lightweight revision check.
 Restarting discards the cache; no persistent aggregate table is maintained.
+
+Cache misses aggregate the recorded history through the requested period; revisits
+reuse the complete cached statement. Historical edits invalidate later balances
+through the existing conservative revision policy. Persisted monthly checkpoints
+and narrower invalidation remain optional optimizations that require measured need;
+no aggregate table or schema migration is introduced for cumulative balances.

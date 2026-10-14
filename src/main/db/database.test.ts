@@ -782,7 +782,7 @@ test('monthly cash flow aggregates settlement dates, isolates profiles and inval
     client: db.$client,
     logger: {
       logQuery(query) {
-        if (query.includes('GROUP BY date')) {
+        if (query.includes('GROUP BY CASE')) {
           aggregateQueries++;
         }
       },
@@ -899,27 +899,26 @@ test('monthly cash flow aggregates settlement dates, isolates profiles and inval
     assert.equal(statement.income, 100);
     assert.equal(statement.expense, 55);
     assert.equal(statement.net, 45);
-    assert.equal(statement.closingBalance, 45);
-    assert.equal(statement.openingBalance, 0);
+    assert.equal(statement.closingBalance, -755);
+    assert.equal(statement.openingBalance, -800);
     assert.equal(statement.savingsRate, 0.45);
-    assert.equal(statement.transactionCount, 3);
     assert.equal(statement.balanceSeries.length, 31);
     assert.deepEqual(statement.balanceSeries[0], {
       date: '2026-10-01',
-      balance: 100,
+      balance: -700,
     });
     assert.deepEqual(statement.balanceSeries[4], {
       date: '2026-10-05',
-      balance: 70,
+      balance: -730,
     });
     assert.deepEqual(statement.balanceSeries[30], {
       date: '2026-10-31',
-      balance: 45,
+      balance: -755,
     });
     statements.get('2026-10');
     assert.equal(aggregateQueries, 1);
     statement.balanceSeries[0].balance = 999;
-    assert.equal(statements.get('2026-10').balanceSeries[0].balance, 100);
+    assert.equal(statements.get('2026-10').balanceSeries[0].balance, -700);
     const receipt = db
       .select()
       .from(transactionsTable)
@@ -997,7 +996,6 @@ test('monthly income includes recorded salaries without settlement and preserves
     assert.equal(initial.net, 123.45);
     assert.equal(initial.closingBalance, 123.45);
     assert.equal(initial.savingsRate, 1);
-    assert.equal(initial.transactionCount, 1);
     assert.equal(initial.balanceSeries[7].balance, 0);
     assert.equal(initial.balanceSeries[8].balance, 123.45);
 
@@ -1038,7 +1036,6 @@ test('monthly income includes recorded salaries without settlement and preserves
     });
     assert.equal(statements.get('2026-10').income, 132.45);
     assert.equal(statements.get('2026-10').expense, 900);
-    assert.equal(statements.get('2026-10').transactionCount, 5);
     assert.equal(statements.get('2026-11').income, 5);
 
     transactions.update(salary.id, { ...input, amount_cents: 20000 });
@@ -1120,7 +1117,6 @@ test('monthly expenses include direct methods without settlement and preserve ex
     assert.equal(initial.net, 648.5);
     assert.equal(initial.closingBalance, 648.5);
     assert.equal(initial.savingsRate, 0.6485);
-    assert.equal(initial.transactionCount, 4);
     assert.equal(initial.balanceSeries[0].balance, 899.75);
     assert.equal(initial.balanceSeries[14].balance, 699.25);
     assert.equal(initial.balanceSeries[30].balance, 648.5);
@@ -1178,7 +1174,6 @@ test('monthly expenses include direct methods without settlement and preserve ex
     assert.equal(settled.expense, 374.5);
     assert.equal(settled.net, 625.5);
     assert.equal(settled.savingsRate, 0.6255);
-    assert.equal(settled.transactionCount, 5);
     assert.equal(statements.get('2026-09').expense, 0);
     assert.equal(statements.get('2026-11').expense, 912);
     transactions.update(pix.id, { ...input, amount_cents: 15025 });
@@ -1342,6 +1337,7 @@ test('monthly cache detects external commits and queries use settlement indexes'
       profiles.requireActive(),
     );
     assert.equal(statements.get('2026-10').income, 0);
+    assert.equal(statements.get('2026-11').openingBalance, 0);
     const payment = profiles
       .options()
       .payments.find((method) => method.catalog_key === 'cash')!;
@@ -1358,6 +1354,8 @@ test('monthly cache detects external commits and queries use settlement indexes'
       })
       .run();
     assert.equal(statements.get('2026-10').income, 123.45);
+    assert.equal(statements.get('2026-11').openingBalance, 123.45);
+    assert.equal(statements.get('2026-11').closingBalance, 123.45);
     const plan = db.all<{ detail: string }>(sql`
       EXPLAIN QUERY PLAN SELECT amount_cents FROM transactions
       WHERE user_id = ${profile.profile.id} AND payment_date >= '2026-10-01' AND payment_date < '2026-11-01'
@@ -1384,5 +1382,290 @@ test('monthly cache detects external commits and queries use settlement indexes'
     external.$client.close();
     db.$client.close();
     rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('cumulative balances carry across empty months and years and recalculate after historical changes', () => {
+  const db = initDb(':memory:', migrationsFolder);
+  const profiles = createProfileService(db);
+  let aggregates = 0;
+  const observed = drizzle({
+    client: db.$client,
+    logger: {
+      logQuery(query) {
+        if (query.includes('GROUP BY CASE')) {
+          aggregates++;
+        }
+      },
+    },
+  });
+  const statements = createMonthlyStatementService(observed, () =>
+    profiles.requireActive(),
+  );
+
+  try {
+    const profile = profiles.create({
+      name: 'Cumulative flow',
+      email: 'cumulative@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(profile.ok);
+    const payment = profiles
+      .options()
+      .payments.find((method) => method.catalog_key === 'cash')!;
+    const receipt = db
+      .insert(transactionsTable)
+      .values({
+        name: 'Opening receipt',
+        type: 1,
+        amount_cents: 100001,
+        user_id: profile.profile.id,
+        payment_id: payment.id,
+        reference_date: '2025-12-31',
+        payment_date: null,
+      })
+      .returning()
+      .get();
+    db.insert(transactionsTable)
+      .values({
+        name: 'February expense',
+        type: 2,
+        amount_cents: 150002,
+        user_id: profile.profile.id,
+        payment_id: payment.id,
+        reference_date: '2026-02-15',
+        payment_date: null,
+      })
+      .run();
+    const january = statements.get('2026-01');
+    assert.equal(january.openingBalance, 1000.01);
+    assert.equal(january.net, 0);
+    assert.equal(january.closingBalance, 1000.01);
+    assert.ok(january.balanceSeries.every((day) => day.balance === 1000.01));
+    const february = statements.get('2026-02');
+    assert.equal(february.openingBalance, january.closingBalance);
+    assert.equal(february.net, -1500.02);
+    assert.equal(february.closingBalance, -500.01);
+    assert.equal(february.balanceSeries[13].balance, 1000.01);
+    assert.equal(february.balanceSeries[14].balance, -500.01);
+    const march = statements.get('2026-03');
+    assert.equal(march.openingBalance, february.closingBalance);
+    assert.equal(march.closingBalance, -500.01);
+    const queries = aggregates;
+    statements.get('2026-01');
+    statements.get('2026-03');
+    assert.equal(aggregates, queries);
+    db.update(transactionsTable)
+      .set({ amount_cents: 200001 })
+      .where(eq(transactionsTable.id, receipt.id))
+      .run();
+    assert.equal(statements.get('2026-03').closingBalance, 499.99);
+    db.update(transactionsTable)
+      .set({ payment_date: '2026-04-01' })
+      .where(eq(transactionsTable.id, receipt.id))
+      .run();
+    assert.equal(statements.get('2026-01').openingBalance, 0);
+    assert.equal(statements.get('2026-03').closingBalance, -1500.02);
+    assert.equal(statements.get('2026-04').closingBalance, 499.99);
+    db.delete(transactionsTable)
+      .where(eq(transactionsTable.id, receipt.id))
+      .run();
+    assert.equal(statements.get('2026-04').closingBalance, -1500.02);
+    assert.equal(statements.get('2025-11').closingBalance, 0);
+    const other = profiles.create({
+      name: 'Other cumulative profile',
+      email: 'other-cumulative@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(other.ok);
+    assert.equal(statements.get('2026-04').openingBalance, 0);
+    assert.equal(statements.get('2026-04').closingBalance, 0);
+    assert.equal('id' in january, false);
+    assert.equal('transactionCount' in january, false);
+  } finally {
+    db.$client.close();
+  }
+});
+
+test('historical projected invoices move to actual payment dates without duplicating accumulated outflows', () => {
+  const db = initDb(':memory:', migrationsFolder);
+  const profiles = createProfileService(db);
+  const statements = createMonthlyStatementService(db, () =>
+    profiles.requireActive(),
+  );
+
+  try {
+    const profile = profiles.create({
+      name: 'Invoice carry',
+      email: 'invoice-carry@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(profile.ok);
+    const card = db
+      .insert(creditCardsTable)
+      .values({ name: 'Historical card', user_id: profile.profile.id })
+      .returning()
+      .get();
+    const invoice = db
+      .insert(creditCardInvoicesTable)
+      .values({
+        credit_card_id: card.id,
+        amount_cents: 12345,
+        closing_date: '2025-12-20',
+        due_date: '2025-12-27',
+        paid_at: null,
+      })
+      .returning()
+      .get();
+    assert.equal(statements.get('2026-01').openingBalance, -123.45);
+    assert.equal(statements.get('2026-02').closingBalance, -123.45);
+    db.update(creditCardInvoicesTable)
+      .set({ paid_at: '2026-02-05' })
+      .where(eq(creditCardInvoicesTable.id, invoice.id))
+      .run();
+    assert.equal(statements.get('2026-01').openingBalance, 0);
+    const paid = statements.get('2026-02');
+    assert.equal(paid.openingBalance, 0);
+    assert.equal(paid.expense, 123.45);
+    assert.equal(paid.closingBalance, -123.45);
+    assert.equal(statements.get('2026-03').openingBalance, -123.45);
+    db.update(creditCardInvoicesTable)
+      .set({ paid_at: '2025-11-30' })
+      .where(eq(creditCardInvoicesTable.id, invoice.id))
+      .run();
+    assert.equal(statements.get('2025-12').openingBalance, -123.45);
+    assert.equal(statements.get('2025-12').expense, 0);
+    assert.equal(statements.get('2026-02').expense, 0);
+    assert.equal(statements.get('2026-03').closingBalance, -123.45);
+  } finally {
+    db.$client.close();
+  }
+});
+
+test('large histories use indexed aggregation and bounded cached statements', (context) => {
+  const db = initDb(':memory:', migrationsFolder);
+  const profiles = createProfileService(db);
+  let aggregates = 0;
+  let aggregateSql = '';
+  let aggregateParams: unknown[] = [];
+  const observed = drizzle({
+    client: db.$client,
+    logger: {
+      logQuery(query, params) {
+        if (query.includes('GROUP BY CASE')) {
+          aggregates++;
+          aggregateSql = query;
+          aggregateParams = params;
+        }
+      },
+    },
+  });
+  const statements = createMonthlyStatementService(observed, () =>
+    profiles.requireActive(),
+  );
+
+  try {
+    const profile = profiles.create({
+      name: 'Long history',
+      email: 'long-history@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(profile.ok);
+    const payment = profiles
+      .options()
+      .payments.find((method) => method.catalog_key === 'cash')!;
+    const insert = db.$client.prepare(
+      'INSERT INTO transactions (name, type, amount_cents, user_id, payment_id, reference_date, payment_date) VALUES (?, 1, 100, ?, ?, ?, ?)',
+    );
+    db.$client.transaction(() => {
+      for (let index = 0; index < 12000; index++) {
+        const date = `${2010 + (index % 10)}-${String(1 + (index % 12)).padStart(2, '0')}-${String(1 + (index % 28)).padStart(2, '0')}`;
+        insert.run(
+          'Historical receipt',
+          profile.profile.id,
+          payment.id,
+          date,
+          index % 2 ? date : null,
+        );
+      }
+    })();
+    const start = performance.now();
+    const result = statements.get('2026-01');
+    const elapsed = performance.now() - start;
+    assert.equal(result.openingBalance, 12000);
+    assert.equal(result.closingBalance, 12000);
+    const rows = db.$client.prepare(aggregateSql).all(...aggregateParams);
+    assert.equal(rows.length, 1);
+    const plan = db.$client
+      .prepare(`EXPLAIN QUERY PLAN ${aggregateSql}`)
+      .all(...aggregateParams) as { detail: string }[];
+    assert.ok(
+      plan.some((row) =>
+        row.detail.includes('transactions_user_payment_date_idx'),
+      ),
+    );
+    assert.ok(
+      plan.some((row) =>
+        row.detail.includes('credit_card_invoice_card_paid_idx'),
+      ),
+    );
+    const cachedStart = performance.now();
+    for (let index = 0; index < 100; index++) {
+      statements.get('2026-01');
+    }
+    assert.equal(aggregates, 1);
+    context.diagnostic(
+      `12,000 events: first aggregation ${elapsed.toFixed(2)} ms; 100 cached reads ${(performance.now() - cachedStart).toFixed(2)} ms.`,
+    );
+    // Fill beyond the 24-entry LRU capacity, then verify that the oldest entry is recomputed.
+    for (let month = 2; month <= 12; month++) {
+      statements.get(`2026-${String(month).padStart(2, '0')}`);
+    }
+    for (let month = 1; month <= 12; month++) {
+      statements.get(`2027-${String(month).padStart(2, '0')}`);
+    }
+    statements.get('2028-01');
+    const before = aggregates;
+    statements.get('2026-01');
+    assert.equal(aggregates, before + 1);
+  } finally {
+    db.$client.close();
+  }
+});
+
+test('cumulative summaries reject amounts beyond exact integer-cent precision', () => {
+  const db = initDb(':memory:', migrationsFolder);
+  const profiles = createProfileService(db);
+  const statements = createMonthlyStatementService(db, () =>
+    profiles.requireActive(),
+  );
+
+  try {
+    const profile = profiles.create({
+      name: 'Precision boundary',
+      email: 'precision@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(profile.ok);
+    const payment = profiles
+      .options()
+      .payments.find((method) => method.catalog_key === 'cash')!;
+    for (const date of ['2026-01-01', '2026-01-02']) {
+      db.insert(transactionsTable)
+        .values({
+          name: 'Large receipt',
+          type: 1,
+          amount_cents: Number.MAX_SAFE_INTEGER,
+          user_id: profile.profile.id,
+          payment_id: payment.id,
+          reference_date: date,
+          payment_date: date,
+        })
+        .run();
+    }
+    assert.throws(() => statements.get('2026-01'), /supported amount/);
+    assert.throws(() => statements.get('2026-02'), /supported amount/);
+  } finally {
+    db.$client.close();
   }
 });

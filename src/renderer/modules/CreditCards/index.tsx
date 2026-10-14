@@ -1,3 +1,7 @@
+import {
+  financialActionsBlocked,
+  useFinancialOperations,
+} from '@store/financial-operations';
 import { useEffect, useId, useRef, useState } from 'react';
 import {
   Archive,
@@ -97,16 +101,16 @@ export default function CreditCards() {
   async function refreshed() {
     await Promise.all([
       creditCardStore.getState().refresh(),
-      useAppStore.getState().loadTransactions(),
-      useAppStore.getState().loadMonthlyStatement(),
+      useAppStore.getState().refreshMonth(),
     ]);
   }
 
   async function archive() {
-    if (!card || busy) {
+    if (!card || busy || financialActionsBlocked()) {
       return;
     }
 
+    const release = useFinancialOperations.getState().begin('mutation');
     setBusy(true);
     try {
       if (
@@ -132,6 +136,8 @@ export default function CreditCards() {
         });
       }
     } finally {
+      release();
+
       if (current()) {
         setBusy(false);
       }

@@ -1,6 +1,13 @@
 import type { TransactionInput } from '@shared/contracts/transaction';
 import { createStore, useStore } from 'zustand';
 import { useShallow } from 'zustand/shallow';
+import { useFinancialOperations } from './financial-operations';
+
+function dialogActionsBlocked(): boolean {
+  return [...useFinancialOperations.getState().pending.values()].some(
+    (operation) => operation !== 'transaction-details',
+  );
+}
 
 interface State {
   /**
@@ -48,6 +55,7 @@ export function createDialogTransactionStore(
     window.api.getTransaction(id),
 ) {
   let requestId = 0;
+  let releaseSubmission: (() => void) | undefined;
 
   return createStore<State>((set, get) => ({
     transactionId: null,
@@ -58,6 +66,8 @@ export function createDialogTransactionStore(
     returnFocus: null,
 
     resetSession: () => {
+      releaseSubmission?.();
+      releaseSubmission = undefined;
       requestId++;
       set({
         transactionId: null,
@@ -70,11 +80,12 @@ export function createDialogTransactionStore(
     },
 
     startSubmission: () => {
-      if (get().isSubmitting) {
+      if (get().isSubmitting || dialogActionsBlocked()) {
         return null;
       }
 
       requestId++;
+      releaseSubmission = useFinancialOperations.getState().begin('mutation');
       set({ isSubmitting: true });
       return requestId;
     },
@@ -87,6 +98,8 @@ export function createDialogTransactionStore(
         return;
       }
 
+      releaseSubmission?.();
+      releaseSubmission = undefined;
       set(
         saved
           ? {
@@ -101,7 +114,7 @@ export function createDialogTransactionStore(
     },
 
     openDialogTransaction: (newTransaction) => {
-      if (get().isSubmitting) {
+      if (get().isSubmitting || dialogActionsBlocked()) {
         return;
       }
 
@@ -146,10 +159,13 @@ export function createDialogTransactionStore(
           ? null
           : (document.activeElement as HTMLElement | null);
 
-      if (get().isSubmitting) {
+      if (get().isSubmitting || dialogActionsBlocked()) {
         return;
       }
 
+      const release = useFinancialOperations
+        .getState()
+        .begin('transaction-details');
       const currentRequestId = ++requestId;
       let transaction: TransactionInput;
 
@@ -161,6 +177,8 @@ export function createDialogTransactionStore(
         }
 
         throw error;
+      } finally {
+        release();
       }
 
       if (currentRequestId !== requestId || get().isSubmitting) {

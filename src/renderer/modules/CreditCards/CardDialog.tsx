@@ -1,3 +1,7 @@
+import {
+  financialActionsBlocked,
+  useFinancialOperations,
+} from '@store/financial-operations';
 import { useEffect, useId, useState } from 'react';
 import {
   Dialog,
@@ -41,6 +45,7 @@ export default function CardDialog({
   onSaved: (id: number) => Promise<void>;
   returnFocus?: React.RefObject<HTMLElement | null>;
 }) {
+  const blocked = useFinancialOperations((state) => state.pending.size > 0);
   const id = useId();
   const [input, setInput] = useState<CreditCardInput>({
     name: card === 'new' ? '' : card.name,
@@ -80,10 +85,11 @@ export default function CardDialog({
   async function save(event: React.FormEvent) {
     event.preventDefault();
 
-    if (busy) {
+    if (busy || financialActionsBlocked()) {
       return;
     }
 
+    const release = useFinancialOperations.getState().begin('mutation');
     setBusy(true);
     try {
       const savedId =
@@ -103,6 +109,8 @@ export default function CardDialog({
         });
       }
     } finally {
+      release();
+
       if (useProfileStore.getState().sessionVersion === session) {
         setBusy(false);
       }
@@ -143,7 +151,7 @@ export default function CardDialog({
                 : 'py-4'
             }
           >
-            <FieldSet disabled={busy}>
+            <FieldSet disabled={busy || blocked}>
               <FieldGroup>
                 <Field>
                   <FieldLabel htmlFor={`${id}-name`}>
@@ -309,11 +317,11 @@ export default function CardDialog({
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={busy}
+              disabled={busy || blocked}
             >
               {t('common.cancel')}
             </Button>
-            <Button type="submit" disabled={busy}>
+            <Button type="submit" disabled={busy || blocked}>
               {t('common.save')}
             </Button>
           </DialogFooter>

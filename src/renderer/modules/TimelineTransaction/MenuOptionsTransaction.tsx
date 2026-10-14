@@ -1,3 +1,7 @@
+import {
+  financialActionsBlocked,
+  useFinancialOperations,
+} from '@store/financial-operations';
 import { t } from '@lib/i18n';
 import {
   ContextMenu,
@@ -28,6 +32,7 @@ export default function MenuOptionsTransaction({
   children: (actions: TransactionActions) => React.ReactNode;
   transactionId: number;
 }) {
+  const blocked = useFinancialOperations((state) => state.pending.size > 0);
   const isRemoving = useRef(false);
   const { loadTransaction, isSubmitting } = useDialogTransactionStore(
     (state) => ({
@@ -58,10 +63,11 @@ export default function MenuOptionsTransaction({
   const handleCopy = () => handleLoad('copy');
 
   const handleRemove = async () => {
-    if (isRemoving.current) {
+    if (isRemoving.current || financialActionsBlocked()) {
       return;
     }
 
+    const release = useFinancialOperations.getState().begin('mutation');
     isRemoving.current = true;
     const sessionVersion = useProfileStore.getState().sessionVersion;
     const isCurrentSession = () =>
@@ -98,12 +104,11 @@ export default function MenuOptionsTransaction({
         return;
       }
 
-      const { loadTransactions, loadMonthlyStatement } = useAppStore.getState();
+      const { refreshMonth } = useAppStore.getState();
 
       try {
         await Promise.all([
-          loadTransactions(),
-          loadMonthlyStatement(),
+          refreshMonth(),
           creditCardStore.getState().refresh(),
         ]);
       } catch (error) {
@@ -141,6 +146,7 @@ export default function MenuOptionsTransaction({
         description: t('transactions.remove_error'),
       });
     } finally {
+      release();
       isRemoving.current = false;
     }
   };
@@ -155,17 +161,26 @@ export default function MenuOptionsTransaction({
           onEdit: handleEdit,
           onCopy: handleCopy,
           onRemove: handleRemove,
-          disabled: isSubmitting,
+          disabled: isSubmitting || blocked,
         })}
       </ContextMenuTrigger>
       <ContextMenuContent>
-        <ContextMenuItem onClick={handleEdit} disabled={isSubmitting}>
+        <ContextMenuItem
+          onClick={handleEdit}
+          disabled={isSubmitting || blocked}
+        >
           {t('common.edit')}
         </ContextMenuItem>
-        <ContextMenuItem onClick={handleCopy} disabled={isSubmitting}>
+        <ContextMenuItem
+          onClick={handleCopy}
+          disabled={isSubmitting || blocked}
+        >
           {t('common.copy')}
         </ContextMenuItem>
-        <ContextMenuItem onClick={handleRemove} disabled={isSubmitting}>
+        <ContextMenuItem
+          onClick={handleRemove}
+          disabled={isSubmitting || blocked}
+        >
           {t('common.remove')}
         </ContextMenuItem>
       </ContextMenuContent>

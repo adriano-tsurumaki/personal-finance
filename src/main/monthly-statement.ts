@@ -7,10 +7,9 @@ interface DailyCashFlow {
   date: string;
   income: number;
   expense: number;
-  count: number;
 }
 
-/** Aggregates monthly flows, including unpaid invoices due; the DTO exposes BRL units. */
+/** Carries projected cash flow into the month; the DTO exposes BRL units. */
 export function createMonthlyStatementService(
   db: AppDatabase,
   getActiveUser: () => { id: number },
@@ -60,8 +59,8 @@ export function createMonthlyStatementService(
         }
 
         const rows = tx.all<DailyCashFlow>(sql`
-          SELECT date, SUM(income) AS income, SUM(expense) AS expense,
-                 COUNT(*) AS count
+          SELECT CASE WHEN date < ${start} THEN '' ELSE date END AS date,
+                 SUM(income) AS income, SUM(expense) AS expense
           FROM (
             SELECT t.payment_date AS date,
                    CASE WHEN t.type = 1 THEN t.amount_cents ELSE 0 END AS income,
@@ -69,7 +68,7 @@ export function createMonthlyStatementService(
             FROM transactions t
             INNER JOIN payments p ON p.id = t.payment_id
             WHERE t.user_id = ${user.id}
-              AND t.payment_date >= ${start} AND t.payment_date < ${end}
+              AND t.payment_date < ${end}
               AND t.credit_card_invoice_id IS NULL AND p.type = 1
             UNION ALL
             SELECT t.reference_date AS date,
@@ -79,28 +78,39 @@ export function createMonthlyStatementService(
             INNER JOIN payments p ON p.id = t.payment_id
             WHERE t.user_id = ${user.id} AND t.type IN (1, 2)
               AND t.payment_date IS NULL
-              AND t.reference_date >= ${start} AND t.reference_date < ${end}
+              AND t.reference_date < ${end}
               AND t.credit_card_invoice_id IS NULL AND p.type = 1
             UNION ALL
             SELECT i.paid_at AS date, 0 AS income, i.amount_cents AS expense
             FROM credit_cards c
             INNER JOIN credit_card_invoice i ON i.credit_card_id = c.id
             WHERE c.user_id = ${user.id}
-              AND i.paid_at >= ${start} AND i.paid_at < ${end}
+              AND i.paid_at < ${end}
             UNION ALL
             SELECT i.due_date AS date, 0 AS income, i.amount_cents AS expense
             FROM credit_cards c
             INNER JOIN credit_card_invoice i ON i.credit_card_id = c.id
             WHERE c.user_id = ${user.id} AND i.paid_at IS NULL
-              AND i.due_date >= ${start} AND i.due_date < ${end}
+              AND i.due_date < ${end}
           )
-          GROUP BY date ORDER BY date
+          GROUP BY CASE WHEN date < ${start} THEN '' ELSE date END ORDER BY date
         `);
+
+        for (const row of rows) {
+          if (
+            !Number.isSafeInteger(row.income) ||
+            !Number.isSafeInteger(row.expense)
+          ) {
+            throw new Error('Monthly cash flow exceeds the supported amount.');
+          }
+        }
+
         const days = new Map(rows.map((row) => [row.date, row]));
+        const opening = days.get('');
+        const openingCents = (opening?.income ?? 0) - (opening?.expense ?? 0);
         const dayCount = getDaysInMonth(year, month);
         let income = 0;
         let expense = 0;
-        let transactionCount = 0;
         const balanceSeries: MonthlyStatementDto['balanceSeries'] = [];
 
         for (let day = 1; day <= dayCount; day++) {
@@ -108,21 +118,30 @@ export function createMonthlyStatementService(
           const row = days.get(date);
           income += row?.income ?? 0;
           expense += row?.expense ?? 0;
-          transactionCount += row?.count ?? 0;
-          balanceSeries.push({ date, balance: (income - expense) / 100 });
+
+          if (
+            !Number.isSafeInteger(income) ||
+            !Number.isSafeInteger(expense) ||
+            !Number.isSafeInteger(openingCents + (income - expense))
+          ) {
+            throw new Error('Monthly cash flow exceeds the supported amount.');
+          }
+
+          balanceSeries.push({
+            date,
+            balance: (openingCents + (income - expense)) / 100,
+          });
         }
 
         const statement: MonthlyStatementDto = {
-          id: 0,
           year,
           month,
           income: income / 100,
           expense: expense / 100,
           net: (income - expense) / 100,
           savingsRate: income > 0 ? (income - expense) / income : 0,
-          transactionCount,
-          openingBalance: 0,
-          closingBalance: (income - expense) / 100,
+          openingBalance: openingCents / 100,
+          closingBalance: (openingCents + (income - expense)) / 100,
           balanceSeries,
         };
         cache.set(key, statement);

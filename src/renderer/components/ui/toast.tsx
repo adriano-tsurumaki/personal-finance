@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Toast as ToastPrimitive } from '@base-ui/react/toast';
 import { cn } from '@lib/utils';
+import { t } from '@lib/i18n';
 import {
   CircleCheckIcon,
   InfoIcon,
@@ -12,7 +13,12 @@ import {
 
 import { Button } from '@components/ui/button';
 
-const toast = ToastPrimitive.createToastManager();
+interface ToastData {
+  dismissible?: boolean;
+  instantDismiss?: boolean;
+}
+
+const toast = ToastPrimitive.createToastManager<ToastData>();
 
 const ToastPortalContext = React.createContext<
   ((container: HTMLElement) => () => void) | null
@@ -47,7 +53,7 @@ function ToastViewport({ className, ...props }: ToastPrimitive.Viewport.Props) {
     <ToastPrimitive.Viewport
       data-slot="toast-viewport"
       className={cn(
-        'pointer-events-none fixed inset-x-4 bottom-4 z-[100] mx-auto w-auto max-w-sm outline-none sm:right-4 sm:left-auto sm:mx-0 sm:w-full',
+        'pointer-events-none fixed inset-x-4 bottom-4 z-[100] mx-auto w-auto max-w-sm outline-none sm:w-full',
         className,
       )}
       {...props}
@@ -142,7 +148,7 @@ function ToastClose({
   return (
     <ToastPrimitive.Close
       data-slot="toast-close"
-      aria-label="Close toast"
+      aria-label={t('common.close')}
       render={render}
       className={cn(
         "relative shrink-0 text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:text-foreground",
@@ -192,11 +198,28 @@ function ToastIcon({ type }: { type: string | undefined }) {
   );
 }
 
-function ToastList() {
-  const { toasts } = ToastPrimitive.useToastManager();
-
-  return toasts.map((toastItem) => (
-    <Toast key={toastItem.id} toast={toastItem}>
+function ToastItem({
+  toast: toastItem,
+}: {
+  toast: ToastPrimitive.Root.ToastObject<ToastData>;
+}) {
+  return (
+    <Toast
+      toast={toastItem}
+      swipeDirection={toastItem.data?.dismissible === false ? [] : undefined}
+      hidden={
+        toastItem.data?.instantDismiss &&
+        toastItem.transitionStatus === 'ending'
+      }
+      style={
+        toastItem.data?.instantDismiss ? { transition: 'none' } : undefined
+      }
+      onKeyDown={(event) => {
+        if (toastItem.data?.dismissible === false && event.key === 'Escape') {
+          event.preventBaseUIHandler();
+        }
+      }}
+    >
       <ToastContent>
         <ToastIcon type={toastItem.type} />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -204,9 +227,17 @@ function ToastList() {
           <ToastDescription />
         </div>
         <ToastAction />
-        <ToastClose />
+        {toastItem.data?.dismissible !== false && <ToastClose />}
       </ToastContent>
     </Toast>
+  );
+}
+
+function ToastList() {
+  const { toasts } = ToastPrimitive.useToastManager<ToastData>();
+
+  return toasts.map((toastItem) => (
+    <ToastItem key={toastItem.id} toast={toastItem} />
   ));
 }
 
@@ -245,6 +276,7 @@ export {
   ToastAction,
   ToastClose,
   ToastContent,
+  ToastItem,
   ToastDescription,
   ToastPortal,
   ToastPortalTarget,

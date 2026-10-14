@@ -47,16 +47,24 @@ The following items were checked against the working tree on 2026-09-18. They ar
 
 ### Monthly summary loading and failure states
 
-- [ ] Restore explicit loading and failure feedback for the monthly summary
-      (P1 technical debt deferred after review on 2026-10-13). Month navigation
-      retains the previous statement for animation, but the UI currently displays
-      those amounts and the chart under the newly selected month even if its request
-      fails. Initial load failures also display the empty statement as zero amounts.
-      Decide how to present unavailable or stale data while preserving animation.
-      Complete when balance, income, expenses, savings, and the chart distinguish
-      loading, failure, and valid results, with regression coverage for initial load
-      failure, failed month navigation, and successful recovery. No error behavior
-      change is included in the current corrections.
+- [x] Restore explicit loading and failure feedback for the monthly summary
+      (verified 2026-10-14): navigation publishes the period, timeline, and summary
+      together only after both requests succeed. Failed navigation preserves the
+      confirmed period and offers retry; initial failure and failed refresh show
+      unavailable amounts. Store regression tests cover both request failures,
+      recovery, overlapping requests, lock release, and session isolation. Rendered
+      markup tests cover unavailable amounts and confirm feedback does not change
+      the summary layout. Notification lifecycle tests verify non-dismissible
+      loading, error retry, cleanup on state changes, and no success notification.
+- [x] Carry projected cash flow across months (verified 2026-10-14): SQLite tests
+      cover empty months, year boundaries, negative balances, historical edits and
+      deletion, explicit settlement dates, invoice projections, profile isolation,
+      integer-cent precision, indexed aggregation of 12,000 historical events, cache
+      reuse, and LRU eviction. The UI exposes the opening balance under the closing
+      balance. DTO identifier and unused cash-flow event count were removed.
+- Define an explicit initial cash adjustment if users need to start with money
+  predating their recorded history. The current cumulative projection assumes zero
+  before the first recorded event; this does not require account tracking.
 
 ### Profile and localization follow-up
 

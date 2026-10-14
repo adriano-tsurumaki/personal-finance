@@ -47,7 +47,7 @@ export default function TimelineTransaction() {
             onClick={() => {
               void useAppStore
                 .getState()
-                .loadTransactions()
+                .refreshMonth()
                 .catch(() => {});
             }}
           >

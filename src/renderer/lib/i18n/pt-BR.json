@@ -150,12 +150,15 @@
   "summary": {
     "previous": "Mês anterior",
     "next": "Próximo mês",
-    "balance": "Saldo mensal previsto",
+    "balance": "Saldo final projetado",
     "income": "Entradas",
     "expenses": "Saídas",
     "saved": "Economizado",
     "net": "Líquido {amount}",
-    "chart": "Gráfico do saldo mensal previsto"
+    "chart": "Gráfico do saldo mensal previsto",
+    "opening_balance": "Saldo inicial",
+    "loading_month": "Carregando {month}…",
+    "load_error": "Não foi possível carregar {month}. Os dados exibidos não foram atualizados."
   },
   "sections": {
     "label": "Seções das finanças mensais",
