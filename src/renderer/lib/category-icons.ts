@@ -29,6 +29,9 @@ import {
   type LucideIcon,
   ShoppingBag,
   UtensilsCrossed,
+  Joystick,
+  Heart,
+  HeartHandshake,
 } from 'lucide-react';
 
 import type { CategoryIconKey } from '@shared/contracts/categories';
@@ -62,6 +65,9 @@ export const categoryIcons: Record<CategoryIconKey, LucideIcon> = {
   sports: Trophy,
   vehicle: Car,
   work: BriefcaseBusiness,
+  joystick: Joystick,
+  heart: Heart,
+  heart_handshake: HeartHandshake,
   other: Tag,
 };
 

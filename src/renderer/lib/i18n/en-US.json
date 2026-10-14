@@ -272,6 +272,9 @@
       "sports": "Sports",
       "vehicle": "Vehicle",
       "work": "Work",
+      "joystick": "Gaming",
+      "heart": "Health & Wellness",
+      "heart_handshake": "Health & Wellness",
       "other": "Other"
     }
   }

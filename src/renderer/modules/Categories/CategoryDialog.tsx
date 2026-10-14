@@ -175,6 +175,7 @@ export default function CategoryDialog({
                 >
                   {categoryIconKeys.map((key) => {
                     const OptionIcon = getCategoryIcon(key);
+                    const label = t(`category_manager.icons.${key}`);
                     return (
                       <Button
                         key={key}
@@ -182,8 +183,8 @@ export default function CategoryDialog({
                         size="icon"
                         variant="outline"
                         className={`w-full ${input.icon_key === key ? 'border-primary bg-primary/10 text-primary' : 'text-muted-foreground'}`}
-                        aria-label={t(`category_manager.icons.${key}`)}
-                        title={t(`category_manager.icons.${key}`)}
+                        aria-label={label}
+                        title={label}
                         aria-pressed={input.icon_key === key}
                         onClick={() => setInput({ ...input, icon_key: key })}
                       >

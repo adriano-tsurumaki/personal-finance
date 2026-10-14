@@ -28,6 +28,9 @@ export type CategoryIconKey =
   | 'sports'
   | 'vehicle'
   | 'work'
+  | 'joystick'
+  | 'heart'
+  | 'heart_handshake'
   | 'other';
 
 export interface CategoryOption {
@@ -65,6 +68,9 @@ export const categoryIconKeys: CategoryIconKey[] = [
   'sports',
   'vehicle',
   'work',
+  'joystick',
+  'heart',
+  'heart_handshake',
   'other',
 ];
 
