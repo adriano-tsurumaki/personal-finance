@@ -937,7 +937,7 @@ test('monthly cash flow aggregates settlement dates, isolates profiles and inval
       .where(eq(creditCardInvoicesTable.id, invoice.id))
       .run();
     assert.equal(statements.get('2026-10').expense, 25);
-    assert.equal(statements.get('2026-11').expense, 30);
+    assert.equal(statements.get('2026-11').expense, 100);
     const second = profiles.create({
       name: 'Other profile',
       email: 'other-flow@example.test',
@@ -1037,8 +1037,8 @@ test('monthly income includes recorded salaries without settlement and preserves
       amount_cents: 90000,
     });
     assert.equal(statements.get('2026-10').income, 132.45);
-    assert.equal(statements.get('2026-10').expense, 0);
-    assert.equal(statements.get('2026-10').transactionCount, 4);
+    assert.equal(statements.get('2026-10').expense, 900);
+    assert.equal(statements.get('2026-10').transactionCount, 5);
     assert.equal(statements.get('2026-11').income, 5);
 
     transactions.update(salary.id, { ...input, amount_cents: 20000 });
@@ -1059,6 +1059,149 @@ test('monthly income includes recorded salaries without settlement and preserves
     assert.equal(statements.get('2026-10').income, 0);
     profiles.enter(profile.profile.id);
     assert.equal(statements.get('2026-10').income, 9);
+  } finally {
+    db.$client.close();
+  }
+});
+
+test('monthly expenses include direct methods without settlement and preserve explicit payment dates', () => {
+  const db = initDb(':memory:', migrationsFolder);
+  const profiles = createProfileService(db);
+  const transactions = createTransactionService(db, () =>
+    profiles.requireActive(),
+  );
+  const statements = createMonthlyStatementService(db, () =>
+    profiles.requireActive(),
+  );
+
+  try {
+    const profile = profiles.create({
+      name: 'Recorded expenses',
+      email: 'recorded-expenses@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(profile.ok);
+    const options = profiles.options();
+    const methodId = (key: string) =>
+      options.payments.find((payment) => payment.catalog_key === key)!.id;
+    const input = {
+      name: 'PIX expense',
+      type: 2 as const,
+      amount_cents: 10025,
+      reference_date: '2026-10-01',
+      payment_date: null,
+      payment_id: methodId('pix'),
+      category_id: null,
+      user_id: profile.profile.id,
+    };
+    transactions.create(input);
+    const pix = transactions.list('2026-10')[0];
+    transactions.create({
+      ...input,
+      name: 'Cash expense',
+      amount_cents: 20050,
+      reference_date: '2026-10-15',
+      payment_id: methodId('cash'),
+    });
+    const cash = transactions
+      .list('2026-10')
+      .find((entry) => entry.name === 'Cash expense')!;
+    transactions.create({
+      ...input,
+      name: 'Debit expense',
+      amount_cents: 5075,
+      reference_date: '2026-10-31',
+      payment_id: methodId('debit'),
+    });
+    transactions.create({ ...input, type: 1, amount_cents: 100000 });
+    const initial = statements.get('2026-10');
+    assert.equal(initial.income, 1000);
+    assert.equal(initial.expense, 351.5);
+    assert.equal(initial.net, 648.5);
+    assert.equal(initial.closingBalance, 648.5);
+    assert.equal(initial.savingsRate, 0.6485);
+    assert.equal(initial.transactionCount, 4);
+    assert.equal(initial.balanceSeries[0].balance, 899.75);
+    assert.equal(initial.balanceSeries[14].balance, 699.25);
+    assert.equal(initial.balanceSeries[30].balance, 648.5);
+    assert.equal(transactions.get(pix.id).payment_date, null);
+    transactions.create({
+      ...input,
+      amount_cents: 1200,
+      payment_date: '2026-11-01',
+    });
+    transactions.create({
+      ...input,
+      amount_cents: 2300,
+      reference_date: '2026-09-30',
+      payment_date: '2026-10-10',
+    });
+    const card = db
+      .insert(creditCardsTable)
+      .values({ name: 'Excluded credit card', user_id: profile.profile.id })
+      .returning()
+      .get();
+    const invoice = db
+      .insert(creditCardInvoicesTable)
+      .values({
+        credit_card_id: card.id,
+        amount_cents: 90000,
+        closing_date: '2026-10-31',
+        due_date: '2026-11-07',
+        paid_at: null,
+      })
+      .returning()
+      .get();
+
+    for (const paymentDate of [null, '2026-10-10']) {
+      db.insert(transactionsTable)
+        .values({
+          ...input,
+          name: 'Unlinked credit expense',
+          payment_id: methodId('credit'),
+          payment_date: paymentDate,
+          amount_cents: 80000,
+        })
+        .run();
+      db.insert(transactionsTable)
+        .values({
+          ...input,
+          name: 'Invoice-linked expense',
+          credit_card_invoice_id: invoice.id,
+          payment_date: paymentDate,
+          amount_cents: 90000,
+        })
+        .run();
+    }
+
+    const settled = statements.get('2026-10');
+    assert.equal(settled.expense, 374.5);
+    assert.equal(settled.net, 625.5);
+    assert.equal(settled.savingsRate, 0.6255);
+    assert.equal(settled.transactionCount, 5);
+    assert.equal(statements.get('2026-09').expense, 0);
+    assert.equal(statements.get('2026-11').expense, 912);
+    transactions.update(pix.id, { ...input, amount_cents: 15025 });
+    assert.equal(statements.get('2026-10').expense, 424.5);
+    transactions.update(pix.id, {
+      ...input,
+      amount_cents: 15025,
+      reference_date: '2026-11-01',
+    });
+    assert.equal(statements.get('2026-10').expense, 274.25);
+    assert.equal(statements.get('2026-11').expense, 1062.25);
+    assert.equal(transactions.get(pix.id).payment_date, null);
+    transactions.remove(cash.id);
+    assert.equal(statements.get('2026-10').expense, 73.75);
+    const other = profiles.create({
+      name: 'Other expense profile',
+      email: 'other-expenses@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(other.ok);
+    assert.equal(statements.get('2026-10').expense, 0);
+    profiles.enter(profile.profile.id);
+    assert.equal(statements.get('2026-10').expense, 73.75);
   } finally {
     db.$client.close();
   }

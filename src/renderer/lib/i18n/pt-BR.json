@@ -149,12 +149,12 @@
   "summary": {
     "previous": "Mês anterior",
     "next": "Próximo mês",
-    "balance": "Fluxo de caixa mensal",
+    "balance": "Saldo mensal previsto",
     "income": "Entradas",
     "expenses": "Saídas",
     "saved": "Economizado",
     "net": "Líquido {amount}",
-    "chart": "Gráfico do fluxo de caixa mensal",
+    "chart": "Gráfico do saldo mensal previsto",
     "loading": "Carregando fluxo de caixa mensal...",
     "failed": "Não foi possível carregar o fluxo de caixa mensal."
   },

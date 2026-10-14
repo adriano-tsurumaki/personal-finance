@@ -32,9 +32,12 @@ The following items were checked against the working tree on 2026-09-18. They ar
       timeline already displays and filters by reference date. Direct income
       without a receipt date also contributes to the summary by reference date
       (verified 2026-10-09 with SQLite regression tests).
+      Direct expenses without a payment date use the same reporting fallback
+      (verified 2026-10-13 with SQLite regression tests for PIX, cash, debit,
+      explicit payment dates, and credit exclusion).
 - Define an explicit direct-entry settlement workflow for pending expenses and
-  scheduled income. Direct income currently uses its reference date when there
-  is no explicit receipt date. Payment recording remains deferred; editing the
+  scheduled income. Direct income and expenses currently use their reference date
+  when there is no explicit settlement date. Payment recording remains deferred; editing the
   reference date must not record or change stored settlement.
 - [x] Implement the monthly statement IPC API (verified 2026-10-08): preload and
       main expose monthly cash flow for the active profile. SQLite regression tests
@@ -79,8 +82,12 @@ Existing paid invoices could migrate to one historical payment record without du
   preserve existing history and distinguish rule changes from invoice corrections.
 - Full invoice settlement and payment corrections remain TX-04. Derive purchase
   payment status from `paid_at` and count the invoice payment once.
-- Projected monthly indicators that include unpaid commitments remain SUM-02;
-  they must distinguish commitments from cash flow and avoid double counting.
+- Unpaid invoice projection is implemented (verified 2026-10-13): the monthly
+  summary includes each invoice once by due date until an actual payment date
+  replaces it. SQLite tests cover next-month purchases, cached total updates,
+  due-date corrections, early and late payments, and profile isolation.
+  The UI identifies the balance as projected. Separate settled and committed
+  amounts and broader scheduled-entry projections remain SUM-02.
 
 ### Cascade deletion review
 

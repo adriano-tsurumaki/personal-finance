@@ -4,15 +4,22 @@ This document records the goals, table responsibilities, and decisions for the f
 
 ## Main screen goal
 
-The main screen presents a monthly cash-flow summary and a timeline of financial events. A credit-card purchase can appear in the timeline before its payment affects available cash.
+The main screen presents a projected monthly balance and a timeline of financial
+events. The summary includes unpaid invoices in their due month; it does not
+represent confirmed available cash. A credit-card purchase remains in its
+reference-date timeline month, independent of its invoice's due or payment month.
 
 The first version uses these rules:
 
 - Inflows are direct income entries. An explicit receipt date determines the
   month; without one, the reference date is treated as the receipt date.
-- Outflows are direct expenses and invoices paid during the month.
+- Outflows are direct expenses and invoices paid or due during the month. An explicit
+  payment date determines the month; without one, direct expenses use the
+  reference date.
+- Unpaid invoices contribute in their due month. Paid invoices use the actual
+  payment month instead, even when it differs from the due month.
 - Monthly balance is inflows minus outflows; it is not an account balance.
-- Credit-card purchases may appear as a separate indicator and must not be counted again as cash outflows.
+- Credit-card purchases must not be counted again alongside their invoice total.
 
 Category analysis should count purchases and installments without counting the invoice payment as another consumption expense.
 
@@ -47,10 +54,10 @@ Monetary entry accepts digits and the profile's decimal separator, with up to tw
 decimal places; grouping separators and currency-prefixed paste are currently
 rejected rather than reinterpreted. New credit expenses require a profile-owned
 card and are associated with a suggested or explicitly chosen invoice. Selecting a
-method does not set a payment date; settlement workflows remain deferred. Direct income is counted as received on its
-reference date when no explicit receipt date exists. Direct expenses remain
-pending until settlement; credit-method entries remain excluded from direct
-cash flow.
+method does not set a payment date; settlement workflows remain deferred. Direct
+income and expenses contribute to the summary on their reference date when no
+explicit settlement date exists. This reporting fallback does not mark an entry
+as settled; credit-method entries remain excluded from direct cash flow.
 
 Creation and editing use separate dialogs. Editing changes only the description,
 note, entry type, amount, and reference date. Main preserves category, payment
@@ -249,7 +256,11 @@ erDiagram
 
 ## Timeline and cash-flow example
 
-A R$250 purchase made on August 20 appears in the August timeline. If its invoice closes on August 31, is due September 7, and is paid September 5, the R$250 cash outflow belongs to September. The purchase remains available through the invoice details and is not counted twice.
+A R$250 purchase made on August 20 appears in the August timeline. If its invoice
+closes on August 31 and is due September 7, the summary projects R$250 in September
+expenses while unpaid. If paid September 5, the outflow uses that day instead.
+If paid October 2, it moves to October and is removed from September. The purchase
+remains available through the invoice details and is not counted twice.
 
 ## Current conventions and limits
 
@@ -262,27 +273,33 @@ A R$250 purchase made on August 20 appears in the August timeline. If its invoic
   Merely previewing a period does not create rows. Recurrence and installment
   generation remain deferred.
 
-## Monthly cash-flow summaries
+## Monthly projected summaries
 
 The monthly statement API derives ownership from the active profile. Direct
 entries with a direct payment method (`payments.type = 1`) contribute in their
-`payment_date` month when it is present. Direct income (`transactions.type = 1`)
-without a payment date contributes in its `reference_date` month, so manually
-recorded receipts such as salaries appear immediately, including existing entries.
+`payment_date` month when it is present. Direct income and expenses
+(`transactions.type = 1` or `2`) without a payment date contribute in their
+`reference_date` month, so manually recorded receipts and PIX, cash, or debit
+expenses appear immediately, including existing entries.
 This fallback does not write a settlement date or change stored history. An
 explicit payment date always takes precedence, preventing double counting.
 Invoice-linked and credit-method entries are excluded from direct cash flow.
 Paid invoices contribute their stored `amount_cents` in their `paid_at` month,
-once, through the owning card. Pending direct expenses and unpaid invoices do
-not contribute. Reference dates also remain timeline dates.
+once, through the owning card. Unpaid invoices contribute that same total in their
+`due_date` month, without marking them as paid. An explicit payment date replaces
+the projected event, so early or late payments never count in both months.
+Calculated invoices use their reconciled purchase total; statement invoices use
+their recorded total even when purchase details are incomplete. Reference dates
+also remain timeline dates. The UI calls this a projected monthly balance because
+it includes commitments as well as recorded settlements.
 
-One SQL query groups receipts, direct expenses, and invoice payments by their
+One SQL query groups receipts, direct expenses, and paid or due invoices by their
 effective cash-flow day. Totals are calculated in integer cents and converted to BRL units for the
 DTO. The daily series includes every day of the selected month. Opening cash flow
 is zero and closing cash flow equals income minus expenses; neither represents
 an account balance. The savings rate is net divided by income, or zero when
-there is no income. The event count includes direct receipts, settled direct
-expenses, and invoice payments, rather than every purchase inside an invoice. Summaries are computed;
+there is no income. The event count includes direct receipts, direct
+expenses, and paid or due invoices, rather than every purchase inside an invoice. Summaries are computed;
 their reserved DTO identifier is zero.
 
 Composite indexes support transaction lookups by profile and payment date, card

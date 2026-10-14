@@ -181,7 +181,90 @@ test('purchase previews leave no rows, create once, preserve dates and reconcile
             ),
         ),
     );
+    assert.equal(f.statements.get('2026-10').expense, 25);
+  } finally {
+    f.db.$client.close();
+  }
+});
+
+test('monthly summaries include unpaid invoices by due month and count settlement once', () => {
+  const f = fixture();
+
+  try {
+    // A purchase after closing belongs to the next invoice, not its timeline month.
+    assert.equal(f.statements.get('2026-11').expense, 0);
+    const first = f.purchase({ reference_date: '2026-10-21' });
+    const invoiceId = first.credit_card_invoice_id!;
+    assert.equal(f.cards.details(invoiceId).invoice.due_date, '2026-11-27');
+    assert.equal(f.cards.details(invoiceId).invoice.paid_at, null);
     assert.equal(f.statements.get('2026-10').expense, 0);
+    const due = f.statements.get('2026-11');
+    assert.equal(due.expense, 100);
+    assert.equal(due.net, -100);
+    assert.equal(due.closingBalance, -100);
+    assert.equal(due.transactionCount, 1);
+    assert.equal(due.balanceSeries[25].balance, 0);
+    assert.equal(due.balanceSeries[26].balance, -100);
+    f.purchase({ reference_date: '2026-10-22', amount_cents: 2500 });
+    assert.equal(f.statements.get('2026-11').expense, 125);
+    assert.equal(f.statements.get('2026-11').transactionCount, 1);
+
+    const update = { ...f.input, amount_cents: 15000 };
+    const plan = f.transactions.previewUpdate(first.id, update)!;
+    f.transactions.update(first.id, {
+      ...update,
+      correction_token: plan.token,
+    });
+    assert.equal(f.statements.get('2026-11').expense, 175);
+    const removal = f.transactions.previewRemove(first.id);
+    f.transactions.remove(first.id, removal.token);
+    assert.equal(f.statements.get('2026-11').expense, 25);
+    const current = f.cards.details(invoiceId).invoice;
+    const correction: InvoiceInput = {
+      opening_date: current.opening_date!,
+      closing_date: current.closing_date,
+      due_date: '2026-12-01',
+      includes_closing_day: current.includes_closing_day!,
+      total_source: current.total_source,
+      amount_cents: current.amount_cents,
+    };
+    const correctionPlan = f.cards.previewCorrection(invoiceId, correction);
+    f.cards.correctInvoice(invoiceId, correction, correctionPlan.token);
+    assert.equal(f.statements.get('2026-11').expense, 0);
+    assert.equal(f.statements.get('2026-12').expense, 25);
+
+    // An actual payment replaces the projected due-date event, including early payment.
+    f.db
+      .update(creditCardInvoicesTable)
+      .set({ paid_at: '2026-11-30' })
+      .where(eq(creditCardInvoicesTable.id, invoiceId))
+      .run();
+    assert.equal(f.statements.get('2026-11').expense, 25);
+    assert.equal(f.statements.get('2026-12').expense, 0);
+    f.db
+      .update(creditCardInvoicesTable)
+      .set({ paid_at: '2026-12-01' })
+      .where(eq(creditCardInvoicesTable.id, invoiceId))
+      .run();
+    assert.equal(f.statements.get('2026-11').expense, 0);
+    assert.equal(f.statements.get('2026-12').expense, 25);
+    assert.equal(f.statements.get('2026-12').transactionCount, 1);
+    f.db
+      .update(creditCardInvoicesTable)
+      .set({ paid_at: '2027-01-02' })
+      .where(eq(creditCardInvoicesTable.id, invoiceId))
+      .run();
+    assert.equal(f.statements.get('2026-12').expense, 0);
+    assert.equal(f.statements.get('2027-01').expense, 25);
+    const other = f.profiles.create({
+      name: 'Other invoice owner',
+      email: 'other-invoice-owner@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(other.ok);
+    assert.equal(f.statements.get('2027-01').expense, 0);
+    f.profiles.enter(f.profile.id);
+    assert.equal(f.statements.get('2027-01').expense, 25);
   } finally {
     f.db.$client.close();
   }
@@ -449,6 +532,7 @@ test('paid historical statement totals remain fixed while details are completed 
       amount_cents: 50000,
     };
     const id = f.cards.registerInvoice(f.cardId, historical);
+    assert.equal(f.statements.get('2024-10').expense, 500);
     f.db
       .update(creditCardInvoicesTable)
       .set({ paid_at: '2024-11-02' })

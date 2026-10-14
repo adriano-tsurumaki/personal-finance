@@ -10,7 +10,7 @@ interface DailyCashFlow {
   count: number;
 }
 
-/** Aggregates monthly cash flow in cents; the DTO exposes BRL monetary units. */
+/** Aggregates monthly flows, including unpaid invoices due; the DTO exposes BRL units. */
 export function createMonthlyStatementService(
   db: AppDatabase,
   getActiveUser: () => { id: number },
@@ -72,11 +72,12 @@ export function createMonthlyStatementService(
               AND t.payment_date >= ${start} AND t.payment_date < ${end}
               AND t.credit_card_invoice_id IS NULL AND p.type = 1
             UNION ALL
-            SELECT t.reference_date AS date, t.amount_cents AS income,
-                   0 AS expense
+            SELECT t.reference_date AS date,
+                   CASE WHEN t.type = 1 THEN t.amount_cents ELSE 0 END AS income,
+                   CASE WHEN t.type = 2 THEN t.amount_cents ELSE 0 END AS expense
             FROM transactions t
             INNER JOIN payments p ON p.id = t.payment_id
-            WHERE t.user_id = ${user.id} AND t.type = 1
+            WHERE t.user_id = ${user.id} AND t.type IN (1, 2)
               AND t.payment_date IS NULL
               AND t.reference_date >= ${start} AND t.reference_date < ${end}
               AND t.credit_card_invoice_id IS NULL AND p.type = 1
@@ -86,6 +87,12 @@ export function createMonthlyStatementService(
             INNER JOIN credit_card_invoice i ON i.credit_card_id = c.id
             WHERE c.user_id = ${user.id}
               AND i.paid_at >= ${start} AND i.paid_at < ${end}
+            UNION ALL
+            SELECT i.due_date AS date, 0 AS income, i.amount_cents AS expense
+            FROM credit_cards c
+            INNER JOIN credit_card_invoice i ON i.credit_card_id = c.id
+            WHERE c.user_id = ${user.id} AND i.paid_at IS NULL
+              AND i.due_date >= ${start} AND i.due_date < ${end}
           )
           GROUP BY date ORDER BY date
         `);

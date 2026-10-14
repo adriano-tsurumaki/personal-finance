@@ -149,12 +149,12 @@
   "summary": {
     "previous": "Previous month",
     "next": "Next month",
-    "balance": "Monthly cash flow",
+    "balance": "Projected monthly balance",
     "income": "Income",
     "expenses": "Expenses",
     "saved": "Saved",
     "net": "Net {amount}",
-    "chart": "Monthly cash-flow chart",
+    "chart": "Projected monthly balance chart",
     "loading": "Loading monthly cash flow...",
     "failed": "Unable to load monthly cash flow."
   },
