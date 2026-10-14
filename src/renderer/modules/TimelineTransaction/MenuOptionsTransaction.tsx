@@ -16,6 +16,7 @@ import { confirmCardCorrection } from '@lib/card-corrections';
 
 interface TransactionActions {
   onEdit: () => Promise<void>;
+  onCopy: () => Promise<void>;
   onRemove: () => Promise<void>;
   disabled: boolean;
 }
@@ -35,11 +36,11 @@ export default function MenuOptionsTransaction({
     }),
   );
 
-  const handleEdit = async () => {
+  const handleLoad = async (mode: 'edit' | 'copy') => {
     const sessionVersion = useProfileStore.getState().sessionVersion;
 
     try {
-      await loadTransaction(transactionId);
+      await loadTransaction(transactionId, mode);
     } catch (error) {
       if (useProfileStore.getState().sessionVersion !== sessionVersion) {
         return;
@@ -52,6 +53,9 @@ export default function MenuOptionsTransaction({
       });
     }
   };
+
+  const handleEdit = () => handleLoad('edit');
+  const handleCopy = () => handleLoad('copy');
 
   const handleRemove = async () => {
     if (isRemoving.current) {
@@ -149,6 +153,7 @@ export default function MenuOptionsTransaction({
       >
         {children({
           onEdit: handleEdit,
+          onCopy: handleCopy,
           onRemove: handleRemove,
           disabled: isSubmitting,
         })}
@@ -156,6 +161,9 @@ export default function MenuOptionsTransaction({
       <ContextMenuContent>
         <ContextMenuItem onClick={handleEdit} disabled={isSubmitting}>
           {t('common.edit')}
+        </ContextMenuItem>
+        <ContextMenuItem onClick={handleCopy} disabled={isSubmitting}>
+          {t('common.copy')}
         </ContextMenuItem>
         <ContextMenuItem onClick={handleRemove} disabled={isSubmitting}>
           {t('common.remove')}

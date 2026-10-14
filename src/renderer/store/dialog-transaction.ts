@@ -22,11 +22,11 @@ interface State {
   closeDialogTransaction: () => void;
   setModeDialogTransaction: (mode: 'add' | 'edit') => void;
   /**
-   * Loads a transaction into the dialog for editing or viewing.
+   * Loads a transaction for editing or as a new creation draft.
    * @param id
    * @returns
    */
-  loadTransaction: (id: number) => Promise<void>;
+  loadTransaction: (id: number, mode?: 'edit' | 'copy') => Promise<void>;
   handleTransaction: (field: string, value: unknown) => void;
   resetTransaction: () => void;
 }
@@ -140,7 +140,7 @@ export function createDialogTransactionStore(
       set({ modeDialogTransaction: mode });
     },
 
-    loadTransaction: async (id) => {
+    loadTransaction: async (id, mode = 'edit') => {
       const returnFocus =
         typeof document === 'undefined'
           ? null
@@ -173,10 +173,25 @@ export function createDialogTransactionStore(
       }
 
       set({
-        transactionId: id,
+        transactionId: mode === 'copy' ? null : id,
         returnFocus,
-        transaction,
-        modeDialogTransaction: 'edit',
+        transaction:
+          mode === 'copy'
+            ? {
+                ...emptyTransaction,
+                name: transaction.name,
+                note: transaction.note ?? null,
+                type: transaction.type,
+                amount_cents: transaction.amount_cents,
+                reference_date: transaction.reference_date,
+                category_id: transaction.category_id,
+                payment_id: transaction.payment_id,
+                card_id: transaction.card_id ?? null,
+                credit_card_invoice_id:
+                  transaction.credit_card_invoice_id ?? null,
+              }
+            : transaction,
+        modeDialogTransaction: mode === 'copy' ? 'add' : 'edit',
         isDialogTransactionOpen: true,
       });
     },

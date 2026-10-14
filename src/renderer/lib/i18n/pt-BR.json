@@ -96,7 +96,8 @@
     "success": "Sucesso",
     "error_title": "Erro",
     "remove": "Remover",
-    "edit": "Editar"
+    "edit": "Editar",
+    "copy": "Copiar"
   },
   "profiles": {
     "create_title": "Crie seu perfil",
@@ -172,6 +173,8 @@
     "empty_hint": "Adicione sua primeira entrada ou despesa para vê-la na linha do tempo.",
     "add": "Adicionar transação",
     "edit": "Editar transação",
+    "copy": "Copiar transação",
+    "copy_label": "Copiar transação: {name}",
     "remove": "Remover transação",
     "edit_label": "Editar transação: {name}",
     "remove_label": "Remover transação: {name}",

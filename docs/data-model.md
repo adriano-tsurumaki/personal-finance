@@ -75,6 +75,13 @@ pending edit, catalog, locale, and financial-load responses. Older mutation
 completions cannot clear a new draft, refresh another session, or show stale
 notifications. Notification providers are recreated when the active profile changes.
 
+Copying a transaction from its timeline action or context menu opens a creation
+draft with its name, note, type, amount, reference date, category, payment method,
+card, and invoice. It does not create an entry until the user saves. The draft
+has no transaction identity, settlement date, or correction authorization and
+uses the active profile when submitted. Current creation validation still applies,
+including category and payment compatibility and credit-card correction previews.
+
 ### A transaction is one financial entry
 
 `transactions` is the smallest financial unit in the domain: a purchase, salary, bonus, or individual installment. It does not represent every product on a receipt.

@@ -96,7 +96,8 @@
     "success": "Success",
     "error_title": "Error",
     "remove": "Remove",
-    "edit": "Edit"
+    "edit": "Edit",
+    "copy": "Copy"
   },
   "profiles": {
     "create_title": "Create your profile",
@@ -172,6 +173,8 @@
     "empty_hint": "Add your first income or expense to see it on the timeline.",
     "add": "Add transaction",
     "edit": "Edit transaction",
+    "copy": "Copy transaction",
+    "copy_label": "Copy transaction: {name}",
     "remove": "Remove transaction",
     "edit_label": "Edit transaction: {name}",
     "remove_label": "Remove transaction: {name}",

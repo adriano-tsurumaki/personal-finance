@@ -2,7 +2,7 @@ import { getCategoryIcon } from '@lib/category-icons';
 import { formatSignedCurrency } from '@lib/format/currency';
 import type { TransactionDto } from '@shared/contracts/transaction';
 import { Button } from '@components/ui/button';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Copy, Pencil, Trash2 } from 'lucide-react';
 import { categoryLabel, getLocale, t } from '@lib/i18n';
 
 function dayLabel(date: string): string {
@@ -15,11 +15,13 @@ function dayLabel(date: string): string {
 export default function TimelineEntryRow({
   entry,
   onEdit,
+  onCopy,
   onRemove,
   disabled,
 }: {
   entry: TransactionDto;
   onEdit: () => Promise<void>;
+  onCopy: () => Promise<void>;
   onRemove: () => Promise<void>;
   disabled: boolean;
 }): React.JSX.Element {
@@ -101,6 +103,18 @@ export default function TimelineEntryRow({
                 disabled={disabled}
               >
                 <Pencil aria-hidden="true" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                className="text-muted-foreground hover:bg-secondary"
+                aria-label={t('transactions.copy_label', { name: entry.name })}
+                title={t('transactions.copy')}
+                onClick={onCopy}
+                disabled={disabled}
+              >
+                <Copy aria-hidden="true" />
               </Button>
               <Button
                 type="button"
