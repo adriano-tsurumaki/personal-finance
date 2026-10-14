@@ -154,9 +154,7 @@
     "expenses": "Saídas",
     "saved": "Economizado",
     "net": "Líquido {amount}",
-    "chart": "Gráfico do saldo mensal previsto",
-    "loading": "Carregando fluxo de caixa mensal...",
-    "failed": "Não foi possível carregar o fluxo de caixa mensal."
+    "chart": "Gráfico do saldo mensal previsto"
   },
   "sections": {
     "label": "Seções das finanças mensais",

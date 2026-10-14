@@ -154,9 +154,7 @@
     "expenses": "Expenses",
     "saved": "Saved",
     "net": "Net {amount}",
-    "chart": "Projected monthly balance chart",
-    "loading": "Loading monthly cash flow...",
-    "failed": "Unable to load monthly cash flow."
+    "chart": "Projected monthly balance chart"
   },
   "sections": {
     "label": "Monthly finance sections",

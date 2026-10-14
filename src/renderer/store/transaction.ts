@@ -13,10 +13,10 @@ interface AppState {
   statementLoading: boolean;
   statementFailed: boolean;
   statementLoaded: boolean;
-  reset: () => void;
   transactionsLoading: boolean;
   transactionsFailed: boolean;
 
+  reset: () => void;
   init: () => Promise<void>;
   setMonthKey: (monthKey: string) => Promise<void>;
   loadTransactions: () => Promise<void>;
@@ -91,7 +91,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     statementRequestId++;
     set({
       monthKey,
-      monthlyStatement: emptyMonthlyStatement,
       statementLoaded: false,
       statementLoading: true,
       statementFailed: false,

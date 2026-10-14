@@ -16,17 +16,17 @@ import { shiftMonth } from '@shared/lib/calc';
 import ProfileHeader from '@modules/Profiles/ProfileHeader';
 import { t } from '@lib/i18n';
 
+function formatSavingsRate(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
 export default function MonthlyFinance(): React.JSX.Element {
   const monthlyStatement = useAppStore((s) => s.monthlyStatement);
   const monthKey = useAppStore((s) => s.monthKey);
   const setMonthKey = useAppStore((s) => s.setMonthKey);
   const statementLoading = useAppStore((s) => s.statementLoading);
-  const statementFailed = useAppStore((s) => s.statementFailed);
-  const statementLoaded = useAppStore((s) => s.statementLoaded);
 
   const [year, month] = monthKey.split('-').map(Number);
-  const summaryAvailable =
-    statementLoaded && !statementLoading && !statementFailed;
 
   return (
     <header className="border-b border-border bg-card">
@@ -60,66 +60,49 @@ export default function MonthlyFinance(): React.JSX.Element {
         </div>
 
         <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
+          <div className="flex flex-col gap-1.5">
             <p className="text-sm text-muted-foreground">
               {t('summary.balance')}
             </p>
-            {summaryAvailable && (
+            <div className="relative" aria-busy={statementLoading}>
               <p className="font-mono text-4xl font-semibold tracking-tight text-foreground tabular-nums sm:text-5xl">
                 <OdometerMoney value={monthlyStatement.closingBalance} />
               </p>
-            )}
-            {!summaryAvailable && (
-              <p className="mt-2 text-sm text-muted-foreground" role="status">
-                {t(statementFailed ? 'summary.failed' : 'summary.loading')}
-              </p>
-            )}
+            </div>
           </div>
 
-          {summaryAvailable && monthlyStatement.balanceSeries.length >= 2 ? (
-            <div className="w-full max-w-60 shrink-0">
-              <BalanceSparkline data={monthlyStatement.balanceSeries} />
-              <p className="mt-2 text-right text-xs text-muted-foreground">
-                {t('summary.balance')}
-              </p>
-            </div>
-          ) : null}
+          <div
+            className="w-full max-w-60 shrink-0"
+            style={{
+              visibility:
+                monthlyStatement.balanceSeries.length >= 2
+                  ? 'visible'
+                  : 'hidden',
+            }}
+          >
+            <BalanceSparkline data={monthlyStatement.balanceSeries} />
+          </div>
         </div>
 
         <dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Stat
             label={t('summary.income')}
-            value={
-              summaryAvailable
-                ? formatCompactCurrency(monthlyStatement.income)
-                : '—'
-            }
+            value={monthlyStatement.income}
             tone="income"
             icon={<ArrowUpRight className="size-4" aria-hidden="true" />}
           />
           <Stat
             label={t('summary.expenses')}
-            value={
-              summaryAvailable
-                ? formatCompactCurrency(monthlyStatement.expense)
-                : '—'
-            }
+            value={monthlyStatement.expense}
             tone="expense"
             icon={<ArrowDownRight className="size-4" aria-hidden="true" />}
           />
           <Stat
             label={t('summary.saved')}
-            value={
-              summaryAvailable
-                ? `${Math.round(monthlyStatement.savingsRate * 100)}%`
-                : '—'
-            }
+            value={monthlyStatement.savingsRate}
+            formatValue={formatSavingsRate}
             tone="neutral"
-            hint={
-              summaryAvailable
-                ? formatCompactCurrency(monthlyStatement.net)
-                : undefined
-            }
+            hint={formatCompactCurrency(monthlyStatement.net)}
           />
         </dl>
       </div>
@@ -130,12 +113,14 @@ export default function MonthlyFinance(): React.JSX.Element {
 function Stat({
   label,
   value,
+  formatValue,
   tone,
   icon,
   hint,
 }: {
   label: string;
-  value: string;
+  value: number;
+  formatValue?: (value: number) => string;
   tone: 'income' | 'expense' | 'neutral';
   icon?: React.ReactNode;
   hint?: string;
@@ -154,15 +139,16 @@ function Stat({
         {label}
       </dt>
       <dd
-        className={`mt-1 font-mono text-lg font-semibold tabular-nums ${toneClass}`}
+        className={`relative mt-1 font-mono text-lg font-semibold tabular-nums ${toneClass}`}
       >
-        {/* <OdometerMoney value={value} /> */}
-        {value}
-        {hint ? (
-          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-            {t('summary.net', { amount: hint })}
-          </span>
-        ) : null}
+        <span>
+          <OdometerMoney value={value} formatValue={formatValue} />
+          {hint ? (
+            <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+              {t('summary.net', { amount: hint })}
+            </span>
+          ) : null}
+        </span>
       </dd>
     </div>
   );

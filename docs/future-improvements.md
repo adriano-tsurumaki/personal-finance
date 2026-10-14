@@ -45,6 +45,19 @@ The following items were checked against the working tree on 2026-09-18. They ar
       ranges, cache reuse, and invalidation after local and external writes. Existing
       timeline mutation refreshes can now reload the monthly indicators.
 
+### Monthly summary loading and failure states
+
+- [ ] Restore explicit loading and failure feedback for the monthly summary
+      (P1 technical debt deferred after review on 2026-10-13). Month navigation
+      retains the previous statement for animation, but the UI currently displays
+      those amounts and the chart under the newly selected month even if its request
+      fails. Initial load failures also display the empty statement as zero amounts.
+      Decide how to present unavailable or stale data while preserving animation.
+      Complete when balance, income, expenses, savings, and the chart distinguish
+      loading, failure, and valid results, with regression coverage for initial load
+      failure, failed month navigation, and successful recovery. No error behavior
+      change is included in the current corrections.
+
 ### Profile and localization follow-up
 
 - [x] Clear financial UI state across profile sessions (verified 2026-10-08):

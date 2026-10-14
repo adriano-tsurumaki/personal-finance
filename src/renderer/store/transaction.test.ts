@@ -3,6 +3,68 @@ import { test } from 'node:test';
 import type { TransactionDto } from '@shared/contracts/transaction';
 import { useAppStore } from './transaction';
 
+test('month navigation retains animation values while the new summary is unavailable', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  const initialState = useAppStore.getState();
+  const previousStatement = {
+    ...initialState.monthlyStatement,
+    year: 2026,
+    month: 10,
+    income: 1250,
+    closingBalance: 950,
+  };
+  const nextStatement = {
+    ...previousStatement,
+    month: 11,
+    income: 2300,
+    closingBalance: 1500,
+  };
+  let resolveStatement!: (statement: typeof nextStatement) => void;
+  const response = new Promise<typeof nextStatement>((resolve) => {
+    resolveStatement = resolve;
+  });
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      api: {
+        getTransactions: async () => [],
+        getMonthlyStatement: () => response,
+      },
+    },
+  });
+
+  try {
+    useAppStore.getState().reset();
+    useAppStore.setState({
+      monthKey: '2026-10',
+      monthlyStatement: previousStatement,
+      statementLoaded: true,
+    });
+    const loading = useAppStore.getState().setMonthKey('2026-11');
+    assert.equal(useAppStore.getState().monthKey, '2026-11');
+    assert.equal(useAppStore.getState().statementLoaded, false);
+    assert.equal(useAppStore.getState().statementLoading, true);
+    assert.equal(useAppStore.getState().monthlyStatement, previousStatement);
+    resolveStatement(nextStatement);
+    await loading;
+    assert.equal(useAppStore.getState().monthlyStatement, nextStatement);
+    assert.equal(useAppStore.getState().statementLoaded, true);
+    assert.equal(useAppStore.getState().statementLoading, false);
+    useAppStore.getState().reset();
+    assert.equal(useAppStore.getState().monthlyStatement.closingBalance, 0);
+    assert.equal(useAppStore.getState().statementLoaded, false);
+  } finally {
+    useAppStore.getState().reset();
+    useAppStore.setState(initialState);
+
+    if (descriptor) {
+      Object.defineProperty(globalThis, 'window', descriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, 'window');
+    }
+  }
+});
+
 test('timeline refresh applies the latest response and reports load failures', async () => {
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
   const initialState = useAppStore.getState();

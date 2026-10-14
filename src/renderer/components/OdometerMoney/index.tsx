@@ -4,17 +4,20 @@ import { formatCurrency } from '@lib/format/currency';
 export default function OdometerMoney({
   value,
   absolute = false,
+  formatValue = formatCurrency,
 }: OdometerMoneyProps) {
-  const formatted = formatCurrency(absolute ? Math.abs(value) : value);
+  const formatted = formatValue(absolute ? Math.abs(value) : value);
 
   return (
     <span className="inline-flex items-baseline">
       {formatted.split('').map((char, index) => {
+        const position = formatted.length - index - 1;
+
         if (!/\d/.test(char)) {
-          return <span key={index}>{char}</span>;
+          return <span key={`character-${position}`}>{char}</span>;
         }
 
-        return <Digit key={index} digit={Number(char)} />;
+        return <Digit key={`digit-${position}`} digit={Number(char)} />;
       })}
     </span>
   );
@@ -22,15 +25,20 @@ export default function OdometerMoney({
 
 function Digit({ digit }: { digit: number }) {
   return (
-    <span className="relative inline-block h-[1em] w-[1ch] overflow-hidden">
+    <span className="relative inline-grid w-[1ch] overflow-hidden">
+      <span className="sr-only">{digit}</span>
+      <span className="invisible" aria-hidden="true">
+        {digit}
+      </span>
       <span
-        className="absolute left-0 top-0.5 flex flex-col transition-transform duration-500 ease-out"
+        aria-hidden="true"
+        className="absolute left-0 top-0 w-full transition-transform duration-500 ease-out motion-reduce:transition-none"
         style={{
-          transform: `translateY(-${digit}em)`,
+          transform: `translateY(-${digit}lh)`,
         }}
       >
         {Array.from({ length: 10 }, (_, i) => (
-          <span key={i} className="flex h-[1em] items-center justify-center">
+          <span key={i} className="block h-lh text-center">
             {i}
           </span>
         ))}
