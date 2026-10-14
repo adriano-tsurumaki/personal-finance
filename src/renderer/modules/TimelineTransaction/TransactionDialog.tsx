@@ -68,12 +68,15 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
   const cardId = useDialogTransactionStore(
     (state) => state.transaction.card_id ?? null,
   );
+
   const invoiceId = useDialogTransactionStore(
     (state) => state.transaction.credit_card_invoice_id ?? null,
   );
+
   const historical_card = useDialogTransactionStore(
     (state) => state.transaction.historical_card ?? false,
   );
+
   const categories = [
     { value: null, label: t('transactions.select_category') },
     ...options.categories
@@ -90,6 +93,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
         label: categoryLabel(category),
       })),
   ];
+
   const payments = [
     { value: null, label: t('transactions.select_payment') },
     ...options.payments
@@ -101,6 +105,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
         label: t(`payments.${payment.catalog_key}`),
       })),
   ];
+
   const {
     openDialogTransaction,
     closeDialogTransaction,
@@ -138,9 +143,11 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
     payment_id: state.transaction.payment_id,
     reference_date: state.transaction.reference_date,
   }));
+
   const selectedPayment = options.payments.find(
     (payment) => payment.id === payment_id,
   );
+
   const isCredit = selectedPayment?.catalog_key === 'credit';
 
   useEffect(() => {

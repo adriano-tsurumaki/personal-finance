@@ -18,7 +18,7 @@ interface State {
   finishSubmission: (saved: boolean, submissionId: number) => void;
   resetSession: () => void;
 
-  openDialogTransaction: () => void;
+  openDialogTransaction: (newTransaction?: Partial<TransactionInput>) => void;
   closeDialogTransaction: () => void;
   setModeDialogTransaction: (mode: 'add' | 'edit') => void;
   /**
@@ -35,7 +35,7 @@ const emptyTransaction: TransactionInput = {
   amount_cents: 0,
   name: '',
   note: null,
-  type: 1,
+  type: 2,
   category_id: null,
   payment_id: 0,
   user_id: 0,
@@ -56,6 +56,7 @@ export function createDialogTransactionStore(
     transaction: emptyTransaction,
     isSubmitting: false,
     returnFocus: null,
+
     resetSession: () => {
       requestId++;
       set({
@@ -67,6 +68,7 @@ export function createDialogTransactionStore(
         returnFocus: null,
       });
     },
+
     startSubmission: () => {
       if (get().isSubmitting) {
         return null;
@@ -76,8 +78,10 @@ export function createDialogTransactionStore(
       set({ isSubmitting: true });
       return requestId;
     },
+
     isCurrentSubmission: (submissionId) =>
       submissionId === requestId && get().isSubmitting,
+
     finishSubmission: (saved, submissionId) => {
       if (!get().isCurrentSubmission(submissionId)) {
         return;
@@ -96,12 +100,13 @@ export function createDialogTransactionStore(
       );
     },
 
-    openDialogTransaction: () => {
+    openDialogTransaction: (newTransaction) => {
       if (get().isSubmitting) {
         return;
       }
 
       requestId++;
+
       set({
         returnFocus:
           typeof document === 'undefined'
@@ -110,9 +115,13 @@ export function createDialogTransactionStore(
         isDialogTransactionOpen: true,
         modeDialogTransaction: 'add',
         transactionId: null,
-        transaction: emptyTransaction,
+        transaction: {
+          ...emptyTransaction,
+          ...newTransaction,
+        },
       });
     },
+
     closeDialogTransaction: () => {
       if (get().isSubmitting) {
         return;
@@ -121,6 +130,7 @@ export function createDialogTransactionStore(
       requestId++;
       set({ isDialogTransactionOpen: false });
     },
+
     setModeDialogTransaction: (mode) => {
       if (get().isSubmitting) {
         return;
@@ -129,6 +139,7 @@ export function createDialogTransactionStore(
       requestId++;
       set({ modeDialogTransaction: mode });
     },
+
     loadTransaction: async (id) => {
       const returnFocus =
         typeof document === 'undefined'
@@ -169,6 +180,7 @@ export function createDialogTransactionStore(
         isDialogTransactionOpen: true,
       });
     },
+
     handleTransaction: (field, value) => {
       if (get().isSubmitting) {
         return;
@@ -182,6 +194,7 @@ export function createDialogTransactionStore(
         } as TransactionInput,
       }));
     },
+
     resetTransaction: () => {
       if (get().isSubmitting) {
         return;
