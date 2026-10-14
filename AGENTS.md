@@ -30,6 +30,15 @@ update their status only after verifying the completion criteria. Do not perform
 unrelated migrations just to close pending items.
 For financial data rules, consult [Data model](docs/data-model.md).
 
+## UI operation coordination
+
+For every new or changed screen, component, hook, or asynchronous UI action,
+evaluate whether it must participate in `useFinancialOperations`. Consult
+[UI operation coordination](docs/ui-operations.md) before implementing loading,
+mutation, navigation, or disabled states. Use the shared operation store when
+pending work can conflict across components; keep independent local interactions
+available. Enforce relevant guards in action handlers as well as UI controls.
+
 ## Versioning and release impact
 
 Before implementing changes or preparing a release, consult
@@ -44,6 +53,28 @@ upgrade actions when completing the task. Increment `package.json` only when
 preparing a release, not for each implementation commit. A request to implement
 changes or create commits does not itself authorize a release, tag, push, or
 publication.
+
+When the user makes a request similar in meaning to "generate a version",
+interpret the intent rather than requiring exact wording or a specific language.
+First analyze the current `package.json` version, the changelog
+when available, and all changes since the latest release tag, including both
+unstaged changes (Changes) and staged changes (Staged), as well as relevant
+untracked files. Inspect the working-tree and index diffs separately so neither
+set of changes is overlooked. If no release tag exists, assess the initial
+release scope. Apply
+`docs/versioning.md`, including its `0.x` conventions, and propose the exact
+next version for the `version` field in `package.json`. Explain whether major,
+minor, or patch should increase and which changes justify that recommendation,
+including compatibility implications and required upgrade actions. If no
+increment is warranted, explain why. Treat this request as analysis and a
+proposal before creating any commits for that request; wait for the user's
+approval of the proposed version before applying it. Once approved and commits
+are authorized, commit the implementation changes in coherent groups under the
+commit guidelines below, then create a separate versioning commit as the final
+commit. Keep the `package.json` version bump and corresponding release metadata
+in that final commit, following `docs/versioning.md`. Do not create commits when
+the user has requested only a proposal. This workflow does not authorize tagging,
+pushing, or publishing.
 
 ## Conditional formatting
 

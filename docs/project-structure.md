@@ -130,6 +130,14 @@ src/
 
 Prefer names that express responsibility, such as `ProgressBadgeProps` and `ReadingSummaryDto`. Do not use `I` or `T` prefixes solely to indicate an interface or type. Use local `types.ts` files when grouping related types improves readability; extracting types from components is optional. Do not create `index.ts` files solely to re-export everything.
 
+## Asynchronous UI coordination
+
+Before adding or changing a screen or component, evaluate whether pending work
+conflicts with other UI actions. Follow [UI operation coordination](ui-operations.md)
+for shared pending-operation ownership, handler guards, session cleanup, and
+notification lifetimes. Keep feature-specific feedback close to its feature and
+reusable notification behavior in renderer components.
+
 ## Translation catalogs
 
 Keep renderer translation catalogs in `src/renderer/lib/i18n`, grouped by locale.
