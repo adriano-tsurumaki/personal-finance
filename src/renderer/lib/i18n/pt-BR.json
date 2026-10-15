@@ -170,6 +170,9 @@
   },
   "transactions": {
     "title": "Transações",
+    "toggle_date_order": "Inverter ordem das datas na timeline",
+    "newest_first": "Mais recentes primeiro",
+    "oldest_first": "Mais antigas primeiro",
     "entries_one": "{count} lançamento",
     "entries_other": "{count} lançamentos",
     "empty": "Seu mês começa aqui",

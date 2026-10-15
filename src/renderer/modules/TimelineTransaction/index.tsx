@@ -2,7 +2,8 @@ import {
   financialActionsBlocked,
   useFinancialOperations,
 } from '@store/financial-operations';
-import { Repeat } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowDown, ArrowUp, Repeat } from 'lucide-react';
 import { OccurrenceSummary } from '@modules/Recurrences';
 import AddTransaction from './AddTransaction';
 import TimelineEntryRow from './TimelineEntryRow';
@@ -16,6 +17,7 @@ export default function TimelineTransaction({
 }: {
   onReviewRecurrences?: () => void;
 }) {
+  const [newestFirst, setNewestFirst] = useState(false);
   const blocked = useFinancialOperations((state) => state.pending.size > 0);
   const recurrence = useAppStore((state) => state.recurrenceMonth);
   const projected =
@@ -69,6 +71,29 @@ export default function TimelineTransaction({
             </Button>
           </div>
         )}
+      {!loading && !failed && transactions.length + projected.length > 0 && (
+        <div className="mb-2 flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={t('transactions.toggle_date_order')}
+            aria-pressed={newestFirst}
+            disabled={transactions.length + projected.length < 2}
+            onClick={() => setNewestFirst((current) => !current)}
+          >
+            {newestFirst ? (
+              <ArrowUp aria-hidden="true" />
+            ) : (
+              <ArrowDown aria-hidden="true" />
+            )}
+            {t(
+              newestFirst
+                ? 'transactions.newest_first'
+                : 'transactions.oldest_first',
+            )}
+          </Button>
+        </div>
+      )}
       {loading ? (
         <p
           role="status"
@@ -120,7 +145,11 @@ export default function TimelineTransaction({
                 entry,
               })),
             ]
-              .sort((a, b) => a.date.localeCompare(b.date))
+              .sort((a, b) =>
+                newestFirst
+                  ? b.date.localeCompare(a.date)
+                  : a.date.localeCompare(b.date),
+              )
               .map((row) =>
                 row.kind === 'projection' ? (
                   <li

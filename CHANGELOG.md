@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- Toggle the monthly timeline between oldest and newest dates first, including
+  projected recurrences, with a separate control immediately above the entries.
+
 ## 0.2.0 - 2026-10-15
 
 ### Added
