@@ -110,12 +110,23 @@ export const recurrencesTable = sqliteTable(
     id: integer().primaryKey({ autoIncrement: true }),
     name: text().notNull(),
     active: integer().notNull().default(1),
+    status: text()
+      .$type<'active' | 'paused' | 'ended' | 'repair_required'>()
+      .notNull()
+      .default('repair_required'),
+    anchor_date: date(),
+    last_retained_date: date(),
     user_id: integer()
       .notNull()
       .references(() => usersTable.id),
   },
   (table) => [
     check('recurrences_active_check', sql`${table.active} IN (0, 1)`),
+    check(
+      'recurrences_status_check',
+      sql`${table.status} IN ('active', 'paused', 'ended', 'repair_required')`,
+    ),
+    index('recurrences_user_status_idx').on(table.user_id, table.status),
   ],
 );
 
@@ -131,6 +142,10 @@ export const recurrenceVersionsTable = sqliteTable(
     interval: integer().notNull(),
     start_date: date().notNull(),
     end_date: date(),
+    type: integer().$type<1 | 2>(),
+    category_id: integer().references(() => categoriesTable.id),
+    payment_id: integer().references(() => paymentsTable.id),
+    credit_card_id: integer().references(() => creditCardsTable.id),
     recurrence_id: integer()
       .notNull()
       .references(() => recurrencesTable.id),
@@ -141,6 +156,15 @@ export const recurrenceVersionsTable = sqliteTable(
       table.version,
     ),
     check('recurrences_versions_active_check', sql`${table.active} IN (0, 1)`),
+    check(
+      'recurrences_versions_type_check',
+      sql`${table.type} IS NULL OR ${table.type} IN (1, 2)`,
+    ),
+    index('recurrences_versions_effective_idx').on(
+      table.recurrence_id,
+      table.start_date,
+      table.end_date,
+    ),
     check(
       'recurrences_versions_frequency_check',
       sql`${table.frequency} IN (1, 2, 3, 4)`,
@@ -223,3 +247,58 @@ export const cardHistoryTable = sqliteTable('credit_card_history', {
   created_at: text().notNull(),
   changes_json: text().notNull(),
 });
+
+/** Only explicit decisions are stored; reading a schedule never creates rows. */
+export const recurrenceOccurrencesTable = sqliteTable(
+  'recurrence_occurrences',
+  {
+    id: integer().primaryKey({ autoIncrement: true }),
+    recurrence_id: integer()
+      .notNull()
+      .references(() => recurrencesTable.id),
+    scheduled_date: date().notNull(),
+    recurrence_version_id: integer()
+      .notNull()
+      .references(() => recurrenceVersionsTable.id),
+    state: text().$type<'confirmed' | 'ignored'>().notNull(),
+    transaction_id: integer().references(() => transactionsTable.id),
+  },
+  (table) => [
+    uniqueIndex('recurrence_occurrences_slot_unique').on(
+      table.recurrence_id,
+      table.scheduled_date,
+    ),
+    uniqueIndex('recurrence_occurrences_transaction_unique').on(
+      table.transaction_id,
+    ),
+    check(
+      'recurrence_occurrences_state_check',
+      sql`(${table.state} = 'confirmed' AND ${table.transaction_id} IS NOT NULL) OR (${table.state} = 'ignored' AND ${table.transaction_id} IS NULL)`,
+    ),
+  ],
+);
+
+export const recurrenceInvoiceCoverageTable = sqliteTable(
+  'recurrence_invoice_coverage',
+  {
+    id: integer().primaryKey({ autoIncrement: true }),
+    recurrence_id: integer()
+      .notNull()
+      .references(() => recurrencesTable.id),
+    scheduled_date: date().notNull(),
+    credit_card_invoice_id: integer()
+      .notNull()
+      .references(() => creditCardInvoicesTable.id),
+    status: text().$type<'included' | 'excluded'>().notNull(),
+  },
+  (table) => [
+    uniqueIndex('recurrence_invoice_coverage_slot_unique').on(
+      table.recurrence_id,
+      table.scheduled_date,
+    ),
+    check(
+      'recurrence_invoice_coverage_status_check',
+      sql`${table.status} IN ('included', 'excluded')`,
+    ),
+  ],
+);

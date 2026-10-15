@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import type { AppDatabase } from './db';
 import type { MonthlyStatementDto } from '@shared/contracts/monthly-statement';
 import { getDaysInMonth } from '@shared/lib/calendar';
+import { createRecurrenceService } from './recurrences';
 
 interface DailyCashFlow {
   date: string;
@@ -14,6 +15,7 @@ export function createMonthlyStatementService(
   db: AppDatabase,
   getActiveUser: () => { id: number },
 ) {
+  const recurrences = createRecurrenceService(db, getActiveUser);
   const cache = new Map<string, MonthlyStatementDto>();
   let revision = '';
   const cacheLimit = 24;
@@ -96,6 +98,41 @@ export function createMonthlyStatementService(
           GROUP BY CASE WHEN date < ${start} THEN '' ELSE date END ORDER BY date
         `);
 
+        const projection = recurrences.getCashFlow(start, end);
+        const projectedDays = new Map(
+          projection.days.map((day) => [day.date, day]),
+        );
+        const openingRow = rows.find((row) => row.date === '');
+
+        if (openingRow) {
+          openingRow.income += projection.openingIncomeCents;
+          openingRow.expense += projection.openingExpenseCents;
+        } else {
+          rows.push({
+            date: '',
+            income: projection.openingIncomeCents,
+            expense: projection.openingExpenseCents,
+          });
+        }
+
+        for (const row of rows) {
+          const projected = projectedDays.get(row.date);
+
+          if (projected) {
+            row.income += projected.incomeCents;
+            row.expense += projected.expenseCents;
+            projectedDays.delete(row.date);
+          }
+        }
+
+        for (const day of projectedDays.values()) {
+          rows.push({
+            date: day.date,
+            income: day.incomeCents,
+            expense: day.expenseCents,
+          });
+        }
+
         for (const row of rows) {
           if (
             !Number.isSafeInteger(row.income) ||
@@ -108,6 +145,11 @@ export function createMonthlyStatementService(
         const days = new Map(rows.map((row) => [row.date, row]));
         const opening = days.get('');
         const openingCents = (opening?.income ?? 0) - (opening?.expense ?? 0);
+
+        if (!Number.isSafeInteger(openingCents)) {
+          throw new Error('Monthly cash flow exceeds the supported amount.');
+        }
+
         const dayCount = getDaysInMonth(year, month);
         let income = 0;
         let expense = 0;

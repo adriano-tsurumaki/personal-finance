@@ -232,18 +232,56 @@ Frequency values are 1 daily, 2 weekly, 3 monthly, and 4 yearly. Versions of the
 
 ## Recurrence generation
 
-Occurrences should be generated on demand for the requested period:
+Recurrence behavior is implemented through versioned defaults and sparse occurrence
+decisions. See [Recurrences](recurrences.md) for calendar, lifecycle, and invoice
+coverage policies. Rules preserve their original anchor across default changes.
 
-1. Find versions whose validity intersects the period.
-2. Calculate scheduled dates from the rule's base date, frequency, and interval.
-3. Create only missing occurrences.
-4. Load the timeline without overwriting existing manual changes.
+Project occurrences on demand in memory. Reading a month must not insert
+transactions, invoices, or audit records. Unconfirmed occurrences influence the
+timeline and projected cash flow independently of earlier confirmation or payment.
+The cumulative summary also needs eligible projected events before the requested
+month to calculate its opening balance.
 
-Generation does not confirm payment. Direct entries keep `payment_date` empty until settlement, while card payment remains represented by the invoice.
+Explicit confirmation creates a transaction atomically and suppresses the matching
+projection. Confirmation does not settle payment. Rule defaults include title,
+estimated amount, category, and payment method/card; confirmation permits overrides
+for that occurrence. Changes to defaults create versions of the same recurrence,
+without changing confirmed transactions or resetting the original calendar.
 
-A future `scheduled_date` field with `UNIQUE (recurrence_version_id, scheduled_date)` can provide stable occurrence identity. Skipped occurrences also need a persistent exception record so generation does not recreate them.
+The definitive amount replaces the estimate rather than adding to it, including
+when its financial month changes. Repeated confirmation returns the same
+transaction. Credit cash flow counts the invoice once, using its due date until
+payment and its actual payment date afterward; the linked purchase is never a
+second outflow. Adding confirmed purchase details to a statement invoice preserves
+its authoritative total. Estimate coverage is separate from confirmation and no
+longer affects a confirmed slot. See the examples and pre-confirmation availability
+limitation in [Recurrences](recurrences.md#estimate-replacement-and-definitive-cash-flow).
 
-Open recurrence decisions include month-end dates, leap years, version calendar resets, overlap validation, defaults for generated transactions, and reconciliation after rule changes.
+Persist immutable occurrence identity separately from mutable reference and
+settlement dates. The immutable key uses recurrence identity plus the
+original scheduled date across default-only version changes; a version/date key
+alone is insufficient to prevent replacement versions from duplicating a slot.
+Exceptions require persistence so ignored occurrences do not reappear.
+
+Pause and end boundaries retain the selected last occurrence inclusively, preserve
+confirmed transactions, and stop subsequent projections. Resume remains available
+for paused rules in the selected-month view. Credit projections follow invoice
+cash-flow dates and must not count both a purchase and its invoice. Statement
+totals and paid invoices require explicit included/excluded coverage for the
+concrete invoice. Unknown coverage makes dependent financial totals unavailable.
+Included estimates add nothing to the authoritative total; excluded estimates add
+to unpaid statement cash flow only. Exclusion from a paid invoice requires an
+audited correction or a different confirmation method before totals become available.
+
+`recurrence_occurrences` stores only confirmed and ignored decisions, with unique
+rule/date and transaction links. Confirmation and purchase reconciliation share a
+transaction. Deleting a confirmed entry atomically ignores its slot; restoring an
+ignored slot removes the decision. Copies carry no occurrence identity.
+`recurrence_invoice_coverage` stores explicit coverage separately from confirmation.
+Legacy rules retain all IDs and historical version links with `repair_required`
+status and an unknown anchor. They cannot silently generate guessed occurrences.
+The user can explicitly end an incomplete rule, excluding its unknown estimates
+while preserving recorded transactions, and create a complete replacement.
 
 ## Relationships
 
@@ -279,8 +317,8 @@ remains available through the invoice details and is not counted twice.
 - Schema changes use versioned Drizzle migrations; see [Database development](database-development.md).
 - Cascade deletion behavior remains scheduled for review.
 - The service creates calculated invoices atomically when linking purchases.
-  Merely previewing a period does not create rows. Recurrence and installment
-  generation remain deferred.
+  Merely previewing a period does not create rows. Recurrence reads project in
+  memory; only explicit confirmation creates a transaction. Installments remain deferred.
 
 ## Monthly projected summaries
 
@@ -322,13 +360,17 @@ from cash-flow events.
 The cumulative projection starts from zero before the first recorded event. It
 includes unpaid commitments under the same rules as monthly flow, so it does not
 represent confirmed available cash. An explicit opening cash adjustment or account
-tracking would require a separate persisted financial rule. Recurrence and
-installment occurrence generation remain deferred; future occurrences must be
-generated idempotently for the requested horizon before aggregation, without
-counting a card purchase and its invoice twice.
+tracking would require a separate persisted financial rule. Installment generation
+remains deferred. Recurrences are projected in memory
+for both monthly and cumulative horizons; only explicit confirmation persists a
+transaction. Projection and confirmation must suppress duplicate occurrence
+identities and never count both a card purchase and its invoice.
 
-Month navigation loads the timeline and summary together and publishes the month
-and both results in one store update after both requests succeed. While pending,
+Month navigation reads transactions, recurrence occurrences, and the summary in one
+SQLite snapshot and publishes the month and results in one store update. Unknown
+recurrence coverage returns an unavailable summary alongside usable occurrences,
+allowing reconciliation in the affected month. Transport and query failures retain
+the confirmed period. While pending,
 the confirmed month stays visible. A non-dismissible loading toast appears at the
 bottom center and disappears immediately when the state changes, without a success
 notification. A failed navigation keeps the confirmed period and shows a dismissible

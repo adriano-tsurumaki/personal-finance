@@ -5,6 +5,7 @@ import {
 } from './financial-operations';
 import { currentMonthKey } from '@shared/lib/calc';
 import type { MonthlyStatementDto } from '@shared/contracts/monthly-statement';
+import type { RecurrenceMonthDto } from '@shared/contracts/recurrence';
 import type { TransactionDto } from '@shared/contracts/transaction';
 
 interface AppState {
@@ -13,6 +14,7 @@ interface AppState {
    */
   monthKey: string;
   transactions: TransactionDto[];
+  recurrenceMonth: RecurrenceMonthDto | null;
   monthlyStatement: MonthlyStatementDto;
   statementLoading: boolean;
   statementFailed: boolean;
@@ -59,9 +61,18 @@ export const useAppStore = create<AppState>((set, get) => {
     });
 
     try {
+      const combined = window.api.getFinancialMonth
+        ? await window.api.getFinancialMonth(monthKey)
+        : null;
       const [timeline, summary] = await Promise.allSettled([
-        (async () => window.api.getTransactions(monthKey))(),
-        (async () => window.api.getMonthlyStatement(monthKey))(),
+        (async () =>
+          combined
+            ? combined.transactions
+            : window.api.getTransactions(monthKey))(),
+        (async () =>
+          combined
+            ? combined.statement
+            : window.api.getMonthlyStatement(monthKey))(),
       ]);
 
       if (
@@ -92,15 +103,37 @@ export const useAppStore = create<AppState>((set, get) => {
       set({
         monthKey,
         transactions: timeline.value,
-        monthlyStatement: summary.value,
+        monthlyStatement: summary.value ?? get().monthlyStatement,
+        recurrenceMonth: combined?.recurrences ?? null,
         pendingMonth: null,
         failedMonth: null,
         statementLoading: false,
-        statementFailed: false,
-        statementLoaded: true,
+        statementFailed: summary.value === null,
+        statementLoaded: summary.value !== null,
         transactionsLoading: false,
         transactionsFailed: false,
       });
+    } catch {
+      if (
+        generation === sessionGeneration &&
+        timelineRequest === transactionsRequestId &&
+        summaryRequest === statementRequestId
+      ) {
+        set({
+          pendingMonth: null,
+          failedMonth: monthKey,
+          statementLoading: false,
+          transactionsLoading: false,
+          ...(!navigation || !get().statementLoaded
+            ? {
+                statementLoaded: false,
+                statementFailed: true,
+                transactionsFailed: true,
+                recurrenceMonth: null,
+              }
+            : {}),
+        });
+      }
     } finally {
       release();
     }
@@ -108,6 +141,7 @@ export const useAppStore = create<AppState>((set, get) => {
 
   return {
     monthKey: currentMonthKey(),
+    recurrenceMonth: null,
     transactions: [],
     transactionsLoading: false,
     transactionsFailed: false,
@@ -140,6 +174,7 @@ export const useAppStore = create<AppState>((set, get) => {
         statementLoaded: false,
         pendingMonth: null,
         failedMonth: null,
+        recurrenceMonth: null,
         transactions: [],
         transactionsLoading: false,
         transactionsFailed: false,

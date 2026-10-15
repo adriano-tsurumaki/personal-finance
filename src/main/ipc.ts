@@ -6,6 +6,14 @@ import { createProfileService } from './profiles';
 import { createMonthlyStatementService } from './monthly-statement';
 import { createCategoryService } from './categories';
 import { createCreditCardService } from './credit-cards';
+import { createRecurrenceService } from './recurrences';
+import { createFinancialMonthService } from './financial-month';
+import type {
+  RecurrenceErrorCode,
+  RecurrenceResult,
+} from '@shared/contracts/recurrence';
+import { previewRecurrenceBoundary } from './recurrences/boundary-preview';
+import type { RecurrenceBoundaryInput } from '@shared/contracts/recurrence';
 import type {
   TransactionInput,
   TransactionUpdateInput,
@@ -21,6 +29,12 @@ export function registerIpcHandlers(
   const cards = createCreditCardService(db, () => profiles.requireActive());
   const service = createTransactionService(db, () => profiles.requireActive());
   const statements = createMonthlyStatementService(db, () =>
+    profiles.requireActive(),
+  );
+  const recurrences = createRecurrenceService(db, () =>
+    profiles.requireActive(),
+  );
+  const financialMonths = createFinancialMonthService(db, () =>
     profiles.requireActive(),
   );
 
@@ -42,6 +56,52 @@ export function registerIpcHandlers(
       return handler(...args);
     });
   }
+
+  function mutation<Args extends unknown[], Value>(
+    handler: (...args: Args) => Value,
+  ): (...args: Args) => RecurrenceResult<Value> {
+    return (...args) => {
+      try {
+        return { ok: true, value: handler(...args) };
+      } catch (error) {
+        const candidate = error as { code?: string; message?: string } | null;
+        const codes: RecurrenceErrorCode[] = [
+          'invalid_input',
+          'not_found',
+          'conflict',
+          'repair_required',
+          'internal_error',
+        ];
+        const code = codes.includes(candidate?.code as RecurrenceErrorCode)
+          ? (candidate!.code as RecurrenceErrorCode)
+          : 'internal_error';
+        return {
+          ok: false,
+          error: {
+            code,
+            message: candidate?.message ?? 'The recurrence action failed.',
+          },
+        };
+      }
+    };
+  }
+
+  register('financial:month', financialMonths.get);
+  register('recurrences:list', recurrences.list);
+  register('recurrences:preview-boundary', (input: RecurrenceBoundaryInput) =>
+    previewRecurrenceBoundary(db, profiles.requireActive().id, input),
+  );
+  register('recurrences:dismiss-legacy', mutation(recurrences.dismissLegacy));
+  register('recurrences:month', recurrences.month);
+  register('recurrences:forecast', recurrences.forecast);
+  register('recurrences:create', mutation(recurrences.create));
+  register('recurrences:update', mutation(recurrences.update));
+  register('recurrences:boundary', mutation(recurrences.boundary));
+  register('recurrences:resume', mutation(recurrences.resume));
+  register('recurrences:confirm', mutation(recurrences.confirm));
+  register('recurrences:ignore', mutation(recurrences.ignore));
+  register('recurrences:restore', mutation(recurrences.restore));
+  register('recurrences:coverage', mutation(recurrences.coverage));
 
   register('cards:list', cards.list);
   register('cards:preview', cards.previewRegistration);

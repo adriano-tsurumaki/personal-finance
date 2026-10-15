@@ -15,6 +15,56 @@ The following items were checked against the working tree on 2026-09-18. They ar
 
 ## Deferred features
 
+### Recurrence projections and confirmation
+
+Implemented and verified on 2026-10-14; see [Recurrences](recurrences.md). The vault's
+`Personal Finance/recurrence-tasks.md` retains the detailed task and evidence log.
+
+- [x] Resolve the documented credit-projection reconciliation policy for paid and
+      statement-recorded invoices, and explicitly adopt or revise the recommended
+      calendar, resume, ignore/restore, and first-occurrence defaults.
+      Verified 2026-10-14: explicit coverage and unavailable-summary tests cover
+      authoritative totals, due/paid dates, and prior unaffected months.
+- [x] Implement compatible migrations, versioned transaction defaults, immutable
+      occurrence identity across default changes, and persistent sparse decisions.
+      Preserve legacy associations and handle ambiguous occurrence mapping explicitly.
+      Verified 2026-10-14: additive upgrade, repeat migration, foreign keys, unique
+      decisions, non-overlap, and legacy provenance tests pass.
+- [x] Compute read-only monthly and cumulative projections, including card due-date
+      attribution, shared timeline/statement rules, safe cents, and cache invalidation.
+      Complete when distant-month navigation writes no transactions or invoices and
+      accumulated estimates do not duplicate confirmed or ignored slots.
+      Verified 2026-10-14: snapshot/statement tests and reference enumeration agree;
+      millions of historical credit slots use bounded billing callbacks.
+- [x] Implement idempotent confirmation with occurrence-specific amount, category,
+      and method/card overrides, inclusive pause/end, and resume without deleting
+      confirmed history. Recording payment remains a separate workflow.
+      Verified 2026-10-14: rollback, moved/deleted confirmations, stale edits,
+      preserved future confirmations, and resumed-gap tests pass.
+- [x] Build the Ledger recurrence screen with **In month** and **All recurrences**,
+      paused-rule resume access, and period notices linking from the timeline.
+      Confirmed occurrences retain their scheduled month when transactions move.
+      Verified 2026-10-14: localized SSR tests and isolated browser checks cover
+      inline creation, moved confirmations, both themes, and forecast layout.
+- [x] Integrate financial-operation ownership, coordinated refresh, profile resets,
+      localized feedback, accessibility, and regression coverage. Reuse the existing
+      navigation and unavailable-data behavior rather than reopening completed work.
+      Verified 2026-10-14: operation/session/refresh tests and browser keyboard-tab,
+      initial focus, focus-restoration, and narrow-layout checks pass. Shared
+      controls retain their reduced-motion overrides.
+
+- Creating a recurrence from an existing transaction remains a future workflow.
+  New rules start unconfirmed; no matching by mutable transaction fields is used.
+
+- [ ] Align pre-confirmation coverage availability for invoices paid before a
+      recurrence's scheduled month. Verified 2026-10-15: the scheduled-date query
+      horizon can omit a later slot from the earlier payment month's coverage
+      check, while a later query reports the unresolved coverage. Complete when
+      coverage availability follows one explicit policy across both months,
+      including unknown, included, and excluded coverage. Confirmation replacement
+      itself is covered by regression tests: the estimate is suppressed, the
+      invoice is counted once, and its payment date determines cash-flow placement.
+
 ### Transaction form integration
 
 - [x] Replace fixed category, user, and payment identifiers (verified 2026-10-08):
@@ -152,7 +202,8 @@ Review each relationship and choose whether to block deletion, archive records, 
 - [x] Prevent monthly cash-flow queries from counting both card purchases and
       invoice payments (verified 2026-10-08): SQLite tests count invoice payment once
       and exclude linked purchases and unlinked credit-method entries.
-- Generate installments and recurring occurrences idempotently.
+- Generate installments idempotently. Recurrence reads remain projection-only;
+  persist confirmations idempotently under the recurrence work above.
 
 ## Discussed possibilities
 

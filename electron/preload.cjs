@@ -1,6 +1,24 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+  getFinancialMonth: (month) => ipcRenderer.invoke('financial:month', month),
+  recurrence: {
+    previewBoundary: (input) =>
+      ipcRenderer.invoke('recurrences:preview-boundary', input),
+    dismissLegacy: (id) => ipcRenderer.invoke('recurrences:dismiss-legacy', id),
+    list: () => ipcRenderer.invoke('recurrences:list'),
+    month: (month) => ipcRenderer.invoke('recurrences:month', month),
+    forecast: (start, end) =>
+      ipcRenderer.invoke('recurrences:forecast', start, end),
+    create: (input) => ipcRenderer.invoke('recurrences:create', input),
+    update: (input) => ipcRenderer.invoke('recurrences:update', input),
+    boundary: (input) => ipcRenderer.invoke('recurrences:boundary', input),
+    resume: (input) => ipcRenderer.invoke('recurrences:resume', input),
+    confirm: (input) => ipcRenderer.invoke('recurrences:confirm', input),
+    ignore: (input) => ipcRenderer.invoke('recurrences:ignore', input),
+    restore: (input) => ipcRenderer.invoke('recurrences:restore', input),
+    coverage: (input) => ipcRenderer.invoke('recurrences:coverage', input),
+  },
   getCreditCards: () => ipcRenderer.invoke('cards:list'),
   previewCreditCard: (input, month) =>
     ipcRenderer.invoke('cards:preview', input, month),

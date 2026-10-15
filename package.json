@@ -20,7 +20,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/main/db/migrate.ts",
     "db:studio": "drizzle-kit studio",
-    "test:db": "tsx --test src/main/db/database.test.ts src/main/db/credit-cards.test.ts src/shared/lib/calendar.test.ts"
+    "test:db": "tsx --test src/main/db/database.test.ts src/main/db/credit-cards.test.ts src/main/db/recurrence-migration.test.ts src/main/db/recurrences.test.ts src/main/db/recurrence-statements.test.ts src/main/db/recurrence-review.test.ts src/main/recurrence-credit-cash-flow.test.ts src/shared/lib/calendar.test.ts src/shared/lib/recurrence-calendar.test.ts"
   },
   "keywords": [],
   "author": {

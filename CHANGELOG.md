@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Added
+
+- Recurrence rules with versioned transaction defaults, anchored schedules,
+  read-only timeline and cumulative cash-flow projections, and a local-date
+  45-day forecast.
+- Explicit occurrence confirmation with per-entry overrides, durable ignore/restore
+  decisions, inclusive pause/end boundaries, and resumption without backfilling gaps.
+  Confirmation replaces the estimate once; credit cash flow counts only the invoice,
+  using its actual payment month after settlement and preserving statement totals.
+- Ledger recurrence management with selected-month and all-rules views, localized
+  feedback, invoice coverage reconciliation, and coordinated financial refreshes.
+
+### Upgrade notes
+
+- An additive migration preserves existing recurrence, version, and transaction
+  identifiers. Incomplete legacy rules require explicit review and can be ended
+  without deleting their recorded transactions; no old scheduled dates are guessed.
+- Paid and statement-recorded invoices require explicit recurrence coverage.
+  Dependent summaries remain unavailable until reconciliation, avoiding duplicate
+  totals. Confirmation does not record payment or receipt.
+
 ## 0.1.0 - 2026-10-14
 
 ### Added

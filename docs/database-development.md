@@ -67,6 +67,14 @@ their financial mutations in `credit_card_history`.
 
 ## Existing databases
 
+The recurrence migration is additive and preserves existing rule, version, and
+transaction identifiers. Old rules lack complete transaction defaults and an
+immutable occurrence anchor, so they migrate to `repair_required` rather than
+guessing dates from mutable transactions. The user can explicitly end an incomplete
+rule, retaining all recorded history, then create a complete replacement. New
+rules enforce non-overlapping effective versions and unique sparse decisions for
+each rule/date pair. Previewing recurrences never inserts invoices or transactions.
+
 The initial migration deliberately uses `CREATE TABLE IF NOT EXISTS` so that it
 can also adopt the schema produced by the previous application initializer,
 including its `categories.icon_key` upgrade. Existing rows, IDs, cents, dates,

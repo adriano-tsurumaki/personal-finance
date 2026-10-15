@@ -261,11 +261,12 @@ separators, rather than the reference demo's USD. A language preview is availabl
 before creation; the profile menu can update the saved language afterward. The interface applies the new language only after persistence succeeds. Local profile
 entry has no password or authentication boundary.
 
-The monthly summary API remains deferred. Show dashes in unavailable indicator
-tiles and a clear pending message beneath the balance label. Omit the large
-balance value while unavailable rather than enlarging a placeholder dash or
-presenting prototype zeroes as financial data. Capitalize month headings in both
-supported locales while preserving locale-specific date wording.
+The monthly summary API is implemented, including cumulative opening and closing
+balances. Preserve its coordinated loading and failure behavior: keep the confirmed
+period while navigating, use the existing bottom-center loading/error feedback,
+and show unavailable amounts on initial or refresh failure rather than valid zeroes.
+Do not add a competing pending message or rebuild the summary layout. Capitalize
+month headings in both supported locales while preserving locale-specific wording.
 
 The original product stacks monthly, weekly, and recurring sections. The expanded kit keeps the monthly header above **Timelines / Installments / Weekly Goals / Recurring** tabs.
 
@@ -279,6 +280,26 @@ The original product stacks monthly, weekly, and recurring sections. The expande
 | Add transaction   | Modal with title, amount, type, category, date, note; optional installment count, amount, and preview               |
 
 The kit limits timeline navigation to January–March 2026 and anchors the forecast to March 20, 2026. Its changes update in-memory sample data. These are demo boundaries, not requirements for consuming applications.
+
+### Recurrence adaptation
+
+[Recurrences](recurrences.md) defines the implemented product behavior.
+Keep the Ledger recurrence form, overview tiles, income/expense rule
+groups, paused-row treatment, and sticky 45-day forecast. Extend the screen with
+existing tab primitives for **In month** and **All recurrences**. The first follows
+the confirmed monthly-summary selection and includes applicable paused rules with
+a resume action; the second preserves visibility of all created rules.
+
+Use a readable unconfirmed badge and recurrence icon on projected timeline rows,
+with a period-specific notice linking to confirmation in **In month**. Confirmation
+prefills editable title, estimated amount, category, method, and optional card.
+Distinguish confirmation from payment. Keep confirmed occurrences associated with
+their scheduled month and show the actual transaction date when it moved.
+
+The rule overview's monthly-equivalent estimates are distinct from the summary's
+actual dated projections. Reuse existing colors and typography; do not create a
+new status palette or reduce projected amounts to illegible opacity. Evaluate
+financial-operation participation under [UI operation coordination](ui-operations.md).
 
 `styles.css` imports fonts, colors, typography, radius, spacing, effects, base, and components, in that order. The standalone kit reads components from `window.LedgerDesignSystem_*` and data from `window.LedgerData`.
 

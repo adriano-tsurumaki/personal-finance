@@ -212,3 +212,80 @@ test('timeline-only refresh ignores obsolete results and releases locks after fa
   assert.equal(useAppStore.getState().transactionsFailed, true);
   assert.equal(financialActionsBlocked(), false);
 });
+
+test('combined financial snapshot publishes projections while unknown invoice coverage keeps summary unavailable', async () => {
+  const recurrences = {
+    month: '2026-11',
+    occurrences: [],
+    paused_rules: [],
+    unconfirmed_count: 1,
+  };
+  window.api.getFinancialMonth = async () => ({
+    transactions: [entry],
+    statement: null,
+    statement_issue: 'coverage_unknown',
+    recurrences,
+  });
+  await useAppStore.getState().setMonthKey('2026-11');
+  const state = useAppStore.getState();
+  assert.equal(state.monthKey, '2026-11');
+  assert.deepEqual(state.transactions, [entry]);
+  assert.equal(state.recurrenceMonth, recurrences);
+  assert.equal(state.transactionsFailed, false);
+  assert.equal(state.statementLoaded, false);
+  assert.equal(state.statementFailed, true);
+  assert.equal(financialActionsBlocked(), false);
+  window.api.getFinancialMonth = async () => ({
+    transactions: [entry],
+    statement,
+    statement_issue: null,
+    recurrences,
+  });
+  await state.refreshMonth();
+  assert.equal(useAppStore.getState().statementLoaded, true);
+  assert.equal(useAppStore.getState().statementFailed, false);
+});
+
+test('stale combined snapshot cannot publish another profile recurrence data or unlock newer operations', async () => {
+  const response =
+    deferred<Awaited<ReturnType<typeof window.api.getFinancialMonth>>>();
+  window.api.getFinancialMonth = () => response.promise;
+  const loading = useAppStore.getState().setMonthKey('2026-11');
+  useAppStore.getState().reset();
+  const releaseNew = useFinancialOperations.getState().begin('mutation');
+  response.resolve({
+    transactions: [entry],
+    statement,
+    statement_issue: null,
+    recurrences: {
+      month: '2026-11',
+      occurrences: [],
+      paused_rules: [],
+      unconfirmed_count: 5,
+    },
+  });
+  await loading;
+  assert.equal(useAppStore.getState().recurrenceMonth, null);
+  assert.deepEqual(useAppStore.getState().transactions, []);
+  assert.equal(financialActionsBlocked(), true);
+  releaseNew();
+  assert.equal(financialActionsBlocked(), false);
+});
+
+test('combined snapshot transport failure preserves the confirmed period and recurrence association', async () => {
+  const previous = {
+    month: '2026-10',
+    occurrences: [],
+    paused_rules: [],
+    unconfirmed_count: 2,
+  };
+  useAppStore.setState({ statementLoaded: true, recurrenceMonth: previous });
+  window.api.getFinancialMonth = async () => {
+    throw new Error('Database unavailable');
+  };
+  await useAppStore.getState().setMonthKey('2026-11');
+  assert.equal(useAppStore.getState().monthKey, '2026-10');
+  assert.equal(useAppStore.getState().recurrenceMonth, previous);
+  assert.equal(useAppStore.getState().failedMonth, '2026-11');
+  assert.equal(financialActionsBlocked(), false);
+});

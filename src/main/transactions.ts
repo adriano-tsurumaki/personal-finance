@@ -9,6 +9,7 @@ import {
   categoriesTable,
   creditCardInvoicesTable,
   paymentsTable,
+  recurrenceOccurrencesTable,
   transactionsTable,
 } from './db/schema';
 import type { CreateResult } from '@shared/contracts/result';
@@ -139,9 +140,10 @@ export function createTransactionService(
   function createPurchase(
     input: TransactionInput,
     dryRun: boolean,
-  ): CardCorrectionPreview | null {
+  ): { plan: CardCorrectionPreview | null; id: number } {
     const rollback = {};
     let plan: CardCorrectionPreview | null = null;
+    let id = 0;
     try {
       db.transaction(() => {
         const user = getActiveUser();
@@ -178,6 +180,8 @@ export function createTransactionService(
           .returning()
           .get()!;
 
+        id = after.id;
+
         if (invoiceId !== null) {
           plan = cards.previewEntry(null, after);
 
@@ -205,7 +209,7 @@ export function createTransactionService(
       }
     }
 
-    return plan;
+    return { plan, id };
   }
 
   return {
@@ -318,8 +322,11 @@ export function createTransactionService(
       createPurchase(input, false);
       return { ok: true };
     },
+    createWithId(input: TransactionInput): number {
+      return createPurchase(input, false).id;
+    },
     previewCreate(input: TransactionInput): CardCorrectionPreview | null {
-      return createPurchase(input, true);
+      return createPurchase(input, true).plan;
     },
 
     previewUpdate(id: number, input: TransactionUpdateInput) {
@@ -477,6 +484,11 @@ export function createTransactionService(
         ) {
           throw new Error('stale_correction');
         }
+
+        db.update(recurrenceOccurrencesTable)
+          .set({ state: 'ignored', transaction_id: null })
+          .where(eq(recurrenceOccurrencesTable.transaction_id, id))
+          .run();
 
         const result = db
           .delete(transactionsTable)
