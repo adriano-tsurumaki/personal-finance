@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.0 - 2026-10-15
+
 ### Added
 
 - Recurrence rules with versioned transaction defaults, anchored schedules,
@@ -22,6 +24,13 @@
 - Paid and statement-recorded invoices require explicit recurrence coverage.
   Dependent summaries remain unavailable until reconciliation, avoiding duplicate
   totals. Confirmation does not record payment or receipt.
+
+### Known limitations
+
+- Before confirmation, an invoice paid before a recurrence's scheduled month can
+  leave that payment month's summary available while a later query reports unknown
+  estimate coverage. Confirmation suppresses the estimate and counts the invoice
+  once in its actual payment month. See [Recurrences](docs/recurrences.md).
 
 ## 0.1.0 - 2026-10-14
 
