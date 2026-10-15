@@ -198,7 +198,7 @@ Card/recurrence queries must leave transaction counts, invoice rows/totals, and 
 This feature is a compatible addition under [Versioning and releases](versioning.md).
 Its additive migration supports the existing 0.1.0 and documented legacy upgrade
 paths. Incomplete old rules require explicit review; financial history is preserved.
-`CHANGELOG.md` records the feature under `Unreleased`; `package.json` remains 0.1.0.
+The recurrence feature was introduced in version 0.2.0 and is recorded in that release section of `CHANGELOG.md`.
 No release, commit, tag, push, or publication is implied.
 
 Automated evidence covers anchored range/count equivalence, leap and short-month

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.0 - 2026-10-15
+
 ### Added
 
 - Toggle the monthly timeline between oldest and newest dates first, including
