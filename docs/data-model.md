@@ -140,6 +140,22 @@ Installment group and number must be set together, the number must be positive, 
 
 Stores data shared by all installments: name, count, total amount, expected start and end dates, purchase date, and owner. Each installment is a separate transaction. Stored dates and totals must remain consistent with those transactions.
 
+Finite monthly expense plans create all numbered transactions atomically after a
+complete schedule and invoice preview. New installment purchases require the
+credit payment method and a profile-owned card; previously recorded direct plans
+remain preserved and manageable. Division preserves the exact total in
+integer cents, with remainder cents assigned to the first positions. Creation
+also accepts an explicit positive-cent allocation whose sum matches the total.
+Optional card scheduling uses invoice opening dates after the first installment;
+resolved amounts/dates are retained in the creation receipt for validation. See
+[Installments](installments.md) for generation, invoice mapping, mutation guards,
+settlement distinctions, and legacy review rules.
+
+`installment_requests` retains a profile-scoped creation identity and normalized
+input for durable duplicate-save protection. Deleting an eligible plan clears its
+receipt's plan link while retaining the request identity. Existing financial rows
+are preserved by the additive receipt migration.
+
 ### `credit_cards` and `credit_card_invoice`
 
 `credit_cards` identifies a profile-owned card and retains initial closing rules
@@ -318,7 +334,8 @@ remains available through the invoice details and is not counted twice.
 - Cascade deletion behavior remains scheduled for review.
 - The service creates calculated invoices atomically when linking purchases.
   Merely previewing a period does not create rows. Recurrence reads project in
-  memory; only explicit confirmation creates a transaction. Installments remain deferred.
+  memory; only explicit confirmation creates a transaction. Installment plans
+  persist all finite commitments on explicit save; preview creates no durable rows.
 
 ## Monthly projected summaries
 
@@ -360,8 +377,8 @@ from cash-flow events.
 The cumulative projection starts from zero before the first recorded event. It
 includes unpaid commitments under the same rules as monthly flow, so it does not
 represent confirmed available cash. An explicit opening cash adjustment or account
-tracking would require a separate persisted financial rule. Installment generation
-remains deferred. Recurrences are projected in memory
+tracking would require a separate persisted financial rule. Installments use their
+persisted entries and invoices without another projection. Recurrences are projected in memory
 for both monthly and cumulative horizons; only explicit confirmation persists a
 transaction. Projection and confirmation must suppress duplicate occurrence
 identities and never count both a card purchase and its invoice.

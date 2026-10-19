@@ -56,6 +56,9 @@ const operationKeys = [
   'update_purchase',
   'delete_purchase',
   'associate_purchase',
+  'create_installment_plan',
+  'rename_installment_plan',
+  'delete_installment_plan',
 ];
 
 export default function CreditCards() {
@@ -170,7 +173,11 @@ export default function CreditCards() {
     return (
       <ul className="divide-y divide-border">
         {rows.map((entry) => (
-          <MenuOptionsTransaction key={entry.id} transactionId={entry.id}>
+          <MenuOptionsTransaction
+            key={entry.id}
+            transactionId={entry.id}
+            installment={!!entry.installment_id}
+          >
             {(actions) => (
               <div className="flex flex-wrap items-center justify-between gap-3 py-3">
                 <div>
@@ -178,7 +185,7 @@ export default function CreditCards() {
                   <p className="text-xs text-muted-foreground">
                     {cardDate(entry.reference_date)}
                     {entry.installment_number
-                      ? ` · #${entry.installment_number}`
+                      ? ` · ${entry.installment_number}/${entry.total_installments ?? '?'}`
                       : ''}
                   </p>
                   {entry.outside_period && (
@@ -202,7 +209,7 @@ export default function CreditCards() {
                       returnFocus.current = event.currentTarget;
                       setAssociation(entry);
                     }}
-                    disabled={actions.disabled}
+                    disabled={actions.disabled || !!entry.installment_id}
                   >
                     <Link2 aria-hidden="true" />
                   </Button>
@@ -214,7 +221,7 @@ export default function CreditCards() {
                     })}
                     title={t('common.edit')}
                     onClick={actions.onEdit}
-                    disabled={actions.disabled}
+                    disabled={actions.disabled || !!entry.installment_id}
                   >
                     <Pencil aria-hidden="true" />
                   </Button>
@@ -227,7 +234,7 @@ export default function CreditCards() {
                     })}
                     title={t('common.remove')}
                     onClick={actions.onRemove}
-                    disabled={actions.disabled}
+                    disabled={actions.disabled || !!entry.installment_id}
                   >
                     <Trash2 aria-hidden="true" />
                   </Button>

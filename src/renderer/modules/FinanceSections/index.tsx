@@ -1,6 +1,7 @@
 import { useFinancialOperations } from '@store/financial-operations';
 import { useState } from 'react';
 import Recurrences from '@modules/Recurrences';
+import Installments from '@modules/Installments';
 import { CreditCard, Repeat, Tags, Target, Wallet } from 'lucide-react';
 import Categories from '@modules/Categories';
 import CreditCards from '@modules/CreditCards';
@@ -11,12 +12,12 @@ import { useAppStore } from '@store/transaction';
 import { t } from '@lib/i18n';
 
 const deferredSections = [
-  { id: 'installments', label: 'sections.installments', icon: CreditCard },
   { id: 'weekly', label: 'sections.weekly', icon: Target },
 ] as const;
 
 export default function FinanceSections() {
   const [section, setSection] = useState('timelines');
+  const [createPlan, setCreatePlan] = useState(false);
   const blocked = useFinancialOperations((state) => state.pending.size > 0);
   const transactionCount = useAppStore(
     (state) =>
@@ -64,6 +65,10 @@ export default function FinanceSections() {
                   <Repeat aria-hidden="true" />
                   {t('sections.recurring')}
                 </TabsTrigger>
+                <TabsTrigger value="installments">
+                  <CreditCard aria-hidden="true" />
+                  {t('sections.installments')}
+                </TabsTrigger>
                 {/* {deferredSections.map(({ id, label, icon: Icon }) => (
                 <TabsTrigger key={id} value={id}>
                   <Icon aria-hidden="true" />
@@ -76,6 +81,12 @@ export default function FinanceSections() {
         </div>
         <TabsContent value="timelines">
           <TimelineTransaction
+            onCreateInstallment={() => {
+              if (!useFinancialOperations.getState().pending.size) {
+                setCreatePlan(true);
+                setSection('installments');
+              }
+            }}
             onReviewRecurrences={() => {
               if (!useFinancialOperations.getState().pending.size) {
                 setSection('recurring');
@@ -91,6 +102,12 @@ export default function FinanceSections() {
         </TabsContent>
         <TabsContent value="recurring">
           <Recurrences />
+        </TabsContent>
+        <TabsContent value="installments">
+          <Installments
+            initialCreate={createPlan}
+            onCreateClosed={() => setCreatePlan(false)}
+          />
         </TabsContent>
         {deferredSections.map(({ id, label }) => (
           <TabsContent key={id} value={id}>

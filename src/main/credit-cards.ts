@@ -5,6 +5,7 @@ import {
   cardHistoryTable,
   creditCardsTable,
   creditCardInvoicesTable,
+  installmentsTable,
   paymentsTable,
   transactionsTable,
 } from './db/schema';
@@ -629,6 +630,16 @@ export function createCreditCardService(
       }
     }
 
+    if (
+      changes.some(
+        (change) =>
+          change.entity === 'transaction' &&
+          change.before?.installment_id != null,
+      )
+    ) {
+      throw new Error('installment_managed');
+    }
+
     return preview(changes, state);
   }
 
@@ -764,6 +775,19 @@ export function createCreditCardService(
         invoice: dto(row),
         entries: items(id).map((value) => ({
           ...value,
+          total_installments:
+            value.installment_id === null
+              ? null
+              : (db
+                  .select({ count: installmentsTable.total_installments })
+                  .from(installmentsTable)
+                  .where(
+                    and(
+                      eq(installmentsTable.id, value.installment_id),
+                      eq(installmentsTable.user_id, getActiveUser().id),
+                    ),
+                  )
+                  .get()?.count ?? null),
           outside_period:
             !!value.reference_date &&
             !!row.opening_date &&
@@ -885,7 +909,63 @@ export function createCreditCardService(
     },
     resolveInvoice,
     invoice,
+    invoiceSummary(id: number): InvoiceDto {
+      return dto(invoice(id));
+    },
     reconcile,
+    previewBatch(before: Entry[], after: Entry[]): CardCorrectionPreview {
+      const ids = [
+        ...new Set(
+          [...before, ...after].flatMap((row) =>
+            row.credit_card_invoice_id === null
+              ? []
+              : [row.credit_card_invoice_id],
+          ),
+        ),
+      ];
+      const changes: CardHistoryChange[] = [
+        ...before.map((row) => snapshot('transaction', row, null)),
+        ...after.map((row) => snapshot('transaction', null, row)),
+      ];
+
+      for (const id of ids) {
+        const original = invoice(id);
+        const rows = items(id).filter(
+          (row) =>
+            ![...before, ...after].some((changed) => changed.id === row.id),
+        );
+        rows.push(...after.filter((row) => row.credit_card_invoice_id === id));
+        changes.push(
+          snapshot('invoice', original, {
+            ...original,
+            amount_cents:
+              original.total_source === 'calculated'
+                ? sum(rows)
+                : original.amount_cents,
+          }),
+        );
+      }
+
+      return preview(
+        changes,
+        ids.map((id) =>
+          items(id).filter(
+            (row) => !after.some((created) => created.id === row.id),
+          ),
+        ),
+      );
+    },
+    recordBatch(operation: string, changes: CardHistoryChange[]) {
+      const ids = changes
+        .filter((change) => change.entity === 'invoice')
+        .map((change) => change.id);
+
+      for (const cardId of new Set(
+        ids.map((id) => invoice(id).credit_card_id),
+      )) {
+        history(cardId, operation, changes);
+      }
+    },
     previewEntry(
       before: Entry | null,
       after: Entry | null,
@@ -949,6 +1029,11 @@ export function createCreditCardService(
     ): CardCorrectionPreview {
       return db.transaction(() => {
         const before = entry(id);
+
+        if (before.installment_id !== null) {
+          throw new Error('installment_managed');
+        }
+
         const method = db
           .select()
           .from(paymentsTable)

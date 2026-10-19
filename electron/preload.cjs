@@ -1,6 +1,17 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+  installment: {
+    list: () => ipcRenderer.invoke('installments:list'),
+    preview: (input) => ipcRenderer.invoke('installments:preview', input),
+    create: (input, token) =>
+      ipcRenderer.invoke('installments:create', input, token),
+    rename: (id, name, note) =>
+      ipcRenderer.invoke('installments:rename', id, name, note),
+    previewRemove: (id) =>
+      ipcRenderer.invoke('installments:preview-remove', id),
+    remove: (id, token) => ipcRenderer.invoke('installments:remove', id, token),
+  },
   getFinancialMonth: (month) => ipcRenderer.invoke('financial:month', month),
   recurrence: {
     previewBoundary: (input) =>

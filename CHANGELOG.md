@@ -5,6 +5,27 @@
 ### Added
 
 - Pill icon option for categories.
+- Monthly expense installment plans with exact cent allocation, anchored dates,
+  complete schedule and invoice previews, atomic saves, and durable retry protection.
+- New installment purchases require credit and a selected card. PIX, cash, and
+  debit are unavailable for creation; existing direct-payment plans are preserved.
+- Editable installment preview amounts with local locks and automatic redistribution
+  of the remaining purchase total, plus optional invoice-opening reference dates
+  after the first installment. Creation uses compact invoice information and
+  localized prompts for unselected payment methods and cards.
+- Installment management with selected-month and all-plan views, schedule progress,
+  payment evidence, an eight-month reference-date forecast, description corrections,
+  and guarded whole-plan deletion. Timeline and invoice rows identify each position.
+- Card installments preserve statement totals and payment dates, preview historical
+  calculated-invoice impacts, and reuse existing cash-flow rules without duplicate
+  purchase outflows. Individual installment financial changes are blocked.
+
+### Upgrade notes
+
+- An additive migration introduces profile-scoped installment creation receipts
+  without changing existing financial rows. Startup applies it automatically.
+  Inconsistent legacy plans remain preserved and visible for review; unsupported
+  plan changes are blocked. See [Installments](docs/installments.md).
 
 ## 0.3.0 - 2026-10-15
 

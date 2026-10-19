@@ -213,6 +213,9 @@ export function createTransactionService(
   }
 
   return {
+    validateInput(input: TransactionInput) {
+      return validate(input, getActiveUser().id);
+    },
     list(month: string): TransactionDto[] {
       const user = getActiveUser();
 
@@ -233,6 +236,11 @@ export function createTransactionService(
             payment_id: transactionsTable.payment_id,
             credit_card_invoice_id: transactionsTable.credit_card_invoice_id,
             invoice_paid_at: creditCardInvoicesTable.paid_at,
+            installment_id: transactionsTable.installment_id,
+            installment_number: transactionsTable.installment_number,
+            total_installments: sql<
+              number | null
+            >`(SELECT total_installments FROM installment WHERE id = ${transactionsTable.installment_id} AND user_id = ${user.id})`,
             category: {
               id: categoriesTable.id,
               name: categoriesTable.name,
@@ -300,6 +308,9 @@ export function createTransactionService(
 
       return {
         name: result.name,
+        ...(result.installment_id === null
+          ? {}
+          : { installment_id: result.installment_id }),
         note: result.note,
         type: result.type,
         amount_cents: result.amount_cents,
@@ -346,6 +357,10 @@ export function createTransactionService(
         throw new Error('Transaction not found.');
       }
 
+      if (before.installment_id !== null) {
+        throw new Error('installment_managed');
+      }
+
       return cards.previewEntry(before, {
         ...before,
         ...details,
@@ -368,6 +383,10 @@ export function createTransactionService(
         throw new Error('Transaction not found.');
       }
 
+      if (before.installment_id !== null) {
+        throw new Error('installment_managed');
+      }
+
       return cards.previewEntry(before, null);
     },
     update(id: number, input: TransactionUpdateInput): CreateResult {
@@ -388,6 +407,10 @@ export function createTransactionService(
 
         if (!existing) {
           throw new Error('Transaction not found.');
+        }
+
+        if (existing.installment_id !== null) {
+          throw new Error('installment_managed');
         }
 
         if (existing.credit_card_invoice_id !== null) {
@@ -476,6 +499,10 @@ export function createTransactionService(
 
         if (!before) {
           throw new Error('Transaction not found.');
+        }
+
+        if (before.installment_id !== null) {
+          throw new Error('installment_managed');
         }
 
         if (

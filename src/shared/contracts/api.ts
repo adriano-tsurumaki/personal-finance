@@ -1,6 +1,7 @@
 import type { MonthlyStatementDto } from './monthly-statement';
 import type { FinancialMonthDto } from './financial-month';
 import type { RecurrenceApi } from './recurrence';
+import type { InstallmentApi } from './installment';
 import type {
   CardCorrectionPreview,
   CreditCardDto,
@@ -32,6 +33,7 @@ import type {
 } from './categories';
 
 export interface Api {
+  installment: InstallmentApi;
   recurrence: RecurrenceApi;
   getFinancialMonth(month: string): Promise<FinancialMonthDto>;
   getCreditCards(): Promise<CreditCardDto[]>;

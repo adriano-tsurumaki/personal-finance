@@ -14,8 +14,10 @@ import { Button } from '@components/ui/button';
 
 export default function TimelineTransaction({
   onReviewRecurrences,
+  onCreateInstallment,
 }: {
   onReviewRecurrences?: () => void;
+  onCreateInstallment?: () => void;
 }) {
   const [newestFirst, setNewestFirst] = useState(false);
   const blocked = useFinancialOperations((state) => state.pending.size > 0);
@@ -28,7 +30,7 @@ export default function TimelineTransaction({
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-8 sm:px-8">
-      <div className="mb-4 flex items-baseline justify-between">
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h2 className="text-sm font-semibold text-foreground">
             {t('transactions.title')}
@@ -42,7 +44,22 @@ export default function TimelineTransaction({
             )}
           </p>
         </div>
-        <AddTransaction />
+        <div className="flex flex-wrap gap-2">
+          {onCreateInstallment && (
+            <Button
+              variant="outline"
+              disabled={blocked}
+              onClick={() => {
+                if (!financialActionsBlocked()) {
+                  onCreateInstallment();
+                }
+              }}
+            >
+              {t('installments.add')}
+            </Button>
+          )}
+          <AddTransaction />
+        </div>
       </div>
 
       {!loading &&
@@ -162,6 +179,7 @@ export default function TimelineTransaction({
                   <MenuOptionsTransaction
                     key={row.entry.id}
                     transactionId={row.entry.id}
+                    installment={!!row.entry.installment_id}
                   >
                     {(actions) => (
                       <TimelineEntryRow entry={row.entry} {...actions} />

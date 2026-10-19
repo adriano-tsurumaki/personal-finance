@@ -64,6 +64,14 @@ export default function TimelineEntryRow({
               <p className="truncate font-medium text-foreground">
                 {entry.name}
               </p>
+              {entry.installment_number && (
+                <span
+                  className="rounded border border-primary/20 bg-primary/10 px-2 py-0.5 font-mono text-xs"
+                  title={t('installments.managed')}
+                >
+                  {entry.installment_number}/{entry.total_installments ?? '?'}
+                </span>
+              )}
               {entry.category?.name ? (
                 <span className="hidden shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-secondary-foreground sm:inline">
                   {categoryLabel(entry.category)}
@@ -100,7 +108,7 @@ export default function TimelineEntryRow({
                 aria-label={t('transactions.edit_label', { name: entry.name })}
                 title={t('transactions.edit')}
                 onClick={onEdit}
-                disabled={disabled}
+                disabled={disabled || !!entry.installment_id}
               >
                 <Pencil aria-hidden="true" />
               </Button>
@@ -126,7 +134,7 @@ export default function TimelineEntryRow({
                 })}
                 title={t('transactions.remove')}
                 onClick={onRemove}
-                disabled={disabled}
+                disabled={disabled || !!entry.installment_id}
               >
                 <Trash2 aria-hidden="true" />
               </Button>

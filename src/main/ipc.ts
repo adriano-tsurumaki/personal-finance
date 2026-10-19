@@ -2,6 +2,7 @@ import type { AppDatabase } from './db';
 import { ipcMain } from 'electron';
 import type { IpcMainInvokeEvent, WebContents } from 'electron';
 import { createTransactionService } from './transactions';
+import { createInstallmentService } from './installments';
 import { createProfileService } from './profiles';
 import { createMonthlyStatementService } from './monthly-statement';
 import { createCategoryService } from './categories';
@@ -28,6 +29,9 @@ export function registerIpcHandlers(
   const categories = createCategoryService(db, () => profiles.requireActive());
   const cards = createCreditCardService(db, () => profiles.requireActive());
   const service = createTransactionService(db, () => profiles.requireActive());
+  const installments = createInstallmentService(db, () =>
+    profiles.requireActive(),
+  );
   const statements = createMonthlyStatementService(db, () =>
     profiles.requireActive(),
   );
@@ -87,6 +91,12 @@ export function registerIpcHandlers(
   }
 
   register('financial:month', financialMonths.get);
+  register('installments:list', installments.list);
+  register('installments:preview', installments.preview);
+  register('installments:create', installments.create);
+  register('installments:rename', installments.rename);
+  register('installments:preview-remove', installments.previewRemove);
+  register('installments:remove', installments.remove);
   register('recurrences:list', recurrences.list);
   register('recurrences:preview-boundary', (input: RecurrenceBoundaryInput) =>
     previewRecurrenceBoundary(db, profiles.requireActive().id, input),

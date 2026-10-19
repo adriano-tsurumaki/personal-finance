@@ -28,6 +28,8 @@ export interface InvoiceInput extends InvoicePeriodDto {
 }
 
 export interface InvoiceEntryDto {
+  installment_id?: number | null;
+  total_installments?: number | null;
   outside_period?: boolean;
   id: number;
   name: string;

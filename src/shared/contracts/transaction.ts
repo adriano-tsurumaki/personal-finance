@@ -1,4 +1,7 @@
 export interface TransactionDto {
+  installment_id?: number | null;
+  installment_number?: number | null;
+  total_installments?: number | null;
   id: number;
   name: string;
   note: string | null;
@@ -19,6 +22,8 @@ export interface TransactionDto {
 }
 
 export interface TransactionInput {
+  /** Read metadata only; creation never accepts plan associations. */
+  installment_id?: number | null;
   card_id?: number | null;
   credit_card_invoice_id?: number | null;
   historical_card?: boolean;

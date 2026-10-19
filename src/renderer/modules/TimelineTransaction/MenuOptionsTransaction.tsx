@@ -28,9 +28,11 @@ interface TransactionActions {
 export default function MenuOptionsTransaction({
   children,
   transactionId,
+  installment = false,
 }: {
   children: (actions: TransactionActions) => React.ReactNode;
   transactionId: number;
+  installment?: boolean;
 }) {
   const blocked = useFinancialOperations((state) => state.pending.size > 0);
   const isRemoving = useRef(false);
@@ -42,6 +44,10 @@ export default function MenuOptionsTransaction({
   );
 
   const handleLoad = async (mode: 'edit' | 'copy') => {
+    if (installment && mode === 'edit') {
+      return;
+    }
+
     const sessionVersion = useProfileStore.getState().sessionVersion;
 
     try {
@@ -63,7 +69,7 @@ export default function MenuOptionsTransaction({
   const handleCopy = () => handleLoad('copy');
 
   const handleRemove = async () => {
-    if (isRemoving.current || financialActionsBlocked()) {
+    if (installment || isRemoving.current || financialActionsBlocked()) {
       return;
     }
 
@@ -165,9 +171,14 @@ export default function MenuOptionsTransaction({
         })}
       </ContextMenuTrigger>
       <ContextMenuContent>
+        {installment && (
+          <p className="max-w-64 px-2 py-2 text-xs text-muted-foreground">
+            {t('installments.managed')}
+          </p>
+        )}
         <ContextMenuItem
           onClick={handleEdit}
-          disabled={isSubmitting || blocked}
+          disabled={installment || isSubmitting || blocked}
         >
           {t('common.edit')}
         </ContextMenuItem>
@@ -179,7 +190,7 @@ export default function MenuOptionsTransaction({
         </ContextMenuItem>
         <ContextMenuItem
           onClick={handleRemove}
-          disabled={isSubmitting || blocked}
+          disabled={installment || isSubmitting || blocked}
         >
           {t('common.remove')}
         </ContextMenuItem>

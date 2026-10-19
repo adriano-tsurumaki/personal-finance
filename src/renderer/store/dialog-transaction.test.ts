@@ -34,6 +34,9 @@ test('copy opens a creation draft without identity, settlement, or correction au
     payment_date: '2026-10-10',
     correction_token: 'previous-authorization',
     historical_card: true,
+    installment_id: 3,
+    installment_number: 2,
+    total_installments: 12,
   };
   const store = createDialogTransactionStore(async () => source);
   await store.getState().loadTransaction(12, 'copy');

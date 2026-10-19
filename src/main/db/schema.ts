@@ -235,6 +235,26 @@ export const transactionsTable = sqliteTable(
   ],
 );
 
+/** Retained after plan deletion so delayed retries cannot recreate purchases. */
+export const installmentRequestsTable = sqliteTable(
+  'installment_requests',
+  {
+    id: integer().primaryKey({ autoIncrement: true }),
+    user_id: integer()
+      .notNull()
+      .references(() => usersTable.id),
+    request_id: text().notNull(),
+    input_json: text().notNull(),
+    installment_id: integer().references(() => installmentsTable.id),
+  },
+  (table) => [
+    uniqueIndex('installment_requests_user_request_unique').on(
+      table.user_id,
+      table.request_id,
+    ),
+  ],
+);
+
 export const cardHistoryTable = sqliteTable('credit_card_history', {
   id: integer().primaryKey({ autoIncrement: true }),
   user_id: integer()
