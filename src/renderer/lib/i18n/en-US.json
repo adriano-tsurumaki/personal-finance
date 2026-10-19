@@ -447,6 +447,7 @@
     "lock_amount": "Lock amount",
     "allocation_error": "Keep every installment positive and the sum equal to the purchase total. Reduce the amount or unlock another installment to distribute the remainder.",
     "invoice_opening_dates": "Use the first day of each invoice period from the second installment onward",
+    "add_day_to_invoice_opening_date": "Move one day after the invoice period starts",
     "invoice_date_error": "Each later invoice needs a known opening date after the preceding installment. Check invoice periods or turn off the invoice-opening-date option.",
     "credit_required": "Installments require the credit payment method and a selected card."
   }

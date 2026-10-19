@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Added
+
+- Optionally move invoice-opening installment reference dates forward by one
+  calendar day from the second installment onward, including month-end starts.
+  Existing plans and invoice membership are preserved; no database migration or
+  manual upgrade action is required.
+
 ## 0.6.0 - 2026-10-19
 
 ### Added

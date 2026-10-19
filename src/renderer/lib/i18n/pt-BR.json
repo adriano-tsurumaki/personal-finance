@@ -447,6 +447,7 @@
     "lock_amount": "Travar valor",
     "allocation_error": "Mantenha todas as parcelas positivas e a soma igual ao total da compra. Reduza o valor ou destrave outra parcela para distribuir o restante.",
     "invoice_opening_dates": "Usar o primeiro dia do período da fatura a partir da segunda parcela",
+    "add_day_to_invoice_opening_date": "Avançar um dia após o início do período da fatura",
     "invoice_date_error": "Cada fatura seguinte precisa ter uma data de início conhecida e posterior à parcela anterior. Verifique os períodos ou desative a opção de usar o início da fatura.",
     "credit_required": "Parcelamentos exigem a forma de pagamento crédito e um cartão selecionado."
   }

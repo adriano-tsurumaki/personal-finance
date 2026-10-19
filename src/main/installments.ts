@@ -14,7 +14,10 @@ import type {
 } from '@shared/contracts/installment';
 import { createCreditCardService } from './credit-cards';
 import { createTransactionService } from './transactions';
-import { validCalendarDate } from './credit-cards/billing-cycle';
+import {
+  addCalendarDays,
+  validCalendarDate,
+} from './credit-cards/billing-cycle';
 import {
   installmentDateAt,
   installmentSchedule,
@@ -209,6 +212,10 @@ export function createInstallmentService(
             BigInt(input.total_amount_cents))) ||
       (input.use_invoice_opening_date !== undefined &&
         typeof input.use_invoice_opening_date !== 'boolean') ||
+      (input.add_day_to_invoice_opening_date !== undefined &&
+        typeof input.add_day_to_invoice_opening_date !== 'boolean') ||
+      (input.add_day_to_invoice_opening_date === true &&
+        input.use_invoice_opening_date !== true) ||
       (input.use_invoice_opening_date === true && input.card_id === null)
     ) {
       throw new Error('invalid_installment_allocation');
@@ -249,6 +256,8 @@ export function createInstallmentService(
       historical_card: input.historical_card,
       installment_amounts_cents: amounts,
       use_invoice_opening_date: input.use_invoice_opening_date ?? false,
+      add_day_to_invoice_opening_date:
+        input.add_day_to_invoice_opening_date ?? false,
       invoice_ids: Array.from(
         { length: input.total_installments },
         (_, i) => input.invoice_ids[i] ?? null,
@@ -368,13 +377,19 @@ export function createInstallmentService(
             if (index > 0 && value.use_invoice_opening_date) {
               if (
                 !invoice.opening_date ||
-                !validCalendarDate(invoice.opening_date) ||
-                invoice.opening_date <= previousDate
+                !validCalendarDate(invoice.opening_date)
               ) {
                 throw new Error('invalid_installment_invoice_dates');
               }
 
-              referenceDate = invoice.opening_date;
+              referenceDate = addCalendarDays(
+                invoice.opening_date,
+                value.add_day_to_invoice_opening_date ? 1 : 0,
+              );
+
+              if (referenceDate <= previousDate) {
+                throw new Error('invalid_installment_invoice_dates');
+              }
             }
           }
 
@@ -512,6 +527,8 @@ export function createInstallmentService(
               storedValue.installment_amounts_cents ?? [],
             use_invoice_opening_date:
               storedValue.use_invoice_opening_date ?? false,
+            add_day_to_invoice_opening_date:
+              storedValue.add_day_to_invoice_opening_date ?? false,
           };
           const candidate = {
             ...Object.fromEntries(
@@ -524,6 +541,8 @@ export function createInstallmentService(
             note: input.note?.trim() || null,
             installment_amounts_cents: input.installment_amounts_cents ?? [],
             use_invoice_opening_date: input.use_invoice_opening_date ?? false,
+            add_day_to_invoice_opening_date:
+              input.add_day_to_invoice_opening_date ?? false,
             invoice_ids: Array.from(
               { length: stored.total_installments },
               (_, i) => input.invoice_ids?.[i] ?? null,

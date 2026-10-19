@@ -414,6 +414,7 @@ export default function PlanDialog({
                       card_id: null,
                       invoice_ids: [],
                       use_invoice_opening_date: false,
+                      add_day_to_invoice_opening_date: false,
                     })
                   }
                 />
@@ -423,11 +424,31 @@ export default function PlanDialog({
                       <Checkbox
                         checked={input.use_invoice_opening_date ?? false}
                         onCheckedChange={(checked) =>
-                          change({ use_invoice_opening_date: !!checked })
+                          change({
+                            use_invoice_opening_date: !!checked,
+                            ...(!checked
+                              ? { add_day_to_invoice_opening_date: false }
+                              : {}),
+                          })
                         }
                       />
                       {t('installments.invoice_opening_dates')}
                     </label>
+                    {input.use_invoice_opening_date && (
+                      <label className="ml-6 flex items-center gap-2 text-sm sm:col-span-2">
+                        <Checkbox
+                          checked={
+                            input.add_day_to_invoice_opening_date ?? false
+                          }
+                          onCheckedChange={(checked) =>
+                            change({
+                              add_day_to_invoice_opening_date: !!checked,
+                            })
+                          }
+                        />
+                        {t('installments.add_day_to_invoice_opening_date')}
+                      </label>
+                    )}
                     <label className="flex items-center gap-2 text-sm sm:col-span-2">
                       <Checkbox
                         checked={input.historical_card}

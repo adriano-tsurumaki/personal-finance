@@ -18,6 +18,8 @@ export interface InstallmentInput {
   installment_amounts_cents?: number[];
   /** Keeps the first reference date; later card entries use their invoice opening date. */
   use_invoice_opening_date?: boolean;
+  /** Adds one calendar day to later invoice-opening reference dates when enabled. */
+  add_day_to_invoice_opening_date?: boolean;
 }
 
 export interface InstallmentEntryDto {

@@ -695,6 +695,89 @@ test('invoice opening dates are actual period starts, including short months, an
   }
 });
 
+test('invoice-opening offsets cross month and year boundaries while preserving invoices, totals and retries', () => {
+  for (const [start, expected] of [
+    ['2027-08-08', ['2027-08-08', '2027-09-01', '2027-10-01']],
+    ['2027-12-08', ['2027-12-08', '2028-01-01', '2028-02-01']],
+    ['2028-02-08', ['2028-02-08', '2028-03-01', '2028-04-01']],
+  ] as const) {
+    const { db, service, cards, input } = setup();
+    try {
+      input.card_id = cards.create({
+        name: 'Exclusive month end',
+        closing_day: 31,
+        includes_closing_day: false,
+        due_days_after_closing: 7,
+      });
+      input.purchase_at = start;
+      input.start_date = start;
+      input.use_invoice_opening_date = true;
+      const original = service.preview(input);
+      input.add_day_to_invoice_opening_date = true;
+      const preview = service.preview(input);
+      assert.deepEqual(
+        preview.plan.entries.map((row) => row.reference_date),
+        expected,
+      );
+      assert.deepEqual(
+        preview.plan.entries.map((row) => row.invoice),
+        original.plan.entries.map((row) => row.invoice),
+      );
+      assert.deepEqual(
+        preview.plan.entries.map((row) => row.amount_cents),
+        original.plan.entries.map((row) => row.amount_cents),
+      );
+      assert.equal(preview.plan.end_date, expected[2]);
+      assert.equal(preview.plan.repair_required, false);
+      assert.equal(service.list().length, 0);
+      assert.throws(
+        () => service.create(input, original.correction.token),
+        /stale_correction/,
+      );
+      const id = service.create(input, preview.correction.token);
+      assert.equal(service.create(input, preview.correction.token), id);
+      assert.throws(
+        () =>
+          service.create(
+            { ...input, add_day_to_invoice_opening_date: false },
+            preview.correction.token,
+          ),
+        /installment_request_conflict/,
+      );
+      assert.equal(service.list()[0].repair_required, false);
+      assert.deepEqual(
+        service.list()[0].entries.map((row) => row.reference_date),
+        expected,
+      );
+      service.rename(id, 'Offset purchase', null);
+      const removal = service.previewRemove(id);
+      service.remove(id, removal.correction.token);
+    } finally {
+      db.$client.close();
+    }
+  }
+});
+
+test('invoice-opening offsets require opening-date mode and boolean input', () => {
+  const { db, service, input } = setup();
+  try {
+    for (const offset of [true, 1, 'true', null]) {
+      assert.throws(
+        () =>
+          service.preview({
+            ...input,
+            use_invoice_opening_date: false,
+            add_day_to_invoice_opening_date: offset as boolean,
+          }),
+        /invalid_installment_allocation/,
+      );
+    }
+    assert.equal(service.list().length, 0);
+  } finally {
+    db.$client.close();
+  }
+});
+
 test('receipts from before editable allocations remain readable and retryable with default options', () => {
   const { db, service, input } = setup();
   try {
@@ -705,6 +788,7 @@ test('receipts from before editable allocations remain readable and retryable wi
     delete stored.reference_dates;
     delete stored.installment_amounts_cents;
     delete stored.use_invoice_opening_date;
+    delete stored.add_day_to_invoice_opening_date;
     db.update(installmentRequestsTable)
       .set({ input_json: JSON.stringify(stored) })
       .where(eq(installmentRequestsTable.id, receipt.id))

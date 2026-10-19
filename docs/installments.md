@@ -72,6 +72,14 @@ Unknown opening dates or starts not after the previous installment are rejected.
 Group end dates follow the resolved final reference date. Existing plans keep
 their recorded dates even after an invoice-period correction.
 
+When invoice-opening dates are enabled, an additional optional checkbox advances
+the second and later reference dates by one calendar day. For a card that excludes
+its month-end closing day from the closing invoice, August 31 becomes September 1
+and September 30 becomes October 1. The first reference date and invoice membership
+stay unchanged. The offset defaults to disabled, is included in preview validation
+and durable retry receipts, and requires no schema migration or upgrade action.
+Disabling invoice-opening dates clears the offset in the creation draft.
+
 The creation dialog shows a compact schedule and any affected historical payment
 months. It does not render before/after invoice panels. State-derived correction
 tokens, audit records, statement-total preservation, and atomic reconciliation
@@ -173,6 +181,16 @@ The credit-only creation follow-up passed `pnpm lint`, `pnpm typecheck`,
 `pnpm format:check`, all 86 database/domain tests, and all 55 renderer tests.
 Regression coverage rejects PIX/cash/debit through preview and save, requires a
 card for credit, and preserves management of historical direct-payment plans.
+
+The optional invoice-opening day offset follow-up on 2026-10-19 passed
+`pnpm lint`, `pnpm typecheck`, `pnpm format:check`, all 102 database/domain
+tests, and the four installment renderer tests. Coverage verifies month/year
+rollover, leap February, unchanged invoice membership and amounts, stale previews,
+durable retries, older receipts, and malformed offset rejection. The full database
+suite used a project-local temporary directory after the sandbox denied session
+file renames in its default temporary directory. Interactive Electron validation
+of the additional checkbox was not performed. This compatible feature requires
+a minor release increment under the `0.x` policy; the package version is unchanged.
 
 The browser available in the execution environment could not access the local
 verification server. Interactive desktop checks, narrow-layout visual inspection,
