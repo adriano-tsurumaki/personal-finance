@@ -1,5 +1,47 @@
 # Release validation
 
+## 0.6.0 - 2026-10-19
+
+The approved minor version adds full invoice payment confirmation, date correction,
+undo, and distinct payment events in the monthly timeline. Both timeline counters
+include those events. This records release preparation, not a distribution-readiness
+declaration.
+
+### Completed checks
+
+- Independent review approved the implementation after the timeline tab counter
+  was aligned with the event list; no findings remain.
+- The complete repository test suite passed all 164 tests, including settlement
+  idempotency, exact invoice/profile ownership, early and late payment months,
+  correction and undo, statement-total preservation, stale-data rejection,
+  atomic audit rollback, monthly snapshot publication, and profile reset.
+- `pnpm lint`, `pnpm typecheck`, and `pnpm format:check` passed with package
+  version `0.6.0`. `pnpm test:db` also passed all 100 database and domain tests
+  with that version.
+- `pnpm make` built the production main, preload, and renderer bundles and
+  generated the Windows x64 application package and Squirrel installer after a
+  retry with network access. Distributables are available under `out/make`.
+- The packaged `app.asar` declares version `0.6.0`.
+- Existing dependency `use client` build warnings and the ESLint configuration
+  module-type warning did not prevent verification or packaging.
+
+### Pending checks and known limitations
+
+- The initial sandboxed packaging attempt failed to resolve `github.com`;
+  retrying with network access completed packaging and installer generation.
+- Installer execution, clean installation, application startup, and an installed
+  upgrade from `0.5.0` with representative existing data have not been verified.
+  Automated integration tests do not substitute for installed-application checks.
+- Exercise payment confirmation, date correction, undo, payment-only months,
+  profile switching, keyboard interaction, and both locales in Electron before
+  distribution. Native UI interaction was not manually verified.
+- Settlement uses existing invoice storage and audit history. No schema migration
+  or manual upgrade action is required. Partial and multiple payments remain
+  deferred. The existing recurrence coverage limitation for early-paid invoices
+  remains; see [Recurrences](recurrences.md).
+- No other platform was packaged or validated. No release tag, push, or publication
+  was performed.
+
 ## 0.5.0 - 2026-10-19
 
 The approved minor version and changelog are prepared for profile settings and

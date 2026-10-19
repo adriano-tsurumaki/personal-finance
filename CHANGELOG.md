@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.6.0 - 2026-10-19
+
 ### Added
 
 - Confirm full credit-card invoice payment with the actual date, correct that date,
