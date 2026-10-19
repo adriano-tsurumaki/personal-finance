@@ -171,8 +171,8 @@
   "transactions": {
     "title": "Transactions",
     "toggle_date_order": "Reverse timeline date order",
-    "newest_first": "Newest first",
-    "oldest_first": "Oldest first",
+    "newest_first": "Newest",
+    "oldest_first": "Oldest",
     "entries_one": "{count} entry",
     "entries_other": "{count} entries",
     "empty": "Your month starts here",
