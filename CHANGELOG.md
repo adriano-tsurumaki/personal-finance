@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Added
+
+- Confirm full credit-card invoice payment with the actual date, correct that date,
+  or explicitly undo payment. Linked purchases reflect the invoice status without
+  changing their original dates. Atomic audit history and stale-data guards protect
+  confirmation; retrying a confirmation does not duplicate cash flow.
+- Display invoice payments as distinct timeline events in the actual payment month,
+  including existing paid invoices. Correction moves the event; undo removes it.
+  Invoice details and monthly indicators refresh together without counting purchases
+  again as payment expenses.
+
+### Upgrade notes
+
+- Uses existing invoice payment storage. Existing financial records are preserved;
+  no database migration or manual upgrade action is required.
+
 ## 0.5.0 - 2026-10-19
 
 ### Added

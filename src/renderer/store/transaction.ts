@@ -8,8 +8,10 @@ import type { MonthlyStatementDto } from '@shared/contracts/monthly-statement';
 import type { RecurrenceMonthDto } from '@shared/contracts/recurrence';
 import type { TransactionDto } from '@shared/contracts/transaction';
 import type { IndicatorAnchorDto } from '@shared/contracts/indicator-anchor';
+import type { InvoicePaymentDto } from '@shared/contracts/credit-cards';
 
 interface AppState {
+  invoicePayments: InvoicePaymentDto[];
   indicatorAnchor: IndicatorAnchorDto | null;
   statementIssue: string | null;
   /**
@@ -108,6 +110,7 @@ export const useAppStore = create<AppState>((set, get) => {
         indicatorAnchor: combined?.indicator_anchor ?? null,
         statementIssue: combined?.statement_issue ?? null,
         transactions: timeline.value,
+        invoicePayments: combined?.invoice_payments ?? [],
         monthlyStatement: summary.value ?? get().monthlyStatement,
         recurrenceMonth: combined?.recurrences ?? null,
         pendingMonth: null,
@@ -152,6 +155,7 @@ export const useAppStore = create<AppState>((set, get) => {
     monthKey: currentMonthKey(),
     recurrenceMonth: null,
     transactions: [],
+    invoicePayments: [],
     transactionsLoading: false,
     transactionsFailed: false,
     monthlyStatement: emptyMonthlyStatement,
@@ -187,6 +191,7 @@ export const useAppStore = create<AppState>((set, get) => {
         failedMonth: null,
         recurrenceMonth: null,
         transactions: [],
+        invoicePayments: [],
         transactionsLoading: false,
         transactionsFailed: false,
       });

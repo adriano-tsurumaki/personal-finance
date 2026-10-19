@@ -127,6 +127,7 @@ export function registerIpcHandlers(
   register('invoices:suggest', cards.suggestPeriod);
   register('invoices:list', cards.invoices);
   register('invoices:details', cards.details);
+  register('invoices:payment', cards.setPayment);
   register('invoices:register', cards.registerInvoice);
   register('invoices:preview-correction', cards.previewCorrection);
   register('invoices:correct', cards.correctInvoice);

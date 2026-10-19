@@ -27,6 +27,23 @@ export interface InvoiceInput extends InvoicePeriodDto {
   amount_cents: number;
 }
 
+export interface InvoicePaymentInput {
+  /** Actual full settlement date, or null to undo settlement. */
+  paid_at: string | null;
+  /** Optimistic guards against changing an invoice after it was displayed. */
+  expected_paid_at: string | null;
+  expected_amount_cents: number;
+}
+
+/** A cash-flow event derived from an invoice, never another purchase expense. */
+export interface InvoicePaymentDto {
+  invoice_id: number;
+  card_name: string;
+  closing_date: string;
+  paid_at: string;
+  amount_cents: number;
+}
+
 export interface InvoiceEntryDto {
   installment_id?: number | null;
   total_installments?: number | null;

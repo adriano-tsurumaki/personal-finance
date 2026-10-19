@@ -4,6 +4,7 @@ import { createTransactionService } from './transactions';
 import { createMonthlyStatementService } from './monthly-statement';
 import { createRecurrenceService } from './recurrences';
 import { createIndicatorAnchorService } from './indicator-anchor';
+import { createCreditCardService } from './credit-cards';
 
 /** Publishes persisted entries and estimates from the same SQLite read snapshot. */
 export function createFinancialMonthService(
@@ -14,6 +15,7 @@ export function createFinancialMonthService(
   const statements = createMonthlyStatementService(db, getActiveUser);
   const recurrences = createRecurrenceService(db, getActiveUser);
   const anchors = createIndicatorAnchorService(db, getActiveUser);
+  const cards = createCreditCardService(db, getActiveUser);
 
   return {
     get(month: string): FinancialMonthDto {
@@ -37,6 +39,7 @@ export function createFinancialMonthService(
         }
 
         return {
+          invoice_payments: cards.payments(month),
           indicator_anchor: anchors.get(),
           transactions: timeline,
           statement,

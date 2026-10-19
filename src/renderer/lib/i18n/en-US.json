@@ -86,7 +86,7 @@
     "no": "No",
     "entry": "Add purchase",
     "refresh": "Refresh",
-    "payment_hint": "Payment registration will be added in TX-04.",
+    "payment_hint": "Confirm full payment of {amount} for the invoice closing on {closing}. Purchases retain their original dates.",
     "confirm_dates": "Save these concrete dates for this invoice only.",
     "preview_hint": "Calculated dates are suggestions; historical statement dates can be entered manually.",
     "create_card": "Card registered",
@@ -108,7 +108,18 @@
     "due_offset_other": "{days} calendar days after closing.",
     "create_installment_plan": "Installment plan created",
     "rename_installment_plan": "Installment description corrected",
-    "delete_installment_plan": "Installment plan removed"
+    "delete_installment_plan": "Installment plan removed",
+    "confirm_payment": "Confirm payment",
+    "manage_payment": "Manage payment",
+    "payment_date": "Payment date",
+    "undo_payment": "Undo payment",
+    "undo_payment_hint": "Mark this invoice as unpaid again? Its cash flow will return to the due date and its payment event will be removed from the timeline. Purchase history is preserved.",
+    "payment_error": "Could not save the payment. Check the invoice is still current, reload if needed, and try again.",
+    "payment_event": "Invoice payment · {card}",
+    "payment_event_hint": "Full invoice settlement. Purchases are not counted again.",
+    "pay_invoice": "Invoice payment confirmed",
+    "correct_invoice_payment": "Invoice payment date corrected",
+    "undo_invoice_payment": "Invoice payment undone"
   },
   "common": {
     "save": "Save",

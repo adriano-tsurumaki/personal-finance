@@ -9,6 +9,7 @@ import { createProfileService } from '../profiles';
 import { createCreditCardService } from '../credit-cards';
 import { createTransactionService } from '../transactions';
 import { createMonthlyStatementService } from '../monthly-statement';
+import { createFinancialMonthService } from '../financial-month';
 import {
   creditCardInvoicesTable,
   creditCardsTable,
@@ -802,5 +803,177 @@ test('billing migration retains unknown history and rolls back duplicate-period 
   } finally {
     db.$client.close();
     rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('full invoice settlement is idempotent, preserves purchases and moves one cash-flow event on correction and undo', () => {
+  const f = fixture();
+  try {
+    const purchase = f.purchase();
+    const other = f.purchase({ reference_date: '2026-11-05' });
+    const invoiceId = purchase.credit_card_invoice_id!;
+    const originalEntries = f.db.select().from(transactionsTable).all();
+    const snapshots = createFinancialMonthService(f.db, () =>
+      f.profiles.requireActive(),
+    );
+    const payment = {
+      paid_at: '2026-12-02',
+      expected_paid_at: null,
+      expected_amount_cents: 10000,
+    };
+    assert.equal(f.statements.get('2026-10').expense, 100);
+    assert.equal(f.statements.get('2026-12').expense, 0);
+    f.cards.setPayment(invoiceId, payment);
+    const historyCount = f.cards.details(invoiceId).history.length;
+    f.cards.setPayment(invoiceId, payment);
+    assert.equal(f.cards.details(invoiceId).history.length, historyCount);
+    assert.deepEqual(
+      f.db.select().from(transactionsTable).all(),
+      originalEntries,
+    );
+    assert.equal(
+      f.transactions.list('2026-10')[0].invoice_paid_at,
+      payment.paid_at,
+    );
+    assert.equal(f.transactions.list('2026-11')[0].invoice_paid_at, null);
+    assert.equal(f.cards.invoice(other.credit_card_invoice_id!).paid_at, null);
+    assert.equal(f.statements.get('2026-10').expense, 0);
+    assert.equal(f.statements.get('2026-12').expense, 100);
+    const december = snapshots.get('2026-12');
+    assert.deepEqual(december.transactions, []);
+    assert.equal(december.invoice_payments!.length, 1);
+    assert.deepEqual(december.invoice_payments![0], {
+      invoice_id: invoiceId,
+      card_name: 'Everyday',
+      closing_date: '2026-10-20',
+      paid_at: '2026-12-02',
+      amount_cents: 10000,
+    });
+    assert.deepEqual(snapshots.get('2026-10').invoice_payments, []);
+    f.cards.setPayment(invoiceId, {
+      ...payment,
+      paid_at: '2026-09-30',
+      expected_paid_at: payment.paid_at,
+    });
+    assert.equal(f.cards.payments('2026-12').length, 0);
+    assert.equal(f.cards.payments('2026-09').length, 1);
+    assert.equal(f.statements.get('2026-09').expense, 100);
+    assert.equal(f.statements.get('2026-12').expense, 0);
+    f.cards.setPayment(invoiceId, {
+      ...payment,
+      paid_at: null,
+      expected_paid_at: '2026-09-30',
+    });
+    assert.equal(f.cards.payments('2026-09').length, 0);
+    assert.equal(f.statements.get('2026-09').expense, 0);
+    assert.equal(f.statements.get('2026-10').expense, 100);
+    assert.equal(f.transactions.list('2026-10')[0].invoice_paid_at, null);
+    assert.deepEqual(
+      f.db.select().from(transactionsTable).all(),
+      originalEntries,
+    );
+    assert.deepEqual(
+      f.cards
+        .details(invoiceId)
+        .history.slice(0, 3)
+        .map((row) => row.operation),
+      ['undo_invoice_payment', 'correct_invoice_payment', 'pay_invoice'],
+    );
+  } finally {
+    f.db.$client.close();
+  }
+});
+
+test('settlement preserves statement totals, rejects invalid or stale inputs and rolls back if auditing fails', () => {
+  const f = fixture();
+  try {
+    const invoiceId = f.cards.registerInvoice(f.cardId, {
+      opening_date: '2020-01-01',
+      closing_date: '2020-01-20',
+      due_date: '2020-01-27',
+      includes_closing_day: true,
+      total_source: 'statement',
+      amount_cents: 45000,
+    });
+    f.purchase({
+      reference_date: '2020-01-10',
+      credit_card_invoice_id: invoiceId,
+    });
+    const payment = {
+      paid_at: '2020-02-03',
+      expected_paid_at: null,
+      expected_amount_cents: 45000,
+    };
+    for (const date of ['2026-02-30', 'bad', '', '2026-1-01']) {
+      assert.throws(
+        () => f.cards.setPayment(invoiceId, { ...payment, paid_at: date }),
+        /invalid_invoice_payment/,
+      );
+    }
+    assert.throws(
+      () =>
+        f.cards.setPayment(invoiceId, {
+          ...payment,
+          expected_paid_at: undefined as never,
+        }),
+      /invalid_invoice_payment/,
+    );
+    assert.throws(
+      () =>
+        f.cards.setPayment(invoiceId, {
+          ...payment,
+          expected_amount_cents: 10000,
+        }),
+      /stale_invoice_payment/,
+    );
+    f.db.$client.exec(
+      "CREATE TRIGGER fail_payment_history BEFORE INSERT ON credit_card_history WHEN NEW.operation = 'pay_invoice' BEGIN SELECT RAISE(ABORT, 'audit_failed'); END",
+    );
+    assert.throws(
+      () => f.cards.setPayment(invoiceId, payment),
+      (error: unknown) =>
+        (error as { cause?: Error }).cause?.message === 'audit_failed',
+    );
+    assert.equal(f.cards.invoice(invoiceId).paid_at, null);
+    assert.equal(f.cards.payments('2020-02').length, 0);
+    f.db.$client.exec('DROP TRIGGER fail_payment_history');
+    f.cards.setPayment(invoiceId, payment);
+    assert.equal(f.cards.payments('2020-02')[0].amount_cents, 45000);
+    assert.equal(f.statements.get('2020-02').expense, 450);
+    assert.equal(f.cards.details(invoiceId).invoice.difference_cents, 35000);
+    assert.throws(
+      () =>
+        f.cards.setPayment(invoiceId, { ...payment, paid_at: '2020-03-01' }),
+      /stale_invoice_payment/,
+    );
+    assert.throws(
+      () => f.cards.setPayment(invoiceId, { ...payment, paid_at: null }),
+      /stale_invoice_payment/,
+    );
+    assert.equal(f.cards.invoice(invoiceId).paid_at, payment.paid_at);
+    assert.throws(
+      () => f.cards.setPayment(999999, payment),
+      /invoice_not_found/,
+    );
+    f.cards.archive(f.cardId);
+    f.cards.setPayment(invoiceId, {
+      ...payment,
+      paid_at: '2020-02-04',
+      expected_paid_at: payment.paid_at,
+    });
+    assert.equal(f.cards.payments('2020-02').length, 1);
+    const profile = f.profiles.create({
+      name: 'Other owner',
+      email: 'other-payment@example.test',
+      locale: 'en-US',
+    });
+    assert.ok(profile.ok);
+    assert.throws(
+      () => f.cards.setPayment(invoiceId, payment),
+      /card_not_found/,
+    );
+    assert.deepEqual(f.cards.payments('2020-02'), []);
+  } finally {
+    f.db.$client.close();
   }
 });

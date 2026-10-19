@@ -12,6 +12,7 @@ import type {
   InvoiceDto,
   InvoiceInput,
   InvoicePeriodDto,
+  InvoicePaymentInput,
   UnlinkedCreditEntryDto,
 } from './credit-cards';
 import type { CreateResult } from './result';
@@ -53,6 +54,7 @@ export interface Api {
   ): Promise<InvoicePeriodDto>;
   getCardInvoices(cardId: number): Promise<InvoiceDto[]>;
   getInvoiceDetails(id: number): Promise<InvoiceDetailsDto>;
+  setInvoicePayment(id: number, input: InvoicePaymentInput): Promise<void>;
   registerInvoice(cardId: number, input: InvoiceInput): Promise<number>;
   previewInvoiceCorrection(
     id: number,

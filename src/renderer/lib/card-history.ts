@@ -11,6 +11,7 @@ const fields = {
   opening_date: 'cards.opening',
   closing_date: 'cards.closing',
   due_date: 'cards.due',
+  paid_at: 'cards.payment_date',
   includes_closing_day: 'cards.includes_closing',
   total_source: 'cards.total_source',
   credit_card_invoice_id: 'cards.invoice',

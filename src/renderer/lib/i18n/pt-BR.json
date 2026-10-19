@@ -86,7 +86,7 @@
     "no": "Não",
     "entry": "Adicionar compra",
     "refresh": "Atualizar",
-    "payment_hint": "O registro de pagamento será adicionado na TX-04.",
+    "payment_hint": "Confirme o pagamento integral de {amount} da fatura com fechamento em {closing}. As compras mantêm suas datas originais.",
     "confirm_dates": "Salvar estas datas apenas para esta fatura.",
     "preview_hint": "As datas calculadas são sugestões; as datas do extrato histórico podem ser preenchidas manualmente.",
     "create_card": "Cartão cadastrado",
@@ -108,7 +108,18 @@
     "due_offset_other": "{days} dias corridos após o fechamento.",
     "create_installment_plan": "Parcelamento criado",
     "rename_installment_plan": "Descrição do parcelamento corrigida",
-    "delete_installment_plan": "Parcelamento removido"
+    "delete_installment_plan": "Parcelamento removido",
+    "confirm_payment": "Confirmar pagamento",
+    "manage_payment": "Gerenciar pagamento",
+    "payment_date": "Data do pagamento",
+    "undo_payment": "Desfazer pagamento",
+    "undo_payment_hint": "Marcar esta fatura como não paga novamente? A saída voltará para a data de vencimento e o registro de pagamento será removido da timeline. O histórico das compras será preservado.",
+    "payment_error": "Não foi possível salvar o pagamento. Verifique se a fatura está atualizada, recarregue se necessário e tente novamente.",
+    "payment_event": "Pagamento de fatura · {card}",
+    "payment_event_hint": "Quitação integral da fatura. As compras não são contabilizadas novamente.",
+    "pay_invoice": "Pagamento da fatura confirmado",
+    "correct_invoice_payment": "Data de pagamento da fatura corrigida",
+    "undo_invoice_payment": "Pagamento da fatura desfeito"
   },
   "common": {
     "save": "Salvar",

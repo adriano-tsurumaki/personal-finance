@@ -295,9 +295,19 @@ test('stale combined snapshot cannot publish another profile recurrence data or 
       paused_rules: [],
       unconfirmed_count: 5,
     },
+    invoice_payments: [
+      {
+        invoice_id: 3,
+        card_name: 'Old profile',
+        closing_date: '2026-10-20',
+        paid_at: '2026-11-02',
+        amount_cents: 10000,
+      },
+    ],
   });
   await loading;
   assert.equal(useAppStore.getState().recurrenceMonth, null);
+  assert.deepEqual(useAppStore.getState().invoicePayments, []);
   assert.deepEqual(useAppStore.getState().transactions, []);
   assert.equal(financialActionsBlocked(), true);
   releaseNew();
@@ -320,4 +330,45 @@ test('combined snapshot transport failure preserves the confirmed period and rec
   assert.equal(useAppStore.getState().recurrenceMonth, previous);
   assert.equal(useAppStore.getState().failedMonth, '2026-11');
   assert.equal(financialActionsBlocked(), false);
+});
+
+test('invoice payments publish with the month snapshot, refresh after undo and clear on profile reset', async () => {
+  const payment = {
+    invoice_id: 3,
+    card_name: 'Card',
+    closing_date: '2026-10-20',
+    paid_at: '2026-11-02',
+    amount_cents: 10000,
+  };
+  window.api.getFinancialMonth = async () => ({
+    transactions: [entry],
+    invoice_payments: [payment],
+    statement,
+    statement_issue: null,
+    recurrences: {
+      month: '2026-11',
+      occurrences: [],
+      paused_rules: [],
+      unconfirmed_count: 0,
+    },
+  });
+  await useAppStore.getState().setMonthKey('2026-11');
+  assert.deepEqual(useAppStore.getState().invoicePayments, [payment]);
+  window.api.getFinancialMonth = async () => ({
+    transactions: [entry],
+    invoice_payments: [],
+    statement,
+    statement_issue: null,
+    recurrences: {
+      month: '2026-11',
+      occurrences: [],
+      paused_rules: [],
+      unconfirmed_count: 0,
+    },
+  });
+  await useAppStore.getState().refreshMonth();
+  assert.deepEqual(useAppStore.getState().invoicePayments, []);
+  useAppStore.setState({ invoicePayments: [payment] });
+  useAppStore.getState().reset();
+  assert.deepEqual(useAppStore.getState().invoicePayments, []);
 });

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { and, asc, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, gte, lt } from 'drizzle-orm';
 import type { AppDatabase } from './db';
 import {
   cardHistoryTable,
@@ -19,6 +19,8 @@ import type {
   InvoiceDto,
   InvoiceInput,
   InvoicePeriodDto,
+  InvoicePaymentInput,
+  InvoicePaymentDto,
 } from '@shared/contracts/credit-cards';
 import {
   addCalendarDays,
@@ -768,6 +770,85 @@ export function createCreditCardService(
     },
     invoices(cardId: number): InvoiceDto[] {
       return allInvoices(cardId).map(dto);
+    },
+    payments(month: string): InvoicePaymentDto[] {
+      if (typeof month !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+        throw new Error('invalid_month');
+      }
+
+      return db
+        .select({
+          invoice_id: creditCardInvoicesTable.id,
+          card_name: creditCardsTable.name,
+          closing_date: creditCardInvoicesTable.closing_date,
+          paid_at: creditCardInvoicesTable.paid_at,
+          amount_cents: creditCardInvoicesTable.amount_cents,
+        })
+        .from(creditCardInvoicesTable)
+        .innerJoin(
+          creditCardsTable,
+          eq(creditCardsTable.id, creditCardInvoicesTable.credit_card_id),
+        )
+        .where(
+          and(
+            eq(creditCardsTable.user_id, getActiveUser().id),
+            gte(creditCardInvoicesTable.paid_at, `${month}-01`),
+            lt(
+              creditCardInvoicesTable.paid_at,
+              `${adjacentMonth(month, 1)}-01`,
+            ),
+          ),
+        )
+        .orderBy(
+          asc(creditCardInvoicesTable.paid_at),
+          asc(creditCardInvoicesTable.id),
+        )
+        .all() as InvoicePaymentDto[];
+    },
+    setPayment(id: number, input: InvoicePaymentInput): void {
+      db.transaction(() => {
+        const before = invoice(id);
+
+        if (
+          !input ||
+          (input.paid_at !== null && !validCalendarDate(input.paid_at)) ||
+          (input.expected_paid_at !== null &&
+            !validCalendarDate(input.expected_paid_at)) ||
+          !Number.isSafeInteger(input.expected_amount_cents) ||
+          input.expected_amount_cents < 0
+        ) {
+          throw new Error('invalid_invoice_payment');
+        }
+
+        if (before.amount_cents !== input.expected_amount_cents) {
+          throw new Error('stale_invoice_payment');
+        }
+
+        // Retrying the same confirmation must not create another event or audit row.
+        if (before.paid_at === input.paid_at) {
+          return;
+        }
+
+        if (before.paid_at !== input.expected_paid_at) {
+          throw new Error('stale_invoice_payment');
+        }
+
+        items(id);
+        const after = { ...before, paid_at: input.paid_at };
+        db.update(creditCardInvoicesTable)
+          .set({ paid_at: input.paid_at })
+          .where(eq(creditCardInvoicesTable.id, id))
+          .run();
+        history(
+          before.credit_card_id,
+          input.paid_at === null
+            ? 'undo_invoice_payment'
+            : before.paid_at === null
+              ? 'pay_invoice'
+              : 'correct_invoice_payment',
+          [snapshot('invoice', before, after)],
+        );
+      });
     },
     details(id: number): InvoiceDetailsDto {
       const row = invoice(id);

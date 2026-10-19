@@ -71,7 +71,7 @@ Monetary entry accepts digits and the profile's decimal separator, with up to tw
 decimal places; grouping separators and currency-prefixed paste are currently
 rejected rather than reinterpreted. New credit expenses require a profile-owned
 card and are associated with a suggested or explicitly chosen invoice. Selecting a
-method does not set a payment date; settlement workflows remain deferred. Direct
+method does not set a payment date; direct-entry settlement remains deferred. Direct
 income and expenses contribute to the summary on their reference date when no
 explicit settlement date exists. This reporting fallback does not mark an entry
 as settled; credit-method entries remain excluded from direct cash flow.
@@ -123,6 +123,22 @@ An `invoice_items` table is unnecessary because each installment is already a tr
 The first version pays an invoice in full through one event. `credit_card_invoice.paid_at` is empty while unpaid and stores the payment date after settlement. A date is required so cash flow can attribute the outflow to the correct month.
 
 The payment does not create another expense transaction, and its date is not copied to every purchase on the invoice. Partial and multiple payments are outside the initial scope.
+
+Invoice details expose full-payment confirmation with an actual date, date correction,
+and explicit undo. Main validates profile ownership through the persisted invoice and
+card, guards the displayed amount and prior payment date against stale writes, and
+atomically updates `paid_at` with before/after audit history. Repeating the same
+confirmation does not add another history row or cash outflow. Archived cards retain
+access to historical settlement corrections.
+
+The financial-month snapshot includes one derived payment event per paid invoice in
+its actual payment month, including historical paid invoices. The timeline distinguishes
+these cash-flow events from purchase expenses and sorts them with purchases and
+recurrence estimates. Correction moves the event; undo removes it and restores the
+unpaid due-date projection. Linked purchases derive paid status and payment-date
+labels from their invoice while retaining their own reference and payment fields.
+Settlement refreshes invoice details, history, timeline, and monthly indicators under
+one shared financial-operation token. No schema migration or manual upgrade is needed.
 
 Cards configure a closing day, whether closing-day purchases are included, and
 a positive number of calendar days after closing until the invoice is due.

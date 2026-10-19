@@ -35,6 +35,7 @@ import type {
 import CardChanges from '@components/CardChanges';
 import CardDialog from './CardDialog';
 import InvoiceDialog from './InvoiceDialog';
+import InvoicePaymentDialog from './InvoicePaymentDialog';
 import AssociationDialog from './AssociationDialog';
 import {
   Select,
@@ -46,6 +47,9 @@ import {
 } from '@components/ui/select';
 
 const operationKeys = [
+  'pay_invoice',
+  'correct_invoice_payment',
+  'undo_invoice_payment',
   'create_card',
   'rename_card',
   'archive_card',
@@ -72,6 +76,8 @@ export default function CreditCards() {
   const [association, setAssociation] = useState<InvoiceEntryDto | null>(null);
   const [period, setPeriod] = useState<InvoicePeriodDto | null>(null);
   const [busy, setBusy] = useState(false);
+  const [paymentEditor, setPaymentEditor] = useState(false);
+  const blocked = useFinancialOperations((value) => value.pending.size > 0);
   const returnFocus = useRef<HTMLButtonElement>(null);
   const card = state.cards.find((value) => value.id === state.cardId);
   const invoice = state.details?.invoice;
@@ -303,7 +309,12 @@ export default function CreditCards() {
               label: card.name,
             }))}
             value={state.cardId}
-            onValueChange={(value) => void state.selectCard(value)}
+            onValueChange={(value) => {
+              if (!financialActionsBlocked()) {
+                void state.selectCard(value);
+              }
+            }}
+            disabled={blocked}
           >
             <SelectTrigger id={`${id}-card`}>
               <SelectValue placeholder={t('cards.select_card')} />
@@ -336,7 +347,7 @@ export default function CreditCards() {
             </Button>
             <Button
               variant="outline"
-              disabled={busy || !!card.archived_at}
+              disabled={blocked || busy || !!card.archived_at}
               onClick={() => void archive()}
             >
               <Archive aria-hidden="true" />
@@ -365,8 +376,13 @@ export default function CreditCards() {
               <Input
                 id={`${id}-month`}
                 type="month"
+                disabled={blocked}
                 value={state.periodMonth}
-                onChange={(event) => state.setPeriodMonth(event.target.value)}
+                onChange={(event) => {
+                  if (!financialActionsBlocked()) {
+                    state.setPeriodMonth(event.target.value);
+                  }
+                }}
               />
             </Field>
             <Field>
@@ -380,7 +396,12 @@ export default function CreditCards() {
                   label: `${cardDate(invoice.closing_date)} · ${formatCurrency(invoice.amount_cents / 100)} · #${invoice.id}`,
                 }))}
                 value={state.invoiceId}
-                onValueChange={(value) => void state.selectInvoice(value)}
+                onValueChange={(value) => {
+                  if (!financialActionsBlocked()) {
+                    void state.selectInvoice(value);
+                  }
+                }}
+                disabled={blocked}
               >
                 <SelectTrigger id={`${id}-invoice`}>
                   <SelectValue placeholder={t('cards.select_invoice')} />
@@ -447,6 +468,23 @@ export default function CreditCards() {
             >
               <Pencil aria-hidden="true" />
               {t('cards.correct_invoice_action')}
+            </Button>
+            <Button
+              disabled={blocked || state.loading || state.failed}
+              onClick={(event) => {
+                if (financialActionsBlocked()) {
+                  return;
+                }
+
+                returnFocus.current = event.currentTarget;
+                setPaymentEditor(true);
+              }}
+            >
+              {t(
+                invoice.paid_at
+                  ? 'cards.manage_payment'
+                  : 'cards.confirm_payment',
+              )}
             </Button>
           </div>
           <dl className="my-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -591,6 +629,15 @@ export default function CreditCards() {
           cards={state.cards}
           initialCard={state.cardId}
           onClose={() => setAssociation(null)}
+          onSaved={refreshed}
+        />
+      )}
+      {paymentEditor && invoice && (
+        <InvoicePaymentDialog
+          key={invoice.id}
+          invoice={invoice}
+          returnFocus={returnFocus}
+          onClose={() => setPaymentEditor(false)}
           onSaved={refreshed}
         />
       )}

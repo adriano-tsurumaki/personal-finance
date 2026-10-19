@@ -3,7 +3,7 @@ import {
   useFinancialOperations,
 } from '@store/financial-operations';
 import { useTimelinePreferences } from '@store/timeline-preferences';
-import { ArrowDown, ArrowUp, Repeat } from 'lucide-react';
+import { ArrowDown, ArrowUp, Repeat, ReceiptText } from 'lucide-react';
 import { OccurrenceSummary } from '@modules/Recurrences';
 import AddTransaction from './AddTransaction';
 import TimelineEntryRow from './TimelineEntryRow';
@@ -11,6 +11,8 @@ import MenuOptionsTransaction from './MenuOptionsTransaction';
 import { useAppStore } from '@store/transaction';
 import { t } from '@lib/i18n';
 import { Button } from '@components/ui/button';
+import { cardDate } from '@lib/card-corrections';
+import { formatSignedCurrency } from '@lib/format/currency';
 
 export default function TimelineTransaction({
   onReviewRecurrences,
@@ -28,6 +30,8 @@ export default function TimelineTransaction({
   const projected =
     recurrence?.occurrences.filter((row) => row.state === 'unconfirmed') ?? [];
   const transactions = useAppStore((s) => s.transactions);
+  const payments = useAppStore((s) => s.invoicePayments);
+  const entryCount = transactions.length + projected.length + payments.length;
   const loading = useAppStore((s) => s.transactionsLoading);
   const failed = useAppStore((s) => s.transactionsFailed);
 
@@ -40,10 +44,10 @@ export default function TimelineTransaction({
           </h2>
           <p className="text-xs text-muted-foreground">
             {t(
-              transactions.length + projected.length === 1
+              entryCount === 1
                 ? 'transactions.entries_one'
                 : 'transactions.entries_other',
-              { count: transactions.length + projected.length },
+              { count: entryCount },
             )}
           </p>
         </div>
@@ -91,14 +95,14 @@ export default function TimelineTransaction({
             </Button>
           </div>
         )}
-      {!loading && !failed && transactions.length + projected.length > 0 && (
+      {!loading && !failed && entryCount > 0 && (
         <div className="mb-2 flex justify-end">
           <Button
             variant="ghost"
             size="sm"
             aria-label={t('transactions.toggle_date_order')}
             aria-pressed={newestFirst}
-            disabled={transactions.length + projected.length < 2}
+            disabled={entryCount < 2}
             onClick={toggleDateOrder}
           >
             {newestFirst ? (
@@ -139,7 +143,7 @@ export default function TimelineTransaction({
             {t('common.retry')}
           </Button>
         </div>
-      ) : transactions.length === 0 && projected.length === 0 ? (
+      ) : entryCount === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-6 text-center">
           <h3 className="text-sm font-medium">{t('transactions.empty')}</h3>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -154,6 +158,11 @@ export default function TimelineTransaction({
           />
           <ol>
             {[
+              ...payments.map((entry) => ({
+                kind: 'invoice_payment' as const,
+                date: entry.paid_at,
+                entry,
+              })),
               ...transactions.map((entry) => ({
                 kind: 'transaction' as const,
                 date: entry.reference_date,
@@ -171,7 +180,37 @@ export default function TimelineTransaction({
                   : a.date.localeCompare(b.date),
               )
               .map((row) =>
-                row.kind === 'projection' ? (
+                row.kind === 'invoice_payment' ? (
+                  <li
+                    key={`invoice-payment:${row.entry.invoice_id}`}
+                    className="relative flex gap-4 py-3 pl-1 pr-2"
+                  >
+                    <span className="relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-background text-primary">
+                      <ReceiptText className="size-4" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">
+                        {t('cards.payment_event', {
+                          card: row.entry.card_name,
+                        })}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        <time dateTime={row.date}>{cardDate(row.date)}</time> ·{' '}
+                        {t('cards.invoice')} #{row.entry.invoice_id} ·{' '}
+                        {cardDate(row.entry.closing_date)}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {t('cards.payment_event_hint')}
+                      </p>
+                    </div>
+                    <span className="shrink-0 font-mono text-sm font-semibold text-expense">
+                      {formatSignedCurrency(
+                        row.entry.amount_cents / 100,
+                        'expense',
+                      )}
+                    </span>
+                  </li>
+                ) : row.kind === 'projection' ? (
                   <li
                     className="relative my-2 ml-1 rounded-lg border border-dashed border-border bg-card p-4"
                     key={`projection:${row.entry.recurrence_id}:${row.date}`}

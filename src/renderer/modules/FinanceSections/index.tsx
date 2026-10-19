@@ -22,6 +22,7 @@ export default function FinanceSections() {
   const transactionCount = useAppStore(
     (state) =>
       state.transactions.length +
+      state.invoicePayments.length +
       (state.recurrenceMonth?.occurrences.filter(
         (entry) => entry.state === 'unconfirmed',
       ).length ?? 0),

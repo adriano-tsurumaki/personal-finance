@@ -86,6 +86,9 @@ export default function TimelineEntryRow({
                 <span className="ml-2 text-xs">
                   {t('cards.invoice')} #{entry.credit_card_invoice_id} ·{' '}
                   {t(entry.invoice_paid_at ? 'cards.paid' : 'cards.unpaid')}
+                  {entry.invoice_paid_at
+                    ? ` · ${dayLabel(entry.invoice_paid_at)}`
+                    : ''}
                 </span>
               )}
             </p>

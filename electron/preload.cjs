@@ -47,6 +47,8 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('invoices:period', id, month),
   getCardInvoices: (id) => ipcRenderer.invoke('invoices:list', id),
   getInvoiceDetails: (id) => ipcRenderer.invoke('invoices:details', id),
+  setInvoicePayment: (id, input) =>
+    ipcRenderer.invoke('invoices:payment', id, input),
   registerInvoice: (id, input) =>
     ipcRenderer.invoke('invoices:register', id, input),
   previewInvoiceCorrection: (id, input) =>
