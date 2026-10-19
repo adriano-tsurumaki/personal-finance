@@ -1,5 +1,45 @@
 # Release validation
 
+## 0.7.0 - 2026-10-19
+
+The approved minor version adds an optional one-calendar-day offset to invoice
+opening reference dates from the second installment onward, and fills the first
+reference date when selecting the purchase date. This records release preparation,
+not a distribution-readiness declaration.
+
+### Completed checks
+
+- Three independent analysis agents reviewed the pending code, commit grouping,
+  and version impact. Code review approved the implementation with no findings.
+- The complete repository suite passed all 166 tests before the metadata-only
+  version bump. Coverage includes month/year rollover, leap February, preserved
+  amounts and invoice membership, stale previews, retries, and older receipts.
+- `pnpm lint`, `pnpm typecheck`, `pnpm format:check`, and all 102 database/domain
+  tests passed with package version `0.7.0`. Database tests used a project-local
+  temporary directory to avoid sandbox session-file rename restrictions.
+- `pnpm make` generated the production main, preload, and renderer bundles,
+  Windows x64 application package, and Squirrel installer. The packaged `app.asar`
+  declares version `0.7.0`; distributables are available under `out/make`.
+- Existing dependency `use client` build warnings and the ESLint configuration
+  module-type warning did not prevent verification or packaging.
+
+### Pending checks and known limitations
+
+- The initial sandboxed packaging attempt could not resolve `github.com`.
+  Retrying with network access completed packaging and installer generation.
+- Exercise purchase-date selection and clearing, manual first-reference-date
+  changes, offset checkbox toggling, preview/save, keyboard navigation, and both
+  locales in Electron. Existing renderer tests do not exercise these interactions.
+- Installer execution, clean installation, application startup, and an installed
+  upgrade from `0.6.0` with representative existing data have not been verified.
+  Automated integration tests do not substitute for installed-application checks.
+- No new schema migration or manual upgrade action is required from `0.6.0`.
+  Existing plans, financial amounts, invoice membership, and older creation
+  receipts are preserved. Known legacy adoption and recurrence coverage
+  limitations documented for earlier versions remain unchanged.
+- No other platform was validated. No release tag, push, or publication was
+  performed.
+
 ## 0.6.0 - 2026-10-19
 
 The approved minor version adds full invoice payment confirmation, date correction,

@@ -195,7 +195,9 @@ durable retries, older receipts, and malformed offset rejection. The full databa
 suite used a project-local temporary directory after the sandbox denied session
 file renames in its default temporary directory. Interactive Electron validation
 of the additional checkbox was not performed. This compatible feature requires
-a minor release increment under the `0.x` policy; the package version is unchanged.
+a minor release increment under the `0.x` policy; the package version remained
+unchanged during implementation. Release preparation for `0.7.0` is recorded in
+[Release validation](release-validation.md).
 
 The browser available in the execution environment could not access the local
 verification server. Interactive desktop checks, narrow-layout visual inspection,

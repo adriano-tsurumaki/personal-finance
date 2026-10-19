@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.7.0 - 2026-10-19
+
 ### Added
 
 - Optionally move invoice-opening installment reference dates forward by one
