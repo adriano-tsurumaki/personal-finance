@@ -37,6 +37,13 @@ The active profile is held in the main process for the application session.
 Restarting requires selecting a profile again; transaction operations require
 an active profile and derive ownership from it rather than renderer input.
 
+Timeline date order is an application-wide renderer preference saved in browser
+local storage. It survives timeline remounts, profile changes, and app restarts.
+Both recorded entries and projected occurrences use the selected order. Missing
+or invalid preferences default to oldest first; unavailable storage keeps the
+current session's ordering usable. This local presentation action does not acquire
+a financial-operation token because it does not alter or reload financial data.
+
 Default categories use the stable keys `food`, `housing`, `salary`, and `other`.
 Categories remain owned by their profile. The shared payment catalog uses `pix`,
 `debit`, `credit`, `cash`, and `bank_transfer`. Income accepts only `pix`, `cash`,

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Remember timeline date ordering across navigation and application restarts.
+
 ## 0.4.0 - 2026-10-19
 
 ### Added

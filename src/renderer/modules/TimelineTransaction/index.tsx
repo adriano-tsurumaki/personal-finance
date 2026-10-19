@@ -2,7 +2,7 @@ import {
   financialActionsBlocked,
   useFinancialOperations,
 } from '@store/financial-operations';
-import { useState } from 'react';
+import { useTimelinePreferences } from '@store/timeline-preferences';
 import { ArrowDown, ArrowUp, Repeat } from 'lucide-react';
 import { OccurrenceSummary } from '@modules/Recurrences';
 import AddTransaction from './AddTransaction';
@@ -19,7 +19,10 @@ export default function TimelineTransaction({
   onReviewRecurrences?: () => void;
   onCreateInstallment?: () => void;
 }) {
-  const [newestFirst, setNewestFirst] = useState(false);
+  const newestFirst = useTimelinePreferences((state) => state.newestFirst);
+  const toggleDateOrder = useTimelinePreferences(
+    (state) => state.toggleDateOrder,
+  );
   const blocked = useFinancialOperations((state) => state.pending.size > 0);
   const recurrence = useAppStore((state) => state.recurrenceMonth);
   const projected =
@@ -96,7 +99,7 @@ export default function TimelineTransaction({
             aria-label={t('transactions.toggle_date_order')}
             aria-pressed={newestFirst}
             disabled={transactions.length + projected.length < 2}
-            onClick={() => setNewestFirst((current) => !current)}
+            onClick={toggleDateOrder}
           >
             {newestFirst ? (
               <ArrowUp aria-hidden="true" />
