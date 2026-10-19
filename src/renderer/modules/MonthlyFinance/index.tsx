@@ -29,6 +29,8 @@ export default function MonthlyFinance(): React.JSX.Element {
   const blocked = useFinancialOperations((state) => state.pending.size > 0);
   const loaded = useAppStore((s) => s.statementLoaded);
   const statementLoading = useAppStore((s) => s.statementLoading);
+  const anchor = useAppStore((s) => s.indicatorAnchor);
+  const statementIssue = useAppStore((s) => s.statementIssue);
 
   useMonthlyStatementFeedback();
 
@@ -108,6 +110,24 @@ export default function MonthlyFinance(): React.JSX.Element {
             <BalanceSparkline data={monthlyStatement.balanceSeries} />
           </div>
         </div>
+
+        {anchor && (
+          <p
+            role="status"
+            className="mt-5 rounded-lg border border-border bg-background/60 p-3 text-xs text-muted-foreground"
+          >
+            {t(
+              statementIssue === 'before_indicator_anchor'
+                ? 'settings.before_anchor'
+                : 'settings.active_anchor',
+              { date: anchor.start_date },
+            )}
+            {statementIssue !== 'before_indicator_anchor' &&
+              monthKey === anchor.start_date.slice(0, 7) &&
+              anchor.start_date.slice(8) !== '01' &&
+              ` ${t('settings.partial_month')}`}
+          </p>
+        )}
 
         <dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Stat

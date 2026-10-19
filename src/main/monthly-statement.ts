@@ -3,6 +3,7 @@ import type { AppDatabase } from './db';
 import type { MonthlyStatementDto } from '@shared/contracts/monthly-statement';
 import { getDaysInMonth } from '@shared/lib/calendar';
 import { createRecurrenceService } from './recurrences';
+import { createIndicatorAnchorService } from './indicator-anchor';
 
 interface DailyCashFlow {
   date: string;
@@ -16,6 +17,7 @@ export function createMonthlyStatementService(
   getActiveUser: () => { id: number },
 ) {
   const recurrences = createRecurrenceService(db, getActiveUser);
+  const anchors = createIndicatorAnchorService(db, getActiveUser);
   const cache = new Map<string, MonthlyStatementDto>();
   let revision = '';
   const cacheLimit = 24;
@@ -60,6 +62,15 @@ export function createMonthlyStatementService(
           return structuredClone(cached);
         }
 
+        const anchor = anchors.get();
+        const lowerBound = anchor?.start_date ?? '0001-01-01';
+
+        if (lowerBound >= end) {
+          throw Object.assign(new Error('before_indicator_anchor'), {
+            code: 'before_indicator_anchor',
+          });
+        }
+
         const rows = tx.all<DailyCashFlow>(sql`
           SELECT CASE WHEN date < ${start} THEN '' ELSE date END AS date,
                  SUM(income) AS income, SUM(expense) AS expense
@@ -71,6 +82,7 @@ export function createMonthlyStatementService(
             INNER JOIN payments p ON p.id = t.payment_id
             WHERE t.user_id = ${user.id}
               AND t.payment_date < ${end}
+              AND t.payment_date >= ${lowerBound}
               AND t.credit_card_invoice_id IS NULL AND p.type = 1
             UNION ALL
             SELECT t.reference_date AS date,
@@ -81,6 +93,7 @@ export function createMonthlyStatementService(
             WHERE t.user_id = ${user.id} AND t.type IN (1, 2)
               AND t.payment_date IS NULL
               AND t.reference_date < ${end}
+              AND t.reference_date >= ${lowerBound}
               AND t.credit_card_invoice_id IS NULL AND p.type = 1
             UNION ALL
             SELECT i.paid_at AS date, 0 AS income, i.amount_cents AS expense
@@ -88,17 +101,23 @@ export function createMonthlyStatementService(
             INNER JOIN credit_card_invoice i ON i.credit_card_id = c.id
             WHERE c.user_id = ${user.id}
               AND i.paid_at < ${end}
+              AND i.paid_at >= ${lowerBound}
             UNION ALL
             SELECT i.due_date AS date, 0 AS income, i.amount_cents AS expense
             FROM credit_cards c
             INNER JOIN credit_card_invoice i ON i.credit_card_id = c.id
             WHERE c.user_id = ${user.id} AND i.paid_at IS NULL
               AND i.due_date < ${end}
+              AND i.due_date >= ${lowerBound}
           )
           GROUP BY CASE WHEN date < ${start} THEN '' ELSE date END ORDER BY date
         `);
 
-        const projection = recurrences.getCashFlow(start, end);
+        const projection = recurrences.getCashFlow(
+          start,
+          end,
+          anchor?.start_date,
+        );
         const projectedDays = new Map(
           projection.days.map((day) => [day.date, day]),
         );
@@ -144,12 +163,19 @@ export function createMonthlyStatementService(
 
         const days = new Map(rows.map((row) => [row.date, row]));
         const opening = days.get('');
-        const openingCents = (opening?.income ?? 0) - (opening?.expense ?? 0);
+        const exactOpeningCents =
+          BigInt(anchor?.opening_balance_cents ?? 0) +
+          BigInt(opening?.income ?? 0) -
+          BigInt(opening?.expense ?? 0);
 
-        if (!Number.isSafeInteger(openingCents)) {
+        if (
+          exactOpeningCents < BigInt(Number.MIN_SAFE_INTEGER) ||
+          exactOpeningCents > BigInt(Number.MAX_SAFE_INTEGER)
+        ) {
           throw new Error('Monthly cash flow exceeds the supported amount.');
         }
 
+        const openingCents = Number(exactOpeningCents);
         const dayCount = getDaysInMonth(year, month);
         let income = 0;
         let expense = 0;
@@ -157,6 +183,11 @@ export function createMonthlyStatementService(
 
         for (let day = 1; day <= dayCount; day++) {
           const date = `${monthKey}-${String(day).padStart(2, '0')}`;
+
+          if (date < lowerBound) {
+            continue;
+          }
+
           const row = days.get(date);
           income += row?.income ?? 0;
           expense += row?.expense ?? 0;
@@ -176,6 +207,7 @@ export function createMonthlyStatementService(
         }
 
         const statement: MonthlyStatementDto = {
+          ...(anchor ? { reportingStartDate: anchor.start_date } : {}),
           year,
           month,
           income: income / 100,

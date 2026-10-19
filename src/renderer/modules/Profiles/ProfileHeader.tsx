@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Globe,
   LogOut,
+  Settings,
   UserRound,
   Wallet,
 } from 'lucide-react';
@@ -12,6 +13,7 @@ import { Menu } from '@base-ui/react/menu';
 import { Button } from '@components/ui/button';
 import { useProfileStore } from '@store/profile';
 import { t } from '@lib/i18n';
+import SettingsDialog from '@modules/Settings';
 
 export default function ProfileHeader() {
   const profile = useProfileStore((state) => state.activeProfile);
@@ -19,6 +21,7 @@ export default function ProfileHeader() {
   const updateLocale = useProfileStore((state) => state.updateLocale);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const operationPending = useRef(false);
 
   const handleLocaleChange = async (locale: ProfileLocale) => {
@@ -95,6 +98,14 @@ export default function ProfileHeader() {
                     {profile?.locale} · BRL
                   </p>
                 </div>
+                <Menu.Item
+                  disabled={pending}
+                  onClick={() => setSettingsOpen(true)}
+                  className="mt-2 flex cursor-default items-center gap-2 rounded-md px-2 py-2 outline-none data-highlighted:bg-muted data-highlighted:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50"
+                >
+                  <Settings className="size-4" aria-hidden="true" />
+                  {t('settings.title')}
+                </Menu.Item>
                 <Menu.SubmenuRoot>
                   <Menu.SubmenuTrigger
                     disabled={pending}
@@ -169,6 +180,7 @@ export default function ProfileHeader() {
           </Menu.Portal>
         </Menu.Root>
       </div>
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 }

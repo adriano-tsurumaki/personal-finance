@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Added
+
+- Profile settings dialog with a topic sidebar, general language preferences, and
+  indicator settings, available from the profile menu.
+- Optional profile-specific indicator start dates and signed opening balances.
+  Calculations include the start date, preserve the full timeline, and exclude
+  earlier cash flow without treating the opening balance as income. Older periods
+  show unavailable indicators; anchor months identify partial totals.
+
+### Upgrade notes
+
+- An additive migration stores indicator settings without changing existing
+  financial records. Startup applies it automatically; existing profiles retain
+  full-history calculations until a starting point is configured. Removing the
+  setting restores full-history calculations. No manual upgrade action is needed.
+
 ### Fixed
 
 - Remember timeline date ordering across navigation and application restarts.

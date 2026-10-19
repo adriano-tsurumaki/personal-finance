@@ -1,4 +1,27 @@
 {
+  "settings": {
+    "title": "Settings",
+    "description": "Preferences for the active profile.",
+    "topics": "Settings topics",
+    "general": "General",
+    "indicators": "Indicators",
+    "anchor_title": "Starting point for indicators",
+    "anchor_description": "Choose when financial calculations begin. Earlier entries remain in your history but are excluded from indicators. The start date is included; its month may show partial totals.",
+    "start_date": "Start date",
+    "select_date": "Select a start date",
+    "opening_balance": "Opening balance (BRL)",
+    "balance_hint": "Balance immediately before the movements on the start date. May be positive, negative, or zero. This is not income.",
+    "invoice_hint": "Invoices are included by their payment or due date, even for older purchases. Enter the balance before those remaining payments. Balances include projected commitments.",
+    "anchor_current": "Current: {date} · Opening balance: {balance}",
+    "save": "Save starting point",
+    "remove": "Use full history",
+    "saved": "Settings saved and indicators updated.",
+    "error": "Could not save. Check the date and opening balance, then try again.",
+    "refresh_failed": "Settings were saved, but the indicators could not be updated. Reload the month or review pending recurrences.",
+    "active_anchor": "Indicators include financial movements from {date} onward.",
+    "before_anchor": "This month is before the starting point ({date}). Its history is available; indicators are outside the reporting period.",
+    "partial_month": "This month shows partial totals from the start date."
+  },
   "cards": {
     "title": "Cards and invoices",
     "name": "Card name",

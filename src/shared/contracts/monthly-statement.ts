@@ -11,7 +11,9 @@ export interface MonthlyStatementDto {
   /** Income minus expenses within this month only. */
   net: number;
   savingsRate: number;
-  /** Projected cumulative cash flow before this month, starting from zero history. */
+  /** Start of the included reporting period, when an anchor is configured. */
+  reportingStartDate?: string;
+  /** Baseline plus included cash flow before this month or partial month. */
   openingBalance: number;
   /** Opening balance plus this month's net projected cash flow. */
   closingBalance: number;

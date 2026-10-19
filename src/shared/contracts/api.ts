@@ -1,4 +1,5 @@
 import type { MonthlyStatementDto } from './monthly-statement';
+import type { IndicatorAnchorApi } from './indicator-anchor';
 import type { FinancialMonthDto } from './financial-month';
 import type { RecurrenceApi } from './recurrence';
 import type { InstallmentApi } from './installment';
@@ -33,6 +34,7 @@ import type {
 } from './categories';
 
 export interface Api {
+  indicatorAnchor: IndicatorAnchorApi;
   installment: InstallmentApi;
   recurrence: RecurrenceApi;
   getFinancialMonth(month: string): Promise<FinancialMonthDto>;

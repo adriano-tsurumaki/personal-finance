@@ -34,6 +34,18 @@ beforeEach(() => {
   setLocale('en-US');
 });
 
+test('periods excluded by an anchor do not produce retry error notifications', () => {
+  useAppStore.setState({
+    statementLoaded: false,
+    statementFailed: false,
+    statementIssue: 'before_indicator_anchor',
+  });
+  const manager = notifications();
+  const cleanup = watchMonthlyStatementFeedback(manager);
+  assert.equal(manager.history.length, 0);
+  cleanup();
+});
+
 afterEach(() => {
   useAppStore.getState().reset();
   setLocale('pt-BR');

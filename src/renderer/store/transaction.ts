@@ -7,8 +7,11 @@ import { currentMonthKey } from '@shared/lib/calc';
 import type { MonthlyStatementDto } from '@shared/contracts/monthly-statement';
 import type { RecurrenceMonthDto } from '@shared/contracts/recurrence';
 import type { TransactionDto } from '@shared/contracts/transaction';
+import type { IndicatorAnchorDto } from '@shared/contracts/indicator-anchor';
 
 interface AppState {
+  indicatorAnchor: IndicatorAnchorDto | null;
+  statementIssue: string | null;
   /**
    * The key of the currently selected month in the format YYYY-MM
    */
@@ -102,13 +105,17 @@ export const useAppStore = create<AppState>((set, get) => {
 
       set({
         monthKey,
+        indicatorAnchor: combined?.indicator_anchor ?? null,
+        statementIssue: combined?.statement_issue ?? null,
         transactions: timeline.value,
         monthlyStatement: summary.value ?? get().monthlyStatement,
         recurrenceMonth: combined?.recurrences ?? null,
         pendingMonth: null,
         failedMonth: null,
         statementLoading: false,
-        statementFailed: summary.value === null,
+        statementFailed:
+          summary.value === null &&
+          combined?.statement_issue !== 'before_indicator_anchor',
         statementLoaded: summary.value !== null,
         transactionsLoading: false,
         transactionsFailed: false,
@@ -140,6 +147,8 @@ export const useAppStore = create<AppState>((set, get) => {
   }
 
   return {
+    indicatorAnchor: null,
+    statementIssue: null,
     monthKey: currentMonthKey(),
     recurrenceMonth: null,
     transactions: [],
@@ -167,6 +176,8 @@ export const useAppStore = create<AppState>((set, get) => {
       transactionsRequestId++;
       statementRequestId++;
       set({
+        indicatorAnchor: null,
+        statementIssue: null,
         monthKey: currentMonthKey(),
         monthlyStatement: emptyMonthlyStatement,
         statementLoading: false,

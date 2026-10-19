@@ -92,6 +92,38 @@ test('navigation publishes the month, timeline and summary together and blocks c
   assert.equal(useAppStore.getState().statementLoading, false);
   assert.equal(financialActionsBlocked(), false);
 });
+
+test('excluded months publish history and anchor metadata without a load failure', async () => {
+  const indicator_anchor = {
+    start_date: '2026-12-10',
+    opening_balance_cents: 50000,
+  };
+  window.api.getFinancialMonth = async () => ({
+    transactions: [entry],
+    statement: null,
+    statement_issue: 'before_indicator_anchor',
+    indicator_anchor,
+    recurrences: {
+      month: '2026-11',
+      occurrences: [],
+      unconfirmed_count: 0,
+      paused_rules: [],
+    },
+  });
+  await useAppStore.getState().setMonthKey('2026-11');
+  const state = useAppStore.getState();
+  assert.equal(state.monthKey, '2026-11');
+  assert.equal(state.statementLoaded, false);
+  assert.equal(state.statementFailed, false);
+  assert.equal(state.transactionsFailed, false);
+  assert.equal(state.failedMonth, null);
+  assert.equal(state.statementIssue, 'before_indicator_anchor');
+  assert.deepEqual(state.indicatorAnchor, indicator_anchor);
+  assert.deepEqual(state.transactions, [entry]);
+  useAppStore.getState().reset();
+  assert.equal(useAppStore.getState().indicatorAnchor, null);
+  assert.equal(useAppStore.getState().statementIssue, null);
+});
 test('failure of either request preserves the confirmed period and allows a successful retry', async () => {
   for (const failing of ['getTransactions', 'getMonthlyStatement'] as const) {
     const original = window.api[failing];

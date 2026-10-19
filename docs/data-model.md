@@ -19,8 +19,10 @@ The first version uses these rules:
 - Unpaid invoices contribute in their due month. Paid invoices use the actual
   payment month instead, even when it differs from the due month.
 - Monthly net is inflows minus outflows. The projected closing balance adds the
-  cumulative opening balance from all earlier events; it is not a confirmed bank
-  account balance. History starts from zero before the first recorded event.
+  cumulative opening balance from included earlier events; it is not a confirmed
+  bank account balance. By default, history starts from zero before the first
+  recorded event. A profile can instead configure an inclusive indicator start
+  date and a signed opening balance through its settings dialog.
 - Credit-card purchases must not be counted again alongside their invoice total.
 
 Category analysis should count purchases and installments without counting the invoice payment as another consumption expense.
@@ -352,6 +354,17 @@ remains available through the invoice details and is not counted twice.
 
 ## Monthly projected summaries
 
+An optional profile-owned indicator anchor replaces pre-anchor flow with the
+supplied signed integer-cent baseline. The boundary uses effective cash-flow
+dates for direct entries, invoices, and recurrence projections. The baseline is
+not income. Earlier months expose `before_indicator_anchor` availability metadata
+and retain their history; the anchor month shows partial totals and a daily series
+beginning on the anchor date. Removing the setting restores full-history behavior.
+The additive `indicator_anchors` table preserves existing financial rows and
+participates in database-revision cache invalidation. See
+[Indicator anchors and settings](indicator-anchors.md) for the complete rules,
+credit coverage limitations, UI coordination, and validation scope.
+
 The monthly statement API derives ownership from the active profile. Direct
 entries with a direct payment method (`payments.type = 1`) contribute in their
 `payment_date` month when it is present. Direct income and expenses
@@ -380,17 +393,18 @@ integer-cent precision are rejected rather than displayed with rounded values.
 The opening balance is cumulative income minus expenses before the month. Monthly
 `net` remains income minus expenses only within the selected month, while
 `closingBalance` adds that net to `openingBalance`. The daily series includes every
-day of the month and carries the opening balance into each day. Empty months retain
+included day of the month and carries the opening balance into each day. Empty months retain
 the previous closing balance, including negative balances and year transitions.
 The savings rate remains monthly net divided by monthly income, or zero when
 there is no income. Computed summaries expose no identifier or transaction count.
 The timeline count remains separate because its reference-date entries differ
 from cash-flow events.
 
-The cumulative projection starts from zero before the first recorded event. It
+By default, the cumulative projection starts from zero before the first recorded event. It
 includes unpaid commitments under the same rules as monthly flow, so it does not
-represent confirmed available cash. An explicit opening cash adjustment or account
-tracking would require a separate persisted financial rule. Installments use their
+represent confirmed available cash. The optional indicator baseline changes the
+reporting boundary without recording a cash adjustment; account tracking remains
+outside this rule. Installments use their
 persisted entries and invoices without another projection. Recurrences are projected in memory
 for both monthly and cumulative horizons; only explicit confirmation persists a
 transaction. Projection and confirmation must suppress duplicate occurrence

@@ -55,6 +55,7 @@ export function aggregateCreditRecurrence(input: {
   to: string;
   start: string;
   end: string;
+  notBefore?: string;
   criticalDates: string[];
   project(date: string): {
     cash_flow_date: string | null;
@@ -115,19 +116,27 @@ export function aggregateCreditRecurrence(input: {
       return low;
     }
     const end = lowerBound(input.end);
+    const includedFirst = input.notBefore
+      ? Math.min(end, lowerBound(input.notBefore))
+      : first;
 
-    if (first >= end) {
+    if (includedFirst >= end) {
       continue;
     }
 
-    if (firstValue.issue) {
-      input.fail(firstValue.issue);
+    const includedValue = projected(includedFirst);
+
+    if (includedValue.issue) {
+      input.fail(includedValue.issue);
     }
 
-    const visible = Math.min(end, lowerBound(input.start));
+    const visible = Math.max(
+      includedFirst,
+      Math.min(end, lowerBound(input.start)),
+    );
 
-    if (visible > first) {
-      input.add(firstValue.cash_flow_date, visible - first);
+    if (visible > includedFirst) {
+      input.add(includedValue.cash_flow_date!, visible - includedFirst);
     }
 
     let index = visible;

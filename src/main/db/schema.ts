@@ -21,6 +21,23 @@ export const usersTable = sqliteTable('user', {
   locale: text().$type<'pt-BR' | 'en-US'>().notNull().default('pt-BR'),
 });
 
+export const indicatorAnchorsTable = sqliteTable(
+  'indicator_anchors',
+  {
+    user_id: integer()
+      .primaryKey()
+      .references(() => usersTable.id),
+    start_date: date().notNull(),
+    opening_balance_cents: integer().notNull(),
+  },
+  (table) => [
+    check(
+      'indicator_anchor_safe_balance',
+      sql`${table.opening_balance_cents} BETWEEN -9007199254740991 AND 9007199254740991`,
+    ),
+  ],
+);
+
 export const paymentsTable = sqliteTable('payments', {
   id: integer().primaryKey({ autoIncrement: true }),
   name: text().notNull(),

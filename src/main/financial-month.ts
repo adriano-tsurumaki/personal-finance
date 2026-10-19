@@ -3,6 +3,7 @@ import type { FinancialMonthDto } from '@shared/contracts/financial-month';
 import { createTransactionService } from './transactions';
 import { createMonthlyStatementService } from './monthly-statement';
 import { createRecurrenceService } from './recurrences';
+import { createIndicatorAnchorService } from './indicator-anchor';
 
 /** Publishes persisted entries and estimates from the same SQLite read snapshot. */
 export function createFinancialMonthService(
@@ -12,6 +13,7 @@ export function createFinancialMonthService(
   const transactions = createTransactionService(db, getActiveUser);
   const statements = createMonthlyStatementService(db, getActiveUser);
   const recurrences = createRecurrenceService(db, getActiveUser);
+  const anchors = createIndicatorAnchorService(db, getActiveUser);
 
   return {
     get(month: string): FinancialMonthDto {
@@ -23,7 +25,11 @@ export function createFinancialMonthService(
         try {
           statement = statements.get(month);
         } catch (error) {
-          if ((error as { code?: string } | null)?.code !== 'repair_required') {
+          if (
+            !['repair_required', 'before_indicator_anchor'].includes(
+              (error as { code?: string } | null)?.code ?? '',
+            )
+          ) {
             throw error;
           }
 
@@ -31,6 +37,7 @@ export function createFinancialMonthService(
         }
 
         return {
+          indicator_anchor: anchors.get(),
           transactions: timeline,
           statement,
           statement_issue,

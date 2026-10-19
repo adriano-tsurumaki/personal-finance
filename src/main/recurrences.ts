@@ -951,9 +951,13 @@ export function createRecurrenceService(
           .run();
       });
     },
-    getCashFlow(start: string, end: string) {
+    getCashFlow(start: string, end: string, notBefore?: string) {
       date(start);
       date(end);
+
+      if (notBefore !== undefined) {
+        date(notBefore);
+      }
 
       if (start >= end) {
         fail('invalid_recurrence_range');
@@ -967,7 +971,7 @@ export function createRecurrenceService(
         { date: string; incomeCents: number; expenseCents: number }
       >();
       function add(when: string, type: 1 | 2, cents: number) {
-        if (when >= end) {
+        if (when >= end || (notBefore !== undefined && when < notBefore)) {
           return;
         }
 
@@ -1018,13 +1022,15 @@ export function createRecurrenceService(
             'credit'
           ) {
             const before = to < start ? to : start;
+            const historyFrom =
+              notBefore && notBefore > v.start_date ? notBefore : v.start_date;
 
-            if (v.start_date < before) {
-              let count = countRecurrenceDates(cadence, v.start_date, before);
+            if (historyFrom < before) {
+              let count = countRecurrenceDates(cadence, historyFrom, before);
               count -= data.decisions.filter(
                 (d) =>
                   d.recurrence_id === row.id &&
-                  v.start_date <= d.scheduled_date &&
+                  historyFrom <= d.scheduled_date &&
                   d.scheduled_date < before &&
                   isRecurrenceDate(cadence, d.scheduled_date),
               ).length;
@@ -1033,10 +1039,10 @@ export function createRecurrenceService(
                 validateProjection(v, data);
               }
 
-              add(v.start_date, v.type!, exact(count * v.amount_cents));
+              add(historyFrom, v.type!, exact(count * v.amount_cents));
             }
 
-            const from = v.start_date > start ? v.start_date : start;
+            const from = historyFrom > start ? historyFrom : start;
 
             if (from < to) {
               for (const scheduled of expandRecurrenceDates(
@@ -1089,6 +1095,7 @@ export function createRecurrenceService(
               to,
               start,
               end,
+              notBefore,
               criticalDates: critical,
               project(scheduled) {
                 if (

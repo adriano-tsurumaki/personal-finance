@@ -1,4 +1,27 @@
 {
+  "settings": {
+    "title": "Configurações",
+    "description": "Preferências do perfil ativo.",
+    "topics": "Tópicos das configurações",
+    "general": "Geral",
+    "indicators": "Indicadores",
+    "anchor_title": "Ponto inicial dos indicadores",
+    "anchor_description": "Escolha quando os cálculos financeiros começam. Lançamentos anteriores permanecem no histórico, mas não entram nos indicadores. A data inicial é incluída; seu mês pode apresentar totais parciais.",
+    "start_date": "Data inicial",
+    "select_date": "Selecione uma data inicial",
+    "opening_balance": "Saldo inicial (BRL)",
+    "balance_hint": "Saldo imediatamente antes dos movimentos da data inicial. Pode ser positivo, negativo ou zero. Esse valor não é uma receita.",
+    "invoice_hint": "Faturas entram pela data de pagamento ou vencimento, mesmo para compras antigas. Informe o saldo antes desses pagamentos restantes. Os saldos incluem compromissos projetados.",
+    "anchor_current": "Atual: {date} · Saldo inicial: {balance}",
+    "save": "Salvar ponto inicial",
+    "remove": "Usar histórico completo",
+    "saved": "Configurações salvas e indicadores atualizados.",
+    "error": "Não foi possível salvar. Confira a data e o saldo inicial e tente novamente.",
+    "refresh_failed": "As configurações foram salvas, mas os indicadores não puderam ser atualizados. Recarregue o mês ou revise as recorrências pendentes.",
+    "active_anchor": "Os indicadores consideram movimentos financeiros a partir de {date}.",
+    "before_anchor": "Este mês é anterior ao ponto inicial ({date}). O histórico está disponível; os indicadores estão fora do período de cálculo.",
+    "partial_month": "Este mês apresenta totais parciais a partir da data inicial."
+  },
   "cards": {
     "title": "Cartões e faturas",
     "name": "Nome do cartão",

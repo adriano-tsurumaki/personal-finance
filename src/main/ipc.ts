@@ -9,6 +9,8 @@ import { createCategoryService } from './categories';
 import { createCreditCardService } from './credit-cards';
 import { createRecurrenceService } from './recurrences';
 import { createFinancialMonthService } from './financial-month';
+import { createIndicatorAnchorService } from './indicator-anchor';
+import type { IndicatorAnchorDto } from '@shared/contracts/indicator-anchor';
 import type {
   RecurrenceErrorCode,
   RecurrenceResult,
@@ -26,6 +28,9 @@ export function registerIpcHandlers(
   getContent: () => WebContents | undefined,
 ): void {
   const profiles = createProfileService(db);
+  const indicatorAnchor = createIndicatorAnchorService(db, () =>
+    profiles.requireActive(),
+  );
   const categories = createCategoryService(db, () => profiles.requireActive());
   const cards = createCreditCardService(db, () => profiles.requireActive());
   const service = createTransactionService(db, () => profiles.requireActive());
@@ -157,6 +162,12 @@ export function registerIpcHandlers(
     authorize(event);
     return profiles.list();
   });
+
+  register('indicator-anchor:get', () => indicatorAnchor.get());
+  register('indicator-anchor:save', (input: IndicatorAnchorDto) =>
+    indicatorAnchor.save(input),
+  );
+  register('indicator-anchor:remove', () => indicatorAnchor.remove());
 
   ipcMain.handle('profiles:current', (event) => {
     authorize(event);

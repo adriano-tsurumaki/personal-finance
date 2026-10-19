@@ -1,6 +1,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+  indicatorAnchor: {
+    get: () => ipcRenderer.invoke('indicator-anchor:get'),
+    save: (input) => ipcRenderer.invoke('indicator-anchor:save', input),
+    remove: () => ipcRenderer.invoke('indicator-anchor:remove'),
+  },
   installment: {
     list: () => ipcRenderer.invoke('installments:list'),
     preview: (input) => ipcRenderer.invoke('installments:preview', input),
