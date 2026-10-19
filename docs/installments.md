@@ -19,6 +19,11 @@ installment reference date, description, optional note/category, and method/card
 The complete schedule and invoice changes must be previewed before saving.
 Changing the draft invalidates the displayed preview. Unselected payment/card
 fields display localized prompts rather than numeric identifiers.
+Selecting a purchase date also sets the first installment reference date to that
+date. The reference date remains independently editable afterward; selecting a
+different purchase date replaces it again. Clearing the purchase date clears both
+dates. This local draft interaction uses the existing change handler and preview
+invalidation without acquiring an additional financial-operation token.
 
 The final purchase total is authoritative and uses integer cents. For total `T`
 and count `N`, each installment receives `floor(T / N)` cents; the first `T % N`

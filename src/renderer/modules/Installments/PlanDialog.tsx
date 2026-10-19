@@ -370,6 +370,7 @@ export default function PlanDialog({
                   onValueChange={(value) =>
                     change({
                       purchase_at: value ? format(value, 'yyyy-MM-dd') : '',
+                      start_date: value ? format(value, 'yyyy-MM-dd') : '',
                     })
                   }
                 />

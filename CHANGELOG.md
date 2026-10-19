@@ -8,6 +8,8 @@
   calendar day from the second installment onward, including month-end starts.
   Existing plans and invoice membership are preserved; no database migration or
   manual upgrade action is required.
+- Automatically fill the first installment reference date when selecting the
+  purchase date, while allowing a subsequent manual reference-date adjustment.
 
 ## 0.6.0 - 2026-10-19
 
