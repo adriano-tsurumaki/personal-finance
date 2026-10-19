@@ -138,8 +138,9 @@ month's scheduled-date boundary. If a later scheduled occurrence belongs to an
 invoice paid in an earlier month, unknown coverage can leave that earlier month's
 summary available while a later query reports it unavailable. This is a
 pre-confirmation availability inconsistency, not evidence that confirmation counts
-the estimate and transaction twice. Track the follow-up in
-[Future improvements](future-improvements.md).
+the estimate and transaction twice. Coverage availability still needs a
+consistent policy across the payment and scheduled months, including unknown,
+included, and excluded coverage.
 
 ## Credit-card projection and coverage policy
 
@@ -219,4 +220,4 @@ preference was not changed. Native-window inspection timed out. Installer packag
 and a distributed-app upgrade were not exercised; database upgrades use isolated
 SQLite fixtures.
 
-Implementation work is tracked in [Future improvements](future-improvements.md) and the vault's `Personal Finance/recurrence-tasks.md`. The defaults and reconciliation policy above are finalized implementation choices.
+The implementation and verification evidence above describe the delivered recurrence scope. The early-paid invoice coverage availability issue remains a known limitation, as described in the credit estimate selection discussion. The defaults and reconciliation policy above are finalized implementation choices.

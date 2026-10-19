@@ -35,7 +35,7 @@ This is release preparation, not a distribution-readiness declaration.
 - Pre-confirmation coverage availability remains inconsistent when an invoice is
   paid before an occurrence's scheduled month. The estimate is correctly replaced
   after confirmation without duplicate cash flow. See
-  [Future improvements](future-improvements.md) for the unresolved coverage policy.
+  [Recurrences](recurrences.md) for the current behavior and unresolved coverage policy.
 - Incomplete legacy recurrence rules retain their history but require explicit
   ending and replacement. Paid or statement-recorded invoices can require estimate
   coverage reconciliation before dependent summaries are available.

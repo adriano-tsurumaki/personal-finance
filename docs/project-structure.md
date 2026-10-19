@@ -181,6 +181,6 @@ Use `import type` for dependencies used exclusively as types. Avoid a global `@t
 
 Update this document when an organizational rule changes. Renaming or moving an implementation does not require updating fictional examples. Keep repository inventories, migration history, completion status, and pending work out of this guide.
 
-Apply conventions to new code and refactors related to the requested work. Do not move unrelated files solely to standardize them. Track concrete follow-up work in [Future improvements](future-improvements.md), and verify relevant items against the implementation before updating their status.
+Apply conventions to new code and refactors related to the requested work. Do not move unrelated files solely to standardize them. Follow [Documentation maintenance](task-tracking.md) and verify relevant claims against the implementation before updating this guide.
 
 For financial data rules, consult [Data model](data-model.md).

@@ -24,10 +24,10 @@ Do not perform migrations outside the scope of the task.
 When changing an organizational convention, update the corresponding documentation.
 Keep structure documentation focused on rules, using explicitly fictional examples
 instead of inventories or references to specific feature implementations.
-Track concrete pending work in [Future improvements](docs/future-improvements.md).
-When working on a related area, check relevant pending items against the code and
-update their status only after verifying the completion criteria. Do not perform
-unrelated migrations just to close pending items.
+Follow [Documentation maintenance](docs/task-tracking.md) when recording changes.
+Verify documentation claims against the implementation and distinguish completed
+behavior from known limitations. Do not perform unrelated migrations solely to
+resolve a documented limitation.
 For financial data rules, consult [Data model](docs/data-model.md).
 
 ## UI operation coordination
