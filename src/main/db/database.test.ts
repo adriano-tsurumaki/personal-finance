@@ -37,6 +37,51 @@ const migrationCount = readdirSync(migrationsFolder, {
   withFileTypes: true,
 }).filter((entry) => entry.isDirectory()).length;
 
+test('the last entered profile survives restart and explicit sign-out clears it', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'finance-session-'));
+  const filename = join(directory, 'profiles.db');
+  let db = initDb(filename, migrationsFolder);
+
+  try {
+    let profiles = createProfileService(db);
+    const first = profiles.create({
+      name: 'First',
+      email: 'first@example.test',
+      locale: 'en-US',
+    });
+    const second = profiles.create({
+      name: 'Second',
+      email: 'second@example.test',
+      locale: 'pt-BR',
+    });
+    assert.ok(first.ok && second.ok);
+    db.$client.close();
+    db = initDb(filename, migrationsFolder);
+    profiles = createProfileService(db);
+    assert.deepEqual(profiles.current(), second.profile);
+    profiles.enter(first.profile.id);
+    profiles.updateLocale('pt-BR');
+    assert.throws(() => profiles.enter(999999), /Profile not found/);
+    db.$client.close();
+    db = initDb(filename, migrationsFolder);
+    profiles = createProfileService(db);
+    assert.deepEqual(profiles.current(), { ...first.profile, locale: 'pt-BR' });
+    assert.equal(profiles.options().categories.length, 4);
+    profiles.leave();
+    assert.equal(createProfileService(db).current(), null);
+    writeFileSync(`${filename}.session.json`, 'not json');
+    assert.equal(createProfileService(db).current(), null);
+    writeFileSync(`${filename}.session.json`, '999999');
+    assert.equal(createProfileService(db).current(), null);
+    assert.equal(readFileSync(`${filename}.session.json`, 'utf8'), 'null');
+    writeFileSync(`${filename}.session.json`, '"1"');
+    assert.equal(createProfileService(db).current(), null);
+  } finally {
+    db.$client.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test('category management persists Unicode names, metadata and history with profile isolation', () => {
   const directory = mkdtempSync(join(tmpdir(), 'finance-categories-'));
   const filename = join(directory, 'categories.db');

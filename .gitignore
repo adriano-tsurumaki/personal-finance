@@ -97,3 +97,5 @@ out/
 *.db-wal
 *.db-shm
 *.db-journal
+*.session.json
+*.session.json.tmp

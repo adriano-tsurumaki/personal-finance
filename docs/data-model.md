@@ -33,9 +33,15 @@ Profiles are local and open without authentication. Creating a profile stores
 its name, email, and `pt-BR` or `en-US` locale. The active profile can change its locale through the profile menu; changes are validated and persisted before the interface updates. Existing or unsupported
 preferences fall back to `pt-BR`. The historical password column is retained
 for database compatibility; new profiles store a disabled marker, not credentials.
-The active profile is held in the main process for the application session.
-Restarting requires selecting a profile again; transaction operations require
-an active profile and derive ownership from it rather than renderer input.
+The active profile is held in the main process and its identifier is remembered
+in a small `.session.json` file beside the database. Startup restores that profile
+using its current database details and idempotent catalog initialization. Explicit
+sign-out clears the remembered selection. Missing, invalid, unreadable, or deleted
+profile selections fall back to the profile chooser. Preference writes use a
+temporary file and replacement; write failures are logged and keep the current
+session usable. In-memory databases do not persist this selection. Transaction
+operations require an active profile and derive ownership from it rather than
+renderer input.
 
 Timeline date order is an application-wide renderer preference saved in browser
 local storage. It survives timeline remounts, profile changes, and app restarts.

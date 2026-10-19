@@ -5,6 +5,9 @@
 ### Fixed
 
 - Remember timeline date ordering across navigation and application restarts.
+- Reopen the last active local profile on startup; explicit sign-out clears the
+  remembered session. Existing profiles and financial records are preserved,
+  without a database migration or manual upgrade action.
 
 ## 0.4.0 - 2026-10-19
 

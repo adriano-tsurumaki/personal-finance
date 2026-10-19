@@ -1,5 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import type { AppDatabase } from './db';
+import { createProfileSession } from './profile-session';
 import { categoriesTable, paymentsTable, usersTable } from './db/schema';
 import type {
   CreateProfileInput,
@@ -124,6 +125,7 @@ export function initializeProfile(
 
 export function createProfileService(db: AppDatabase) {
   let activeProfile: UserDto | null = null;
+  const session = createProfileSession(db.$client.name);
   const selection = {
     id: usersTable.id,
     name: usersTable.name,
@@ -131,7 +133,7 @@ export function createProfileService(db: AppDatabase) {
     locale: usersTable.locale,
   };
 
-  return {
+  const service = {
     list(): UserDto[] {
       return db
         .select(selection)
@@ -176,11 +178,13 @@ export function createProfileService(db: AppDatabase) {
         ...profile,
         locale: profile.locale === 'en-US' ? 'en-US' : 'pt-BR',
       };
+      session.write(activeProfile.id);
 
       return activeProfile;
     },
 
     leave(): void {
+      session.write(null);
       activeProfile = null;
     },
 
@@ -243,6 +247,7 @@ export function createProfileService(db: AppDatabase) {
         return created;
       });
       activeProfile = profile;
+      session.write(profile.id);
       return { ok: true, profile };
     },
 
@@ -280,4 +285,22 @@ export function createProfileService(db: AppDatabase) {
       };
     },
   };
+
+  const rememberedId = session.read();
+
+  if (rememberedId !== null) {
+    const exists = db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.id, rememberedId))
+      .get();
+
+    if (exists) {
+      service.enter(rememberedId);
+    } else {
+      session.write(null);
+    }
+  }
+
+  return service;
 }
