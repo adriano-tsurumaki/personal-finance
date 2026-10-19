@@ -1,5 +1,58 @@
 # Release validation
 
+## 0.5.0 - 2026-10-19
+
+The approved minor version and changelog are prepared for profile settings and
+indicator anchors, together with persistent timeline ordering and profile selection.
+This records release preparation, not a distribution-readiness declaration.
+
+### Completed checks
+
+- The complete repository test suite passed all 161 tests after the financial
+  precision correction. Independent review approved the correction and the three
+  implementation groups with no remaining blocking findings.
+- The opening balance now combines the baseline and included historical totals
+  with exact `BigInt` arithmetic before signed safe-cent validation. Regression
+  coverage verifies offsetting flows at both limits, monthly continuity, and
+  rejection of out-of-range historical balances.
+- `pnpm lint`, `pnpm typecheck`, and `pnpm format:check` passed with package
+  version `0.5.0`.
+- `pnpm test:db` passed all 98 database and domain tests with version `0.5.0`,
+  including additive anchor migration, historical row preservation, restart and
+  profile isolation, external-connection cache invalidation, invoice dates,
+  installment preservation, and recurrence coverage boundaries.
+- `pnpm make` built the production main, preload, and renderer bundles and
+  generated the Windows x64 application package and Squirrel installer after a
+  retry with network access. Distributables are available under `out/make`.
+- The packaged `app.asar` declares version `0.5.0`. The indicator-anchor migration
+  is included in packaged resources; its SHA-256 matches the source migration
+  (`ad6ee2e761333aba67e133bc640633eeca78d5f090b4cd7c3547dd7c27a47cd4`).
+- Existing dependency `use client` build warnings and the ESLint configuration
+  module-type warning did not prevent verification or packaging.
+
+### Pending checks and known limitations
+
+- An initial build log inside `.vite` conflicted with Forge's cleanup of that
+  directory; moving the log outside build outputs resolved it. The subsequent
+  sandboxed packaging attempt failed to resolve `github.com`; retrying with
+  network access completed packaging and installer generation.
+- Installer execution, clean installation, application startup, and an installed
+  upgrade from `0.4.0` with representative existing data have not been verified.
+  Automated migration tests do not substitute for installed-application checks.
+- The available browser could not reach the local preview server. Exercise the
+  profile menu, settings sidebar, both locales, signed balance entry, anchor
+  save/removal, partial and excluded months, profile switching, application
+  restart, and explicit sign-out in Electron before distribution.
+- The additive anchor migration preserves financial records. Profiles without
+  settings retain full-history calculations; removing an anchor restores them.
+  Startup applies the migration automatically, with no routine manual upgrade
+  action. Unresolved legacy recurrence dates and relevant unknown invoice coverage
+  still require explicit reconciliation; the anchor never guesses missing dates.
+- The existing recurrence coverage limitation for early-paid invoices remains;
+  see [Recurrences](recurrences.md).
+- No other platform was packaged or validated. No release tag, push, or publication
+  was performed.
+
 ## 0.4.0 - 2026-10-19
 
 The approved minor version and changelog are prepared for installment management

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.5.0 - 2026-10-19
+
 ### Added
 
 - Profile settings dialog with a topic sidebar, general language preferences, and
