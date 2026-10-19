@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.4.0 - 2026-10-19
+
 ### Added
 
 - Pill icon option for categories.

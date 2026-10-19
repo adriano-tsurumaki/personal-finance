@@ -1,5 +1,51 @@
 # Release validation
 
+## 0.4.0 - 2026-10-19
+
+The approved minor version and changelog are prepared for installment management
+and the additional category icon. This is release preparation, not a
+distribution-readiness declaration.
+
+### Completed checks
+
+- `pnpm lint`, `pnpm typecheck`, and `pnpm format:check` passed with package
+  version `0.4.0`.
+- `pnpm test:db` passed all 86 database and domain tests, including the additive
+  installment migration, preserved historical rows, atomic operations, durable
+  retries across restart, invoice integrity, and historical direct-plan management.
+- All renderer test files passed through `tsx --test` (55 tests), including
+  localized installment markup, allocation, individual-action restrictions,
+  single-entry copy cleanup, and existing store regressions.
+- `pnpm make` built the production main, preload, and renderer bundles and
+  generated the Windows x64 application package after a retry with network access.
+  The packaged `app.asar` declares version `0.4.0`; the installment migration is
+  included in packaged resources and its SHA-256 matches the source migration.
+- The same `pnpm make` run completed Squirrel installer generation successfully;
+  Windows x64 distributables are available under `out/make`.
+- Build warnings about dependency `use client` directives did not prevent
+  compilation. ESLint reported its existing configuration module-type warning.
+
+### Pending checks and known limitations
+
+- The initial packaging attempt failed with `getaddrinfo ENOTFOUND github.com`.
+  A retry with network access completed application packaging and installer generation.
+  The earlier releases' Squirrel generation failure did not recur in this run.
+- Installer execution, clean installation, application startup, and an installed
+  upgrade with representative existing data have not been verified for this version.
+  Automated migration tests do not substitute for installed-application checks.
+- Exercise installment creation, allocation and preview changes, retry, deletion,
+  profile switching, keyboard interaction, and both locales in Electron before
+  distribution. Renderer tests primarily verify markup and pure allocation logic;
+  they do not validate the complete interactive installment lifecycle.
+- Inconsistent legacy installment plans remain preserved with unsupported changes
+  blocked. New installment purchases require credit and a selected card; historical
+  direct-payment plans remain manageable. Startup applies the additive receipt
+  migration automatically, with no routine manual upgrade action.
+- The existing recurrence coverage limitation for early-paid invoices remains;
+  see [Recurrences](recurrences.md).
+- No other platform was packaged or validated. No release tag, push, or publication
+  was performed.
+
 ## 0.2.0 - 2026-10-15
 
 The approved minor version and changelog are prepared for recurrence management.

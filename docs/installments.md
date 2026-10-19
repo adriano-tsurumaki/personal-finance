@@ -181,8 +181,8 @@ creation, preview, retry, deletion, profile switching, keyboard interaction, and
 both locales in the actual Electron application.
 
 This is a compatible feature with an additive database migration and warrants a
-minor increment under the project's `0.x` policy. The package remains `0.3.0`;
-release preparation, version changes, commits, tags, and publication are separate
-operations. Startup applies the migration automatically. Inconsistent legacy
+minor increment under the project's `0.x` policy. Release preparation and remaining
+distribution checks for `0.4.0` are recorded in [Release validation](release-validation.md).
+Startup applies the migration automatically. Inconsistent legacy
 plans require review before supported plan mutations; existing standalone entries
 retain their supported behavior.
