@@ -31,6 +31,7 @@ export type CategoryIconKey =
   | 'joystick'
   | 'heart'
   | 'heart_handshake'
+  | 'pill'
   | 'other';
 
 export interface CategoryOption {
@@ -71,6 +72,7 @@ export const categoryIconKeys: CategoryIconKey[] = [
   'joystick',
   'heart',
   'heart_handshake',
+  'pill',
   'other',
 ];
 

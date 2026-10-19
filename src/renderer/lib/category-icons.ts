@@ -32,6 +32,7 @@ import {
   Joystick,
   Heart,
   HeartHandshake,
+  Pill,
 } from 'lucide-react';
 
 import type { CategoryIconKey } from '@shared/contracts/categories';
@@ -68,6 +69,7 @@ export const categoryIcons: Record<CategoryIconKey, LucideIcon> = {
   joystick: Joystick,
   heart: Heart,
   heart_handshake: HeartHandshake,
+  pill: Pill,
   other: Tag,
 };
 
