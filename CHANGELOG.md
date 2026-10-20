@@ -18,6 +18,15 @@
 - Use NumberFlow for smooth monthly balance and indicator animations, with
   locale-aware BRL and percentage formatting.
 
+### Fixed
+
+- Allow editing retained defaults for paused recurrences without resuming them.
+  Earlier occurrences remain available for confirmation, ignoring, and restoration
+  in their scheduled month. No migration or manual upgrade action is required.
+- Keep paused-rule cards and their dimmed styling in All recurrences only.
+  The selected-month tab shows retained occurrences normally and no projected
+  occurrences during paused intervals, while preserving confirmed history.
+
 ## 0.8.0 - 2026-10-20
 
 ### Added

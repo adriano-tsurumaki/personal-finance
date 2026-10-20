@@ -252,7 +252,6 @@ export default function Recurrences() {
     },
     [0, 0],
   );
-  const paused = period?.paused_rules ?? [];
   function ruleRows(rows: RecurrenceRuleDto[]) {
     return (
       <ul className="space-y-2">
@@ -291,25 +290,25 @@ export default function Recurrences() {
                 </span>
               </div>
               <div className="mt-3 flex flex-wrap justify-end gap-2">
+                {(rule.status === 'active' || rule.status === 'paused') && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={blocked}
+                    onClick={() => open({ action: 'edit', rule })}
+                  >
+                    {t('recurrence.edit')}
+                  </Button>
+                )}
                 {rule.status === 'active' && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={blocked}
-                      onClick={() => open({ action: 'edit', rule })}
-                    >
-                      {t('recurrence.edit')}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={blocked}
-                      onClick={() => open({ action: 'pause', rule })}
-                    >
-                      {t('recurrence.pause')}
-                    </Button>
-                  </>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={blocked}
+                    onClick={() => open({ action: 'pause', rule })}
+                  >
+                    {t('recurrence.pause')}
+                  </Button>
                 )}
                 {rule.status === 'paused' && (
                   <Button
@@ -576,14 +575,6 @@ export default function Recurrences() {
                         </li>
                       ))}
                     </ul>
-                    {paused.length > 0 && (
-                      <div className="mt-6">
-                        <h3 className="mb-3 text-xs font-medium text-muted-foreground">
-                          {t('recurrence.paused')}
-                        </h3>
-                        {ruleRows(paused)}
-                      </div>
-                    )}
                   </>
                 )}
               </TabsContent>

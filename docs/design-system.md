@@ -287,8 +287,9 @@ The kit limits timeline navigation to January–March 2026 and anchors the forec
 Keep the Ledger recurrence form, overview tiles, income/expense rule
 groups, paused-row treatment, and sticky 45-day forecast. Extend the screen with
 existing tab primitives for **In month** and **All recurrences**. The first follows
-the confirmed monthly-summary selection and includes applicable paused rules with
-a resume action; the second preserves visibility of all created rules.
+the confirmed monthly-summary selection and shows retained occurrences with normal
+styling. The second preserves visibility of all created rules, including paused-rule
+cards with dimmed styling and a resume action.
 
 Use a readable unconfirmed badge and recurrence icon on projected timeline rows,
 with a period-specific notice linking to confirmation in **In month**. Confirmation

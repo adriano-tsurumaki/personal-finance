@@ -31,7 +31,7 @@ coordinates conflicting operations and protects profile-session boundaries.
 - Rule changes apply from an explicitly chosen occurrence to subsequent unconfirmed occurrences. Previously confirmed transactions remain intact. Changing one confirmation's amount does not automatically update the rule estimate.
 - Frequency and calendar changes are outside the rule editor in this scope. Pause/resume and ending remain distinct actions; an estimated amount change never requires ending or recreating the rule.
 - Pausing or ending requires choosing the last occurrence to retain, inclusively. Retained occurrences may be confirmed transactions or unconfirmed projections. Subsequent projections stop; confirmed transactions are never silently deleted.
-- **In month** provides a way to resume paused rules even when they produce no occurrence in that month.
+- **In month** shows scheduled occurrences with normal styling regardless of the rule's current status. Manage paused rules from **All recurrences**.
 - A confirmed occurrence remains associated with its originally scheduled month if its transaction moves to another month. The recurrence screen shows the actual transaction date; the transaction appears in the timeline by its reference date.
 
 ## Adopted implementation defaults
@@ -46,7 +46,7 @@ The implementation adopts the following defaults to close the remaining product 
 - Monthly day 31 and yearly February 29 clamp to the last valid day, calculated from the original anchor each time. A short month must not permanently shift subsequent occurrences.
 - Expose the Ledger frequencies weekly, monthly, quarterly, and yearly initially; quarterly maps to monthly with interval 3. The schema's daily capability need not become an additional UI requirement.
 - Anchor the **Next 45 days** panel to today's local calendar date, independently of the selected month, and label that distinction. It shares the occurrence engine but does not use the prototype's fixed date or limits.
-- Show paused rules in **In month** when their start and pause intervals apply to the selected month. Ended rules remain available in **All recurrences**.
+- Show paused and ended rules in **All recurrences**. Apply the dimmed paused-rule styling only in that tab; do not add paused-rule cards to **In month**.
 
 ## Rule, occurrence, transaction, and settlement
 
@@ -85,6 +85,11 @@ Generate slots from the original anchor, frequency, and interval, using half-ope
 For a rule anchored at 2026-03-12, monthly slots include 2026-04-12 and 2026-05-12 even if March is unconfirmed. Queries before those dates already include the projections; no background job or date-triggered insertion is necessary.
 
 If the last retained slot is 2026-05-12, March, April, and May remain; June onward stops. Pausing permits later resumption; ending retains history and ends the rule. If June already has a confirmed transaction, show that it is preserved and can be reviewed separately. Choosing the boundary never authorizes bulk deletion.
+
+Paused rules retain the edit action in **All recurrences**. Default edits start at a
+retained scheduled occurrence and preserve the pause boundary. In that occurrence's
+scheduled month, confirmation, ignoring, and restoration remain available without
+resuming the rule. These actions do not generate occurrences inside the paused gap.
 
 If a May slot is confirmed with a June reference date, **In month** for May shows its confirmed state and June date. May has no remaining ghost. June's timeline contains the transaction. Cash flow follows its actual direct-entry or invoice rules.
 
@@ -172,7 +177,7 @@ Use the local Ledger reference: `ui_kits/ledger/RecurringManager.jsx`, `componen
 
 Preserve the centered 48rem composition, existing primary/income/expense palette, Instrument Sans text, JetBrains Mono amounts, border-based surfaces, compact badges, inline rule form, income/expense groups, 55% paused-row treatment, and sticky 45-day panel at the reference breakpoint. The new internal tabs are a deliberate extension using existing tab components, not a new navigation layout.
 
-- **In month:** scheduled date, estimate or confirmed amount, rule origin, state, and actual transaction reference date when different. Unconfirmed rows offer confirmation and proposed ignore actions. Include a separate applicable-paused-rules group with **Resume**.
+- **In month:** scheduled date, estimate or confirmed amount, rule origin, state, and actual transaction reference date when different. Unconfirmed rows offer confirmation and proposed ignore actions. Retained occurrences use normal styling even when the rule is paused. Paused intervals generate no occurrences; existing confirmed transactions remain visible. Do not render a separate paused-rule group.
 - **All recurrences:** continuous rules, active/paused/ended state, defaults, cadence, first date, and last retained date where applicable. Provide create, edit, pause, resume, and end actions.
 - **Timeline:** unconfirmed projected rows use the existing row language with a clear state badge and recurrence icon. The period notice links to the same month's **In month** tab. Confirmations occur in the recurrence screen.
 - **Confirmation:** prefilled title, actual BRL amount, category, method, reference date, and card/invoice when applicable. Show the resulting cash-flow period before saving when the method or invoice changes.

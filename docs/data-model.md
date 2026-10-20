@@ -318,8 +318,9 @@ alone is insufficient to prevent replacement versions from duplicating a slot.
 Exceptions require persistence so ignored occurrences do not reappear.
 
 Pause and end boundaries retain the selected last occurrence inclusively, preserve
-confirmed transactions, and stop subsequent projections. Resume remains available
-for paused rules in the selected-month view. Credit projections follow invoice
+confirmed transactions, and stop subsequent projections. The selected-month view
+shows retained occurrences normally; manage and resume paused rules in
+**All recurrences**. Credit projections follow invoice
 cash-flow dates and must not count both a purchase and its invoice. Statement
 totals and paid invoices require explicit included/excluded coverage for the
 concrete invoice. Unknown coverage makes dependent financial totals unavailable.

@@ -176,6 +176,60 @@ test('inclusive pause preserves future confirmations, resume leaves a gap and en
   );
 });
 
+test('paused rules allow retained default edits and occurrence decisions without filling the gap', () => {
+  const { recurrence, input } = fixture();
+  const id = recurrence.create(input);
+  const first = recurrence.month('2026-03').occurrences[0];
+  const confirmedId = recurrence.confirm({
+    ...input,
+    recurrence_id: id,
+    scheduled_date: first.scheduled_date,
+    expected_version_id: first.version_id,
+    reference_date: first.scheduled_date,
+  });
+  recurrence.boundary({
+    recurrence_id: id,
+    last_retained_date: '2026-05-12',
+    action: 'pause',
+  });
+  recurrence.update({
+    ...input,
+    recurrence_id: id,
+    scheduled_date: '2026-04-12',
+    expected_version_id: first.version_id,
+    amount_cents: 15000,
+  });
+  const april = recurrence.month('2026-04').occurrences[0];
+  assert.equal(april.amount_cents, 15000);
+  recurrence.ignore(april);
+  assert.equal(recurrence.month('2026-04').occurrences[0].state, 'ignored');
+  recurrence.restore(april);
+  assert.equal(recurrence.month('2026-04').unconfirmed_count, 1);
+  recurrence.confirm({
+    ...input,
+    ...april,
+    expected_version_id: april.version_id,
+    reference_date: april.scheduled_date,
+    amount_cents: 17500,
+  });
+  assert.equal(recurrence.month('2026-04').occurrences[0].amount_cents, 17500);
+  assert.equal(recurrence.month('2026-05').occurrences[0].amount_cents, 15000);
+  assert.equal(
+    recurrence.month('2026-03').occurrences[0].transaction_id,
+    confirmedId,
+  );
+  assert.equal(recurrence.month('2026-03').occurrences[0].amount_cents, 10000);
+  assert.equal(recurrence.list()[0].status, 'paused');
+  assert.equal(recurrence.list()[0].last_retained_date, '2026-05-12');
+  assert.equal(recurrence.month('2026-06').occurrences.length, 0);
+  assert.throws(() =>
+    recurrence.ignore({ recurrence_id: id, scheduled_date: '2026-06-12' }),
+  );
+  recurrence.resume({ recurrence_id: id, first_date: '2026-08-12' });
+  assert.equal(recurrence.month('2026-07').occurrences.length, 0);
+  assert.equal(recurrence.month('2026-08').occurrences[0].amount_cents, 15000);
+});
+
 test('credit previews are read-only and authoritative invoice coverage is explicit', () => {
   const { db, recurrence, cards, input } = fixture();
   const card = cards.create({
