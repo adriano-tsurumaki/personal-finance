@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.9.0 - 2026-10-20
+
 ### Added
 
 - Separate reference-date entries and cash flow into monthly timeline tabs, with
