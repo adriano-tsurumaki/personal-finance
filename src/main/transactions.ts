@@ -13,7 +13,12 @@ import {
   transactionsTable,
 } from './db/schema';
 import type { CreateResult } from '@shared/contracts/result';
-import { paymentMethodsForType } from '@shared/lib/payment-method';
+import {
+  paymentMethodsForType,
+  isCreditPayment,
+  isFinancedPayment,
+} from '@shared/lib/payment-method';
+import { financingAmounts } from '@shared/lib/credit-financing';
 import { createCreditCardService } from './credit-cards';
 import type { CardCorrectionPreview } from '@shared/contracts/credit-cards';
 
@@ -64,6 +69,15 @@ export function createTransactionService(
     }
 
     return {
+      ...(input.financing === undefined
+        ? {}
+        : {
+            financing:
+              input.financing === null
+                ? null
+                : financingAmounts(input.financing),
+            financing_terms: input.financing ?? null,
+          }),
       name: input.name.trim(),
       note: input.note === undefined ? undefined : input.note?.trim() || null,
       type: input.type,
@@ -74,6 +88,11 @@ export function createTransactionService(
 
   function validate(input: TransactionInput, userId: number) {
     const details = validateDetails(input);
+    const method = db
+      .select()
+      .from(paymentsTable)
+      .where(eq(paymentsTable.id, input.payment_id))
+      .get();
 
     if (input.payment_date !== null && !validDate(input.payment_date)) {
       throw new Error('Invalid date.');
@@ -97,6 +116,8 @@ export function createTransactionService(
     ) {
       throw new Error('Invalid payment method.');
     }
+
+    validateFinancing(input, method?.catalog_key);
 
     if (
       input.category_id !== null &&
@@ -131,6 +152,23 @@ export function createTransactionService(
     };
   }
 
+  function validateFinancing(
+    input: TransactionUpdateInput,
+    method: string | null | undefined,
+  ) {
+    if (isFinancedPayment(method)) {
+      if (
+        !input.financing ||
+        financingAmounts(input.financing).total_cents !== input.amount_cents ||
+        input.type !== 2
+      ) {
+        throw new Error('invalid_financing_total');
+      }
+    } else if (input.financing) {
+      throw new Error('invalid_financing_method');
+    }
+  }
+
   function validateId(id: number) {
     if (!Number.isSafeInteger(id) || id <= 0) {
       throw new Error('Invalid identifier.');
@@ -155,18 +193,38 @@ export function createTransactionService(
           .get()!;
         let invoiceId: number | null = null;
 
-        if (method.catalog_key === 'credit') {
+        if (isCreditPayment(method.catalog_key)) {
           if (!input.card_id || input.payment_date !== null) {
             throw new Error('credit_card_required');
+          }
+
+          const selected = input.invoice_month
+            ? cards.resolveInvoiceMonth(
+                input.card_id,
+                input.invoice_month,
+                input.historical_card === true,
+              ).id
+            : null;
+
+          if (
+            selected !== null &&
+            input.credit_card_invoice_id != null &&
+            selected !== input.credit_card_invoice_id
+          ) {
+            throw new Error('invalid_invoice');
           }
 
           invoiceId = cards.resolveInvoice(
             input.card_id,
             details.reference_date,
-            input.credit_card_invoice_id ?? null,
+            input.credit_card_invoice_id ?? selected,
             input.historical_card === true,
           ).id;
-        } else if (input.card_id || input.credit_card_invoice_id) {
+        } else if (
+          input.card_id ||
+          input.credit_card_invoice_id ||
+          input.invoice_month
+        ) {
           throw new Error('invalid_credit_purchase');
         }
 
@@ -226,6 +284,8 @@ export function createTransactionService(
       return (
         db
           .select({
+            financing: transactionsTable.financing,
+            payment_method: paymentsTable.catalog_key,
             id: transactionsTable.id,
             name: transactionsTable.name,
             note: transactionsTable.note,
@@ -307,6 +367,23 @@ export function createTransactionService(
       }
 
       return {
+        ...(result.financing_terms
+          ? { financing: result.financing_terms }
+          : result.financing
+            ? {
+                financing: {
+                  principal_cents: result.financing.principal_cents,
+                  interest: {
+                    mode: 'amount' as const,
+                    value: result.financing.interest_cents,
+                  },
+                  iof: {
+                    mode: 'amount' as const,
+                    value: result.financing.iof_cents,
+                  },
+                },
+              }
+            : {}),
         name: result.name,
         ...(result.installment_id === null
           ? {}
@@ -356,6 +433,21 @@ export function createTransactionService(
       if (!before) {
         throw new Error('Transaction not found.');
       }
+
+      validateFinancing(
+        {
+          ...input,
+          financing:
+            input.financing === undefined
+              ? before.financing_terms
+              : input.financing,
+        },
+        db
+          .select()
+          .from(paymentsTable)
+          .where(eq(paymentsTable.id, before.payment_id))
+          .get()?.catalog_key,
+      );
 
       if (before.installment_id !== null) {
         throw new Error('installment_managed');
@@ -408,6 +500,21 @@ export function createTransactionService(
         if (!existing) {
           throw new Error('Transaction not found.');
         }
+
+        validateFinancing(
+          {
+            ...input,
+            financing:
+              input.financing === undefined
+                ? existing.financing_terms
+                : input.financing,
+          },
+          db
+            .select()
+            .from(paymentsTable)
+            .where(eq(paymentsTable.id, existing.payment_id))
+            .get()?.catalog_key,
+        );
 
         if (existing.installment_id !== null) {
           throw new Error('installment_managed');

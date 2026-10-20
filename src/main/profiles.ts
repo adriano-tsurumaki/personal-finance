@@ -19,6 +19,8 @@ const paymentCatalog: { key: PaymentMethodKey; name: string; type: number }[] =
     { key: 'pix', name: 'Instant transfer', type: 1 },
     { key: 'debit', name: 'Debit card', type: 1 },
     { key: 'credit', name: 'Credit card', type: 2 },
+    { key: 'pix_credit', name: 'PIX on credit', type: 2 },
+    { key: 'boleto_credit', name: 'Boleto on credit', type: 2 },
     { key: 'cash', name: 'Cash', type: 1 },
     { key: 'bank_transfer', name: 'Bank transfer', type: 1 },
   ];

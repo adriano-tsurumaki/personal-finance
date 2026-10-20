@@ -989,6 +989,32 @@ export function createCreditCardService(
         .all();
     },
     resolveInvoice,
+    resolveInvoiceMonth(cardId: number, month: string, historical: boolean) {
+      if (typeof month !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+        throw new Error('invalid_invoice_month');
+      }
+
+      const matches = allInvoices(cardId).filter(
+        (row) => row.closing_date.slice(0, 7) === month,
+      );
+
+      if (matches.length > 1) {
+        throw new Error('ambiguous_invoice');
+      }
+
+      const resolved = resolveInvoice(
+        cardId,
+        matches[0]?.closing_date ?? previewPeriod(cardId, month).opening_date,
+        matches[0]?.id ?? null,
+        historical,
+      );
+
+      if (resolved.closing_date.slice(0, 7) !== month) {
+        throw new Error('ambiguous_invoice');
+      }
+
+      return resolved;
+    },
     invoice,
     invoiceSummary(id: number): InvoiceDto {
       return dto(invoice(id));

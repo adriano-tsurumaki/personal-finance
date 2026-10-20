@@ -1,6 +1,13 @@
+import type {
+  CreditFinancingInput,
+  CreditFinancingAmounts,
+} from './credit-financing';
 import type { CardCorrectionPreview, InvoiceDto } from './credit-cards';
 
 export interface InstallmentInput {
+  financing?: CreditFinancingInput | null;
+  /** Optional closing month for a future first invoice, independent of reference dates. */
+  first_invoice_month?: string | null;
   request_id: string;
   name: string;
   note: string | null;
@@ -23,6 +30,7 @@ export interface InstallmentInput {
 }
 
 export interface InstallmentEntryDto {
+  financing?: CreditFinancingAmounts | null;
   id: number;
   installment_number: number;
   reference_date: string;
@@ -32,6 +40,8 @@ export interface InstallmentEntryDto {
 }
 
 export interface InstallmentPlanDto {
+  financing?: CreditFinancingAmounts | null;
+  payment_method?: string | null;
   id: number;
   name: string;
   note: string | null;

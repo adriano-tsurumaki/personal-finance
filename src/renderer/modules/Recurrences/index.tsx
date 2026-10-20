@@ -1,3 +1,13 @@
+import CreditFinancingFields, {
+  emptyFinancing,
+} from '@components/CreditFinancingFields';
+import PlanDialog from '@modules/Installments/PlanDialog';
+import type { CreditFinancingInput } from '@shared/contracts/credit-financing';
+import {
+  invoiceSelection,
+  installmentInvoiceSelection,
+} from './invoice-selection';
+import { isCreditPayment, isFinancedPayment } from '@shared/lib/payment-method';
 import { useEffect, useRef, useState } from 'react';
 import { Repeat, Plus } from 'lucide-react';
 import { Button } from '@components/ui/button';
@@ -396,6 +406,21 @@ export default function Recurrences() {
             setEditor(null);
             returnFocus.current?.focus();
           }}
+          onInstallmentSaved={async () => {
+            const [loaded] = await Promise.all([
+              load(),
+              useAppStore.getState().refreshMonth(),
+            ]);
+
+            if (
+              current() &&
+              (!loaded ||
+                useAppStore.getState().statementFailed ||
+                useAppStore.getState().failedMonth)
+            ) {
+              throw new Error('refresh_failed');
+            }
+          }}
           onSave={mutate}
         />
       )}
@@ -677,6 +702,7 @@ export function RecurrenceEditor({
   busy,
   onClose,
   onSave,
+  onInstallmentSaved,
   returnFocus,
 }: {
   editor: Editor;
@@ -684,12 +710,15 @@ export function RecurrenceEditor({
   busy: boolean;
   returnFocus: HTMLElement | null;
   onClose: () => void;
+  onInstallmentSaved?: () => Promise<void>;
   onSave: (
     operation: () => Promise<RecurrenceResult<unknown>>,
   ) => Promise<void>;
 }) {
   const version = 'rule' in editor ? editor.rule.versions.at(-1) : null;
   const occurrence = 'occurrence' in editor ? editor.occurrence : null;
+  const [split, setSplit] = useState(false);
+  const [financing, setFinancing] = useState<CreditFinancingInput | null>(null);
   const [errors, setErrors] = useState<
     Partial<Record<keyof DefaultValues, string>>
   >({});
@@ -717,28 +746,33 @@ export function RecurrenceEditor({
   const [invoices, setInvoices] = useState<InvoiceDto[]>([]);
   const [suggestion, setSuggestion] = useState<InvoicePeriodDto | null>(null);
   const [invoiceId, setInvoiceId] = useState<number | null>(null);
+  const [invoiceMonth, setInvoiceMonth] = useState<string | null>(null);
   const [billingFailed, setBillingFailed] = useState(false);
   const [billingLoading, setBillingLoading] = useState(false);
   const session = useProfileStore((state) => state.sessionVersion);
   const profile = useProfileStore((state) => state.activeProfile);
   const options = useProfileStore((state) => state.options);
   const blocked = useFinancialOperations((state) => state.pending.size > 0);
-  const credit =
-    options.payments.find((row) => row.id === values.payment_id)
-      ?.catalog_key === 'credit';
+  const credit = isCreditPayment(
+    options.payments.find((row) => row.id === values.payment_id)?.catalog_key,
+  );
+  const financed = isFinancedPayment(
+    options.payments.find((row) => row.id === values.payment_id)?.catalog_key,
+  );
   const defaultsForm = ['create', 'edit', 'confirm'].includes(editor.action);
   useEffect(() => {
     let active = true;
     setInvoices([]);
     setSuggestion(null);
-    setInvoiceId(null);
     setBillingFailed(false);
 
     if (editor.action === 'confirm' && credit && values.credit_card_id) {
       setBillingLoading(true);
       void Promise.all([
         window.api.getCardInvoices(values.credit_card_id),
-        window.api.suggestInvoicePeriod(values.credit_card_id, date),
+        invoiceMonth
+          ? window.api.previewInvoicePeriod(values.credit_card_id, invoiceMonth)
+          : window.api.suggestInvoicePeriod(values.credit_card_id, date),
       ])
         .then(([rows, period]) => {
           if (active && session === useProfileStore.getState().sessionVersion) {
@@ -761,7 +795,14 @@ export function RecurrenceEditor({
     return () => {
       active = false;
     };
-  }, [editor.action, credit, values.credit_card_id, date, session]);
+  }, [
+    editor.action,
+    credit,
+    values.credit_card_id,
+    date,
+    session,
+    invoiceMonth,
+  ]);
   useEffect(() => {
     let active = true;
     setBoundaryPreview(null);
@@ -789,6 +830,9 @@ export function RecurrenceEditor({
       active = false;
     };
   }, [editor, date, session]);
+  useEffect(() => {
+    setInvoiceId(null);
+  }, [values.credit_card_id, date]);
   const selectedInvoice = invoices.find((row) => row.id === invoiceId);
   const dueDate = invoiceId
     ? (selectedInvoice?.paid_at ?? selectedInvoice?.due_date)
@@ -866,13 +910,18 @@ export function RecurrenceEditor({
             scheduled_date: occurrence.scheduled_date,
             expected_version_id: occurrence.version_id,
             reference_date: date,
-            credit_card_invoice_id: invoiceId,
+            ...invoiceSelection(credit, invoiceMonth, invoiceId),
+            financing: financed
+              ? (financing ?? emptyFinancing(values.amount_cents))
+              : null,
           };
           let correction_token: string | undefined;
 
           if (credit) {
             const plan = await window.api.previewTransactionCreation({
               ...values,
+              financing: input.financing,
+              invoice_month: invoiceMonth,
               card_id: values.credit_card_id,
               user_id: profile.id,
               reference_date: date,
@@ -905,8 +954,29 @@ export function RecurrenceEditor({
       {defaultsForm && (
         <DefaultFields
           value={values}
-          onChange={setValues}
+          onChange={(next) => {
+            if (next.payment_id !== values.payment_id) {
+              setFinancing(null);
+              const selection = invoiceSelection(
+                isCreditPayment(
+                  options.payments.find((row) => row.id === next.payment_id)
+                    ?.catalog_key,
+                ),
+                invoiceMonth,
+                invoiceId,
+              );
+              setInvoiceMonth(selection.invoice_month);
+              setInvoiceId(selection.credit_card_invoice_id);
+              next.amount_cents =
+                financing?.principal_cents ?? next.amount_cents;
+            } else if (financing && next.amount_cents !== values.amount_cents) {
+              setFinancing(null);
+            }
+
+            setValues(next);
+          }}
           cards={cards}
+          amountReadOnly={editor.action === 'confirm' && financed}
           fixedType={editor.action !== 'create'}
           errors={errors}
         />
@@ -997,6 +1067,48 @@ export function RecurrenceEditor({
           )}
         </p>
       )}
+      {editor.action === 'confirm' && financed && (
+        <CreditFinancingFields
+          value={financing ?? emptyFinancing(values.amount_cents)}
+          onChange={(next, total) => {
+            setFinancing(next);
+            setValues({ ...values, amount_cents: total });
+          }}
+        />
+      )}
+      {editor.action === 'confirm' && credit && (
+        <Button
+          type="button"
+          variant="outline"
+          disabled={busy || blocked}
+          onClick={() => {
+            if (!financialActionsBlocked()) {
+              setSplit(true);
+            }
+          }}
+        >
+          {t('financing.installments')}
+        </Button>
+      )}
+      {editor.action === 'confirm' && credit && (
+        <Field>
+          <FieldLabel htmlFor="recurrence-invoice-month">
+            {t('financing.first_invoice_month')}
+          </FieldLabel>
+          <Input
+            id="recurrence-invoice-month"
+            type="month"
+            value={invoiceMonth ?? ''}
+            onChange={(event) => {
+              setInvoiceMonth(event.target.value || null);
+              setInvoiceId(null);
+            }}
+          />
+          <p className="text-xs text-muted-foreground">
+            {t('financing.invoice_month_hint')}
+          </p>
+        </Field>
+      )}
       {editor.action === 'confirm' && credit && (
         <Field>
           <FieldLabel htmlFor="recurrence-invoice">
@@ -1011,7 +1123,10 @@ export function RecurrenceEditor({
                 label: `#${row.id} · ${occurrenceDate(row.due_date)}`,
               })),
             ]}
-            onValueChange={(id) => setInvoiceId(Number(id) || null)}
+            onValueChange={(id) => {
+              setInvoiceMonth(null);
+              setInvoiceId(Number(id) || null);
+            }}
           >
             <SelectTrigger id="recurrence-invoice">
               <SelectValue />
@@ -1069,6 +1184,32 @@ export function RecurrenceEditor({
       </div>
     </form>
   );
+
+  if (split && occurrence && editor.action === 'confirm') {
+    return (
+      <PlanDialog
+        month={date.slice(0, 7)}
+        occurrence={occurrence}
+        initial={{
+          name: values.name,
+          total_amount_cents: values.amount_cents,
+          payment_id: values.payment_id,
+          category_id: values.category_id,
+          card_id: values.credit_card_id,
+          purchase_at: date,
+          start_date: date,
+          ...installmentInvoiceSelection(invoiceMonth, invoiceId),
+          financing: financed
+            ? (financing ?? emptyFinancing(values.amount_cents))
+            : null,
+        }}
+        onClose={onClose}
+        onSaved={
+          onInstallmentSaved ?? (() => useAppStore.getState().refreshMonth())
+        }
+      />
+    );
+  }
 
   if (editor.action === 'create') {
     return (

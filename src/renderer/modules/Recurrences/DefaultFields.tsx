@@ -1,3 +1,4 @@
+import { isCreditPayment } from '@shared/lib/payment-method';
 import { useId } from 'react';
 import {
   Field,
@@ -32,19 +33,21 @@ export default function DefaultFields({
   onChange,
   cards,
   fixedType = false,
+  amountReadOnly = false,
   errors = {},
 }: {
   value: DefaultValues;
   onChange: (next: DefaultValues) => void;
   cards: CreditCardDto[];
   fixedType?: boolean;
+  amountReadOnly?: boolean;
   errors?: Partial<Record<keyof DefaultValues, string>>;
 }) {
   const prefix = useId();
   const options = useProfileStore((state) => state.options);
-  const credit =
-    options.payments.find((row) => row.id === value.payment_id)?.catalog_key ===
-    'credit';
+  const credit = isCreditPayment(
+    options.payments.find((row) => row.id === value.payment_id)?.catalog_key,
+  );
   const categories = options.categories.filter(
     (row) =>
       !row.transaction_type ||
@@ -71,6 +74,7 @@ export default function DefaultFields({
         <FieldError>{errors.name}</FieldError>
       </Field>
       <FieldMoney
+        disabled={amountReadOnly}
         label={t('transactions.amount')}
         decimalSeparator={getLocale() === 'en-US' ? '.' : ','}
         error={errors.amount_cents}

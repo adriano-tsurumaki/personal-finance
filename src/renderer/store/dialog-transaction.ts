@@ -201,6 +201,9 @@ export function createDialogTransactionStore(
                 note: transaction.note ?? null,
                 type: transaction.type,
                 amount_cents: transaction.amount_cents,
+                ...(transaction.financing
+                  ? { financing: transaction.financing }
+                  : {}),
                 reference_date: transaction.reference_date,
                 category_id: transaction.category_id,
                 payment_id: transaction.payment_id,

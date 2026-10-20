@@ -1,3 +1,5 @@
+import CreditFinancingSummary from '@components/CreditFinancingSummary';
+import { isFinancedPayment } from '@shared/lib/payment-method';
 import { getCategoryIcon } from '@lib/category-icons';
 import { formatSignedCurrency } from '@lib/format/currency';
 import type { TransactionDto } from '@shared/contracts/transaction';
@@ -78,6 +80,16 @@ export default function TimelineEntryRow({
                 </span>
               ) : null}
             </div>
+            {isFinancedPayment(entry.payment_method) && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t(
+                  entry.payment_method === 'pix_credit'
+                    ? 'payments.pix_credit'
+                    : 'payments.boleto_credit',
+                )}
+              </p>
+            )}
+            <CreditFinancingSummary amounts={entry.financing} />
             <p className="mt-0.5 text-sm text-muted-foreground">
               <time dateTime={entry.reference_date}>
                 {dayLabel(entry.reference_date)}

@@ -1,7 +1,10 @@
 import { createHash } from 'node:crypto';
+import { isCreditPayment } from '@shared/lib/payment-method';
+import { allocateFinancing } from '@shared/lib/credit-financing';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import type { AppDatabase } from './db';
 import {
+  recurrenceOccurrencesTable,
   installmentRequestsTable,
   installmentsTable,
   paymentsTable,
@@ -118,7 +121,21 @@ export function createInstallmentService(
         if (
           row.user_id !== group.user_id ||
           row.type !== 2 ||
-          row.recurrence_version_id !== null ||
+          (row.recurrence_version_id !== null &&
+            (index !== 0 ||
+              !db
+                .select()
+                .from(recurrenceOccurrencesTable)
+                .where(
+                  and(
+                    eq(recurrenceOccurrencesTable.transaction_id, row.id),
+                    eq(
+                      recurrenceOccurrencesTable.recurrence_version_id,
+                      row.recurrence_version_id,
+                    ),
+                  ),
+                )
+                .get())) ||
           row.installment_number !== index + 1 ||
           row.reference_date !==
             (savedSchedule?.reference_dates?.[index] ??
@@ -127,7 +144,7 @@ export function createInstallmentService(
             (savedSchedule?.installment_amounts_cents?.[index] ??
               expected[index]?.amount_cents) ||
           !method ||
-          (method.catalog_key === 'credit'
+          (isCreditPayment(method.catalog_key)
             ? !invoice || row.payment_date !== null
             : method.type !== 1 || invoice !== null) ||
           row.payment_id !== rows[0]?.payment_id ||
@@ -140,6 +157,7 @@ export function createInstallmentService(
         }
 
         return {
+          financing: row.financing,
           id: row.id,
           installment_number: row.installment_number ?? 0,
           reference_date: row.reference_date ?? '',
@@ -169,6 +187,29 @@ export function createInstallmentService(
 
     return {
       ...group,
+      financing: rows[0]?.financing
+        ? rows.reduce(
+            (sum, row) => ({
+              principal_cents:
+                sum.principal_cents + (row.financing?.principal_cents ?? 0),
+              interest_cents:
+                sum.interest_cents + (row.financing?.interest_cents ?? 0),
+              iof_cents: sum.iof_cents + (row.financing?.iof_cents ?? 0),
+              total_cents: sum.total_cents + row.amount_cents,
+            }),
+            {
+              principal_cents: 0,
+              interest_cents: 0,
+              iof_cents: 0,
+              total_cents: 0,
+            },
+          )
+        : null,
+      payment_method: db
+        .select()
+        .from(paymentsTable)
+        .where(eq(paymentsTable.id, rows[0]?.payment_id ?? 0))
+        .get()?.catalog_key,
       note: rows.find((row) => row.user_id === group.user_id)?.note ?? null,
       repair_required: repair,
       entries: result,
@@ -179,6 +220,9 @@ export function createInstallmentService(
       !input ||
       typeof input.request_id !== 'string' ||
       !/^[a-zA-Z0-9-]{16,80}$/.test(input.request_id) ||
+      (input.first_invoice_month != null &&
+        (typeof input.first_invoice_month !== 'string' ||
+          !/^\d{4}-(0[1-9]|1[0-2])$/.test(input.first_invoice_month))) ||
       !validCalendarDate(input.purchase_at) ||
       !validCalendarDate(input.start_date) ||
       input.purchase_at > input.start_date ||
@@ -226,6 +270,7 @@ export function createInstallmentService(
       note: input.note,
       type: 2,
       amount_cents: input.total_amount_cents,
+      financing: input.financing,
       reference_date: input.start_date,
       payment_date: null,
       payment_id: input.payment_id,
@@ -238,11 +283,15 @@ export function createInstallmentService(
       .where(eq(paymentsTable.id, value.payment_id))
       .get()!;
 
-    if (method.catalog_key !== 'credit' || input.card_id === null) {
+    if (!isCreditPayment(method.catalog_key) || input.card_id === null) {
       throw new Error('installment_credit_required');
     }
 
     return {
+      ...(input.financing ? { financing: input.financing } : {}),
+      ...(input.first_invoice_month
+        ? { first_invoice_month: input.first_invoice_month }
+        : {}),
       request_id: input.request_id,
       name: value.name,
       note: value.note ?? null,
@@ -308,6 +357,15 @@ export function createInstallmentService(
           value.total_installments,
           value.start_date,
         );
+        const financing = value.financing
+          ? allocateFinancing(
+              value.financing,
+              schedule.map(
+                (slot, index) =>
+                  value.installment_amounts_cents?.[index] ?? slot.amount_cents,
+              ),
+            )
+          : null;
         let group = db
           .insert(installmentsTable)
           .values({
@@ -329,6 +387,20 @@ export function createInstallmentService(
 
           if (value.card_id !== null) {
             let selected = value.invoice_ids[index];
+
+            if (index === 0 && value.first_invoice_month) {
+              const invoice = cards.resolveInvoiceMonth(
+                value.card_id,
+                value.first_invoice_month,
+                value.historical_card,
+              );
+
+              if (selected !== null && selected !== invoice.id) {
+                throw new Error('invalid_installment_invoices');
+              }
+
+              selected = invoice.id;
+            }
 
             if (index > 0 && selected === null) {
               const month = installmentDateAt(
@@ -399,6 +471,7 @@ export function createInstallmentService(
             .insert(transactionsTable)
             .values({
               ...slot,
+              financing: financing?.[index] ?? null,
               amount_cents:
                 value.installment_amounts_cents?.[index] ?? slot.amount_cents,
               reference_date: referenceDate,
@@ -612,6 +685,15 @@ export function createInstallmentService(
         }
 
         const rows = entries(id);
+        db.update(recurrenceOccurrencesTable)
+          .set({ state: 'ignored', transaction_id: null })
+          .where(
+            inArray(
+              recurrenceOccurrencesTable.transaction_id,
+              rows.map((row) => row.id),
+            ),
+          )
+          .run();
         db.delete(transactionsTable)
           .where(
             inArray(

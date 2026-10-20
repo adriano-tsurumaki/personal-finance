@@ -1,3 +1,7 @@
+import CreditFinancingFields, {
+  emptyFinancing,
+} from '@components/CreditFinancingFields';
+import { isCreditPayment, isFinancedPayment } from '@shared/lib/payment-method';
 import { useFinancialOperations } from '@store/financial-operations';
 import { Checkbox } from '@components/ui/checkbox';
 import { useEffect, useState } from 'react';
@@ -150,7 +154,15 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
     (payment) => payment.id === payment_id,
   );
 
-  const isCredit = selectedPayment?.catalog_key === 'credit';
+  const invoiceMonth = useDialogTransactionStore(
+    (state) => state.transaction.invoice_month ?? null,
+  );
+  const isCredit = isCreditPayment(selectedPayment?.catalog_key);
+  const financed = isFinancedPayment(selectedPayment?.catalog_key);
+  const financing = useDialogTransactionStore(
+    (state) => state.transaction.financing,
+  );
+  const financingDraft = financing ?? emptyFinancing(amount_cents);
 
   useEffect(() => {
     if (isOpen && mode === 'add') {
@@ -169,9 +181,10 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
       void Promise.all([
         window.api.getCardInvoices(cardId),
         reference_date
-          ? window.api
-              .suggestInvoicePeriod(cardId, reference_date)
-              .catch(() => null)
+          ? (invoiceMonth
+              ? window.api.previewInvoicePeriod(cardId, invoiceMonth)
+              : window.api.suggestInvoicePeriod(cardId, reference_date)
+            ).catch(() => null)
           : null,
       ])
         .then(([rows, period]) => {
@@ -195,7 +208,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
     return () => {
       active = false;
     };
-  }, [isOpen, cardId, reference_date]);
+  }, [isOpen, cardId, reference_date, invoiceMonth]);
 
   useEffect(() => {
     if (isOpen && mode === 'add' && !isCredit && cardId !== null) {
@@ -340,6 +353,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
       }
 
       const details = {
+        financing: financed ? financingDraft : null,
         amount_cents: Math.round(amount_cents),
         name: name,
         note: note ?? null,
@@ -359,6 +373,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
           card_id: isCredit ? cardId : null,
           credit_card_invoice_id: isCredit ? invoiceId : null,
           historical_card,
+          invoice_month: isCredit ? invoiceMonth : null,
         };
 
         if (isCredit) {
@@ -585,6 +600,26 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                 >
                   {t('cards.new_card')}
                 </Button>
+                <Field>
+                  <FieldLabel htmlFor="transaction-invoice-month">
+                    {t('financing.first_invoice_month')}
+                  </FieldLabel>
+                  <Input
+                    id="transaction-invoice-month"
+                    type="month"
+                    value={invoiceMonth ?? ''}
+                    onChange={(event) => {
+                      handleTransaction(
+                        'invoice_month',
+                        event.target.value || null,
+                      );
+                      handleTransaction('credit_card_invoice_id', null);
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t('financing.invoice_month_hint')}
+                  </p>
+                </Field>
                 {cardId !== null && (
                   <Field>
                     <FieldLabel htmlFor="transaction-invoice">
@@ -600,6 +635,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                       ]}
                       value={invoiceId}
                       onValueChange={(value) => {
+                        handleTransaction('invoice_month', null);
                         handleTransaction(
                           'credit_card_invoice_id',
                           Number(value) || null,
@@ -657,6 +693,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
             <div className="grid grid-cols-2 gap-4">
               <Field>
                 <FieldMoney
+                  disabled={financed}
                   label={t('transactions.amount')}
                   money={amount_cents / 100}
                   onMoneyChange={(amount) =>
@@ -763,9 +800,14 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                 <Select
                   items={payments}
                   value={payment_id || null}
-                  onValueChange={(value) =>
-                    handleTransaction('payment_id', value ?? 0)
-                  }
+                  onValueChange={(value) => {
+                    handleTransaction('payment_id', value ?? 0);
+                    handleTransaction(
+                      'amount_cents',
+                      financing?.principal_cents ?? amount_cents,
+                    );
+                    handleTransaction('financing', null);
+                  }}
                 >
                   <SelectTrigger id="payment">
                     <SelectValue />
@@ -780,13 +822,21 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-                {options.payments.find((payment) => payment.id === payment_id)
-                  ?.catalog_key === 'credit' && (
+                {isCredit && (
                   <p className="text-xs text-muted-foreground">
                     {t('transactions.credit_hint')}
                   </p>
                 )}
               </Field>
+            )}
+            {financed && (
+              <CreditFinancingFields
+                value={financingDraft}
+                onChange={(next, total) => {
+                  handleTransaction('financing', next);
+                  handleTransaction('amount_cents', total);
+                }}
+              />
             )}
             <Field>
               <FieldLabel htmlFor="note">{t('transactions.note')}</FieldLabel>

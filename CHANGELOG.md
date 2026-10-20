@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### Added
+
+- Record PIX and boleto payments on credit with separately retained principal,
+  interest, and IOF, accepting BRL amounts or total percentage rates.
+- Confirm a selected recurring expense as a credit installment plan, including
+  a future first invoice, without changing later recurring commitments or
+  duplicating the original estimate. Show charge breakdowns in the timeline
+  and installment schedule.
+- Select the first invoice closing month for single credit expenses and new
+  installment plans, creating missing configured billing periods on save.
+
+### Upgrade notes
+
+- Startup applies an additive migration for nullable financing metadata. Existing
+  financial history and installment plans are preserved; no manual action is
+  required. Consolidated financing-cost reporting remains outside this delivery.
+
 ## 0.7.0 - 2026-10-19
 
 ### Added

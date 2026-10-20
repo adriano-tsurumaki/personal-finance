@@ -72,6 +72,24 @@ test('copy supports direct entries and clears prior card selections', async () =
   assert.equal(store.getState().transaction.note, null);
 });
 
+test('copy retains financing amounts and rates without carrying plan identity', async () => {
+  const financing = {
+    principal_cents: 10000,
+    interest: { mode: 'percent' as const, value: 2 },
+    iof: { mode: 'amount' as const, value: 50 },
+  };
+  const store = createDialogTransactionStore(async () => ({
+    ...transaction,
+    amount_cents: 10250,
+    installment_id: 5,
+    financing,
+  }));
+  await store.getState().loadTransaction(1, 'copy');
+  assert.deepEqual(store.getState().transaction.financing, financing);
+  assert.equal(store.getState().transaction.amount_cents, 10250);
+  assert.equal(store.getState().transaction.installment_id, undefined);
+});
+
 test('copy responses cannot replace a newer edit or cross profile sessions', async () => {
   for (const resetSession of [false, true]) {
     const pending = deferred();

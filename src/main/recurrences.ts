@@ -1,6 +1,8 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import type { AppDatabase } from './db';
 import {
+  installmentRequestsTable,
+  installmentsTable,
   categoriesTable,
   creditCardsTable,
   creditCardInvoicesTable,
@@ -30,7 +32,11 @@ import {
   expandRecurrenceDates,
   isRecurrenceDate,
 } from '@shared/lib/recurrence-calendar';
-import { paymentMethodsForType } from '@shared/lib/payment-method';
+import {
+  paymentMethodsForType,
+  isCreditPayment,
+} from '@shared/lib/payment-method';
+import { createInstallmentService } from './installments';
 import {
   addCalendarDays,
   adjacentMonth,
@@ -176,7 +182,7 @@ export function createRecurrenceService(
       }
     }
 
-    if (method!.catalog_key === 'credit') {
+    if (isCreditPayment(method!.catalog_key)) {
       const card =
         input.credit_card_id === null
           ? null
@@ -451,7 +457,18 @@ export function createRecurrenceService(
       version_id: v.id,
       name: actual?.name ?? v.name,
       type: actual?.type ?? v.type ?? 2,
-      amount_cents: actual?.amount_cents ?? v.amount_cents,
+      amount_cents: actual?.installment_id
+        ? (db
+            .select()
+            .from(installmentsTable)
+            .where(
+              and(
+                eq(installmentsTable.id, actual.installment_id),
+                eq(installmentsTable.user_id, getActiveUser().id),
+              ),
+            )
+            .get()?.total_amount_cents ?? actual.amount_cents)
+        : (actual?.amount_cents ?? v.amount_cents),
       category_id: actual ? actual.category_id : v.category_id,
       payment_id: actual?.payment_id ?? v.payment_id ?? 0,
       credit_card_id: actual
@@ -491,8 +508,9 @@ export function createRecurrenceService(
       validateProjection(v, data);
 
       if (
-        data.payments.find((p) => p.id === v.payment_id)?.catalog_key ===
-        'credit'
+        isCreditPayment(
+          data.payments.find((p) => p.id === v.payment_id)?.catalog_key,
+        )
       ) {
         const mapped = billing(v, scheduled, data);
         result.cash_flow_date = mapped.due;
@@ -855,19 +873,86 @@ export function createRecurrenceService(
         }
 
         const values = defaults(input);
-        const id = transactions.createWithId({
-          ...values,
-          user_id: getActiveUser().id,
-          payment_date: null,
-          reference_date: input.reference_date,
-          card_id: values.credit_card_id,
-          credit_card_invoice_id: input.credit_card_invoice_id,
-          correction_token: input.correction_token,
-        });
+        let id: number;
+
+        if (input.installment) {
+          const draft = input.installment;
+
+          if (
+            values.type !== 2 ||
+            draft.name.trim() !== values.name ||
+            draft.total_amount_cents !== values.amount_cents ||
+            draft.payment_id !== values.payment_id ||
+            draft.card_id !== values.credit_card_id ||
+            draft.category_id !== values.category_id ||
+            draft.purchase_at !== input.reference_date ||
+            draft.historical_card
+          ) {
+            fail('invalid_recurrence_installment');
+          }
+
+          if (
+            db
+              .select()
+              .from(installmentRequestsTable)
+              .where(
+                and(
+                  eq(installmentRequestsTable.user_id, getActiveUser().id),
+                  eq(installmentRequestsTable.request_id, draft.request_id),
+                ),
+              )
+              .get()
+          ) {
+            fail('recurrence_occurrence_conflict');
+          }
+
+          const planId = createInstallmentService(db, getActiveUser).create(
+            draft,
+            input.correction_token ?? '',
+          );
+          const first = db
+            .select()
+            .from(transactionsTable)
+            .where(
+              and(
+                eq(transactionsTable.installment_id, planId),
+                eq(transactionsTable.installment_number, 1),
+                eq(transactionsTable.user_id, getActiveUser().id),
+              ),
+            )
+            .get();
+
+          if (
+            !first ||
+            db
+              .select()
+              .from(recurrenceOccurrencesTable)
+              .where(eq(recurrenceOccurrencesTable.transaction_id, first.id))
+              .get()
+          ) {
+            fail('recurrence_occurrence_conflict');
+          }
+
+          id = first.id;
+        } else {
+          id = transactions.createWithId({
+            ...values,
+            financing: input.financing,
+            invoice_month: input.invoice_month,
+            user_id: getActiveUser().id,
+            payment_date: null,
+            reference_date: input.reference_date,
+            card_id: values.credit_card_id,
+            credit_card_invoice_id: input.credit_card_invoice_id,
+            correction_token: input.correction_token,
+          });
+        }
+
         db.update(transactionsTable)
           .set({ recurrence_version_id: version.id })
           .where(eq(transactionsTable.id, id))
           .run();
+
         db.insert(recurrenceOccurrencesTable)
           .values({
             recurrence_id: input.recurrence_id,
@@ -1018,8 +1103,9 @@ export function createRecurrenceService(
           const cadence = schedule(row, v);
 
           if (
-            data.payments.find((p) => p.id === v.payment_id)?.catalog_key !==
-            'credit'
+            !isCreditPayment(
+              data.payments.find((p) => p.id === v.payment_id)?.catalog_key,
+            )
           ) {
             const before = to < start ? to : start;
             const historyFrom =

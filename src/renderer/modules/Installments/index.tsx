@@ -1,3 +1,4 @@
+import CreditFinancingSummary from '@components/CreditFinancingSummary';
 import { useEffect, useRef, useState } from 'react';
 import { CreditCard, Plus } from 'lucide-react';
 import { Button } from '@components/ui/button';
@@ -368,6 +369,7 @@ function InstallmentContent({
                           {t('installments.purchase_date')}:{' '}
                           {planDate(plan.purchase_at)}
                         </p>
+                        <CreditFinancingSummary amounts={plan.financing} />
                         <PlanSchedule plan={plan} />
                       </details>
                     </>

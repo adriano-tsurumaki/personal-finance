@@ -1,3 +1,4 @@
+import { isCreditPayment } from '@shared/lib/payment-method';
 import type { RecurrenceDefaults } from '@shared/contracts/recurrence';
 import type { ProfileOptionsDto } from '@shared/contracts/profile-catalog';
 import type { CreditCardDto } from '@shared/contracts/credit-cards';
@@ -42,7 +43,7 @@ export function validateDefaults(
   }
 
   if (
-    payment?.catalog_key === 'credit' &&
+    isCreditPayment(payment?.catalog_key) &&
     !cards.some(
       (card) => card.id === values.credit_card_id && !card.archived_at,
     )

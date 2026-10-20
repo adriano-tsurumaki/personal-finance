@@ -1,4 +1,10 @@
+import type {
+  CreditFinancingInput,
+  CreditFinancingAmounts,
+} from './credit-financing';
 export interface TransactionDto {
+  financing?: CreditFinancingAmounts | null;
+  payment_method?: string | null;
   installment_id?: number | null;
   installment_number?: number | null;
   total_installments?: number | null;
@@ -22,8 +28,10 @@ export interface TransactionDto {
 }
 
 export interface TransactionInput {
+  financing?: CreditFinancingInput | null;
   /** Read metadata only; creation never accepts plan associations. */
   installment_id?: number | null;
+  invoice_month?: string | null;
   card_id?: number | null;
   credit_card_invoice_id?: number | null;
   historical_card?: boolean;
@@ -42,5 +50,5 @@ export interface TransactionInput {
 /** Editable details; ownership, classification, and settlement stay in main. */
 export type TransactionUpdateInput = Pick<
   TransactionInput,
-  'name' | 'note' | 'type' | 'amount_cents' | 'reference_date'
+  'name' | 'note' | 'type' | 'amount_cents' | 'reference_date' | 'financing'
 > & { correction_token?: string };

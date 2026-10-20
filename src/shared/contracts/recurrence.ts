@@ -1,3 +1,5 @@
+import type { CreditFinancingInput } from './credit-financing';
+import type { InstallmentInput } from './installment';
 export type RecurrenceFrequency = 1 | 2 | 3 | 4;
 export type RecurrenceStatus =
   'active' | 'paused' | 'ended' | 'repair_required';
@@ -93,6 +95,9 @@ export interface RecurrenceMonthDto {
 export interface RecurrenceConfirmInput
   extends RecurrenceOccurrenceKey, RecurrenceDefaults {
   expected_version_id: number;
+  financing?: CreditFinancingInput | null;
+  installment?: InstallmentInput;
+  invoice_month?: string | null;
   reference_date: string;
   credit_card_invoice_id?: number | null;
   correction_token?: string;

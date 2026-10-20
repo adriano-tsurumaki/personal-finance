@@ -1,4 +1,8 @@
 import { sql } from 'drizzle-orm';
+import type {
+  CreditFinancingInput,
+  CreditFinancingAmounts,
+} from '@shared/contracts/credit-financing';
 import {
   check,
   customType,
@@ -220,6 +224,8 @@ export const transactionsTable = sqliteTable(
     payment_date: date(),
     reference_date: date(),
     installment_number: integer(),
+    financing: text({ mode: 'json' }).$type<CreditFinancingAmounts>(),
+    financing_terms: text({ mode: 'json' }).$type<CreditFinancingInput>(),
     user_id: integer()
       .notNull()
       .references(() => usersTable.id),

@@ -1,5 +1,11 @@
 export type PaymentMethodKey =
-  'pix' | 'debit' | 'credit' | 'cash' | 'bank_transfer';
+  | 'pix'
+  | 'debit'
+  | 'credit'
+  | 'cash'
+  | 'bank_transfer'
+  | 'pix_credit'
+  | 'boleto_credit';
 export type DefaultCategoryKey = 'food' | 'housing' | 'salary' | 'other';
 
 export interface ProfileOptionsDto {

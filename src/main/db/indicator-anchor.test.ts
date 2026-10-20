@@ -226,9 +226,28 @@ test('settings are profile-owned and upgrade/restart preserves financial rows an
     }
     const f = fixture(filename, folder);
     db = f.db;
-    f.direct('2026-01-01', 12345, 1);
+    // Write the historical schema without relying on current ORM columns.
+    db.$client
+      .prepare(
+        'INSERT INTO transactions (name, type, amount_cents, reference_date, user_id, payment_id) VALUES (?, ?, ?, ?, ?, ?)',
+      )
+      .run(
+        'Direct entry',
+        1,
+        12345,
+        '2026-01-01',
+        f.active().id,
+        f.method('pix'),
+      );
     const ownerId = f.active().id;
-    const rows = db.select().from(transactionsTable).all();
+    const rows = db.$client
+      .prepare('SELECT * FROM transactions')
+      .all()
+      .map((row) => ({
+        ...(row as object),
+        financing: null,
+        financing_terms: null,
+      }));
     db.$client.close();
     db = initDb(filename, resolve('drizzle'));
     const profiles = createProfileService(db);

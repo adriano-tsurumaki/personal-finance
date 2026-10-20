@@ -159,6 +159,11 @@ A statement-recorded invoice total may already include an unconfirmed recurring 
 
 Archived default categories/cards, unknown cycles, ambiguous invoice periods, and incomplete legacy rules are repair-required states. Keep historical associations intact, expose the issue, and require valid explicit defaults or invoice corrections before confirmation or complete financial totals. Legacy rules are migrated with status repair_required and a null anchor. Their old transaction/version links remain intact; mutable transaction dates never become inferred occurrence identities. No automatic legacy activation or date reassignment is permitted.
 
+Confirmation can also record PIX or boleto on credit, with interest and IOF,
+or split only the selected expense occurrence into a finite plan. See
+[Credit financing](credit-financing.md) for charge calculations, future invoices,
+provenance, and deletion rules. Later recurrence defaults remain unchanged.
+
 Confirmation preselects the default card and suggested invoice; permit method/card/invoice changes using current ownership, compatibility, and correction validation. A PIX override follows direct-entry dates. An explicit invoice selection takes precedence over the suggestion. Actual `payment_date` remains unset unless a separate settlement workflow supplies it; invoice settlement is not copied into individual purchases.
 
 ## Ledger screen composition

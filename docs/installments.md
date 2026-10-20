@@ -6,7 +6,9 @@ reject PIX, cash, debit, and other non-credit methods in both the creation UI an
 main, including preview and save requests. Existing direct-payment plans remain
 readable and manageable without conversion; an idempotent retry can return an
 already committed historical plan but cannot create another direct purchase.
-Creating a plan records commitments, not payment. Interest calculation,
+Creating a plan records commitments, not payment. PIX and boleto on credit also
+support explicitly supplied charges and occurrence-specific plans; see
+[Credit financing](credit-financing.md). Automatic monthly interest calculation,
 non-monthly billing schedules, income installments, refinancing an existing invoice, partial
 payments, early repayment, and importing partially paid purchases are outside
 this delivery.
@@ -49,8 +51,9 @@ the purchase date. Group start/end dates match the generated reference dates.
 
 Explicit save creates one `installment` group and every numbered transaction in
 one database transaction. No transaction stores the full purchase amount in
-addition to its installments. No recurrence identity or parallel projection is
-created. Listing plans/months does not write; preview rolls back temporary rows,
+addition to its installments. Standalone plans have no recurrence identity or parallel projection.
+Occurrence-specific plans retain a link from their first installment to the
+confirmed occurrence, suppressing its estimate atomically. Listing plans/months does not write; preview rolls back temporary rows,
 including generated invoices and audit records.
 
 ## Invoices and financial reporting

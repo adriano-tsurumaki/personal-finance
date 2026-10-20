@@ -246,7 +246,15 @@ test('profiles persist locale changes, initialize once and isolate financial rec
     assert.equal(options.categories.length, 4);
     assert.deepEqual(
       options.payments.map((method) => method.catalog_key).sort(),
-      ['bank_transfer', 'cash', 'credit', 'debit', 'pix'],
+      [
+        'bank_transfer',
+        'boleto_credit',
+        'cash',
+        'credit',
+        'debit',
+        'pix',
+        'pix_credit',
+      ],
     );
     const input = {
       name: 'Private entry',
@@ -295,7 +303,7 @@ test('profiles persist locale changes, initialize once and isolate financial rec
     profiles.enter(first.profile.id);
     profiles.enter(first.profile.id);
     assert.equal(db.select().from(categoriesTable).all().length, 8);
-    assert.equal(db.select().from(paymentsTable).all().length, 6);
+    assert.equal(db.select().from(paymentsTable).all().length, 8);
     assert.equal(profiles.options().categories.length, 3);
     const preserved = db
       .select()
@@ -410,7 +418,7 @@ test('CRUD preserves cents, category joins, month boundaries, ordering and seed 
   try {
     initializeProfile(db, input.user_id);
     assert.equal(db.select().from(usersTable).all().length, 1);
-    assert.equal(db.select().from(paymentsTable).all().length, 5);
+    assert.equal(db.select().from(paymentsTable).all().length, 7);
     assert.equal(db.select().from(categoriesTable).all().length, 4);
     service.create(input);
     service.create({ ...input, name: 'Uncategorized', category_id: null });
@@ -1275,10 +1283,21 @@ test('payment methods enforce income and expense compatibility while preserving 
         const allowed =
           type === 1
             ? ['pix', 'cash', 'bank_transfer'].includes(method.catalog_key)
-            : ['pix', 'cash', 'debit', 'credit'].includes(method.catalog_key);
+            : [
+                'pix',
+                'cash',
+                'debit',
+                'credit',
+                'pix_credit',
+                'boleto_credit',
+              ].includes(method.catalog_key);
 
         if (allowed) {
-          if (method.catalog_key === 'credit') {
+          if (
+            ['credit', 'pix_credit', 'boleto_credit'].includes(
+              method.catalog_key,
+            )
+          ) {
             const cards = createCreditCardService(db, () =>
               profiles.requireActive(),
             );
@@ -1288,7 +1307,19 @@ test('payment methods enforce income and expense compatibility while preserving 
               includes_closing_day: true,
               due_days_after_closing: 7,
             });
-            const creditEntry = { ...entry, card_id: cardId };
+            const creditEntry = {
+              ...entry,
+              card_id: cardId,
+              ...(['pix_credit', 'boleto_credit'].includes(method.catalog_key)
+                ? {
+                    financing: {
+                      principal_cents: 10000,
+                      interest: { mode: 'amount' as const, value: 0 },
+                      iof: { mode: 'amount' as const, value: 0 },
+                    },
+                  }
+                : {}),
+            };
             const plan = service.previewCreate(creditEntry)!;
             service.create({ ...creditEntry, correction_token: plan.token });
           } else {
@@ -1304,7 +1335,7 @@ test('payment methods enforce income and expense compatibility while preserving 
           } else {
             assert.throws(
               () => service.update(saved.id, changed),
-              /Invalid payment|invalid_credit_purchase/,
+              /Invalid payment|invalid_credit_purchase|invalid_financing_total/,
             );
             assert.equal(service.get(saved.id).type, type);
           }
@@ -1341,7 +1372,7 @@ test('payment methods enforce income and expense compatibility while preserving 
     profiles.enter(profile.profile.id);
     profiles.enter(profile.profile.id);
     const methods = profiles.options().payments;
-    assert.equal(methods.length, 5);
+    assert.equal(methods.length, 7);
     assert.equal(
       methods.filter((method) => method.catalog_key === 'bank_transfer').length,
       1,

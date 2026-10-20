@@ -1,3 +1,9 @@
+import { allocateFinancing } from '@shared/lib/credit-financing';
+import CreditFinancingFields, {
+  emptyFinancing,
+} from '@components/CreditFinancingFields';
+import type { RecurrenceOccurrenceDto } from '@shared/contracts/recurrence';
+import { isCreditPayment, isFinancedPayment } from '@shared/lib/payment-method';
 import { useEffect, useId, useRef, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import {
@@ -82,11 +88,15 @@ export function Choice({
 export default function PlanDialog({
   month,
   plan,
+  occurrence,
+  initial,
   onClose,
   onSaved,
 }: {
   month: string;
   plan?: InstallmentPlanDto;
+  occurrence?: RecurrenceOccurrenceDto;
+  initial?: Partial<InstallmentInput>;
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
@@ -106,6 +116,7 @@ export default function PlanDialog({
     card_id: null,
     historical_card: false,
     invoice_ids: [],
+    ...initial,
   }));
   const [cards, setCards] = useState<CreditCardDto[]>([]);
   const [invoices, setInvoices] = useState<InvoiceDto[]>([]);
@@ -121,9 +132,12 @@ export default function PlanDialog({
   const running = useRef(false);
   const current = () =>
     alive.current && session === useProfileStore.getState().sessionVersion;
-  const credit =
-    options.payments.find((row) => row.id === input.payment_id)?.catalog_key ===
-    'credit';
+  const credit = isCreditPayment(
+    options.payments.find((row) => row.id === input.payment_id)?.catalog_key,
+  );
+  const financed = isFinancedPayment(
+    options.payments.find((row) => row.id === input.payment_id)?.catalog_key,
+  );
   const prefix = useId();
   function change(next: Partial<InstallmentInput>) {
     if (running.current) {
@@ -131,6 +145,7 @@ export default function PlanDialog({
     }
 
     const resetAmounts =
+      next.financing !== undefined ||
       next.total_amount_cents !== undefined ||
       next.total_installments !== undefined ||
       allocationError;
@@ -171,6 +186,16 @@ export default function PlanDialog({
       setAllocationError(true);
     }
 
+    let financing = null;
+
+    if (input.financing) {
+      try {
+        financing = allocateFinancing(input.financing, next);
+      } catch {
+        // Invalid allocations must be corrected before the server preview.
+      }
+    }
+
     setInput((previous) => ({ ...previous, installment_amounts_cents: next }));
     setPreview({
       ...preview,
@@ -179,6 +204,7 @@ export default function PlanDialog({
         entries: preview.plan.entries.map((row, position) => ({
           ...row,
           amount_cents: next[position],
+          financing: financing?.[position] ?? null,
         })),
       },
     });
@@ -243,9 +269,38 @@ export default function PlanDialog({
       if (plan) {
         await window.api.installment.rename(plan.id, input.name, input.note);
       } else if (save && preview) {
-        await window.api.installment.create(input, preview.correction.token);
+        if (occurrence) {
+          const result = await window.api.recurrence.confirm({
+            recurrence_id: occurrence.recurrence_id,
+            scheduled_date: occurrence.scheduled_date,
+            expected_version_id: occurrence.version_id,
+            name: input.name,
+            type: 2,
+            amount_cents: input.total_amount_cents,
+            category_id: input.category_id,
+            payment_id: input.payment_id,
+            credit_card_id: input.card_id,
+            reference_date: input.purchase_at,
+            installment: input,
+            correction_token: preview.correction.token,
+          });
+
+          if (!result.ok) {
+            throw new Error(result.error.message);
+          }
+        } else {
+          await window.api.installment.create(input, preview.correction.token);
+        }
       } else {
-        const next = await window.api.installment.preview(input);
+        const draft =
+          financed && !input.financing
+            ? { ...input, financing: emptyFinancing(input.total_amount_cents) }
+            : input;
+        const next = await window.api.installment.preview(draft);
+
+        if (current()) {
+          setInput(draft);
+        }
 
         if (current()) {
           setPreview(next);
@@ -305,7 +360,13 @@ export default function PlanDialog({
           <DialogTitle>
             {t(plan ? 'installments.edit' : 'installments.add')}
           </DialogTitle>
-          <DialogDescription>{t('installments.form_hint')}</DialogDescription>
+          <DialogDescription>
+            {t(
+              occurrence
+                ? 'financing.occurrence_hint'
+                : 'installments.form_hint',
+            )}
+          </DialogDescription>
         </DialogHeader>
         <form
           onSubmit={(event) => {
@@ -315,8 +376,8 @@ export default function PlanDialog({
           className="space-y-4"
         >
           <fieldset
-            disabled={busy}
-            inert={busy}
+            disabled={busy || blocked}
+            inert={busy || blocked}
             className="grid gap-3 sm:grid-cols-2"
           >
             <Field className="sm:col-span-2">
@@ -335,6 +396,7 @@ export default function PlanDialog({
             {!plan && (
               <>
                 <FieldMoney
+                  disabled={financed}
                   label={t('installments.purchase_total')}
                   decimalSeparator={getLocale() === 'en-US' ? '.' : ','}
                   money={input.total_amount_cents / 100}
@@ -342,6 +404,17 @@ export default function PlanDialog({
                     change({ total_amount_cents: Math.round(value * 100) })
                   }
                 />
+                {financed && (
+                  <CreditFinancingFields
+                    value={
+                      input.financing ??
+                      emptyFinancing(input.total_amount_cents)
+                    }
+                    onChange={(financing, total) =>
+                      change({ financing, total_amount_cents: total })
+                    }
+                  />
+                )}
                 <Field>
                   <FieldLabel htmlFor={`${prefix}-count`}>
                     {t('installments.count')}
@@ -404,7 +477,7 @@ export default function PlanDialog({
                   placeholder={t('transactions.select_payment')}
                   value={input.payment_id}
                   items={options.payments
-                    .filter((row) => row.catalog_key === 'credit')
+                    .filter((row) => isCreditPayment(row.catalog_key))
                     .map((row) => ({
                       value: row.id,
                       label: t(`payments.${row.catalog_key}`),
@@ -412,6 +485,10 @@ export default function PlanDialog({
                   onChange={(id) =>
                     change({
                       payment_id: id ?? 0,
+                      total_amount_cents:
+                        input.financing?.principal_cents ??
+                        input.total_amount_cents,
+                      financing: null,
                       card_id: null,
                       invoice_ids: [],
                       use_invoice_opening_date: false,
@@ -450,19 +527,21 @@ export default function PlanDialog({
                         {t('installments.add_day_to_invoice_opening_date')}
                       </label>
                     )}
-                    <label className="flex items-center gap-2 text-sm sm:col-span-2">
-                      <Checkbox
-                        checked={input.historical_card}
-                        onCheckedChange={(checked) =>
-                          change({
-                            historical_card: !!checked,
-                            card_id: null,
-                            invoice_ids: [],
-                          })
-                        }
-                      />
-                      {t('installments.historical')}
-                    </label>
+                    {!occurrence && (
+                      <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                        <Checkbox
+                          checked={input.historical_card}
+                          onCheckedChange={(checked) =>
+                            change({
+                              historical_card: !!checked,
+                              card_id: null,
+                              invoice_ids: [],
+                            })
+                          }
+                        />
+                        {t('installments.historical')}
+                      </label>
+                    )}
                     <Choice
                       label={t('cards.card')}
                       placeholder={t('cards.select_card')}
@@ -476,6 +555,25 @@ export default function PlanDialog({
                         change({ card_id: id, invoice_ids: [] })
                       }
                     />
+                    <Field>
+                      <FieldLabel htmlFor={`${prefix}-invoice-month`}>
+                        {t('financing.first_invoice_month')}
+                      </FieldLabel>
+                      <Input
+                        id={`${prefix}-invoice-month`}
+                        type="month"
+                        value={input.first_invoice_month ?? ''}
+                        onChange={(event) =>
+                          change({
+                            first_invoice_month: event.target.value || null,
+                            invoice_ids: [],
+                          })
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {t('financing.invoice_month_hint')}
+                      </p>
+                    </Field>
                     {input.card_id && (
                       <details className="rounded-lg border border-border p-3 sm:col-span-2">
                         <summary className="cursor-pointer text-sm">
@@ -519,7 +617,12 @@ export default function PlanDialog({
                                     next.push(null);
                                   }
                                   next[index] = id;
-                                  change({ invoice_ids: next });
+                                  change({
+                                    invoice_ids: next,
+                                    ...(index === 0
+                                      ? { first_invoice_month: null }
+                                      : {}),
+                                  });
                                 }}
                               />
                             ),

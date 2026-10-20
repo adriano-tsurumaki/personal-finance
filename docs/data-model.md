@@ -54,11 +54,13 @@ a financial-operation token because it does not alter or reload financial data.
 
 Default categories use the stable keys `food`, `housing`, `salary`, and `other`.
 Categories remain owned by their profile. The shared payment catalog uses `pix`,
-`debit`, `credit`, `cash`, and `bank_transfer`. Income accepts only `pix`, `cash`,
-and `bank_transfer`; expenses accept only `pix`, `cash`, `debit`, and `credit`.
+`debit`, `credit`, `cash`, `bank_transfer`, `pix_credit`, and `boleto_credit`.
+Income accepts only `pix`, `cash`, and `bank_transfer`; expenses accept only
+`pix`, `cash`, `debit`, `credit`, `pix_credit`, and `boleto_credit`.
 The form filters methods by transaction type and clears an incompatible selection
 when the type changes. Main validates the same rule when creating entries or
-changing their type. `pix_credit` remains deferred until its financial rules are defined.
+changing their type. PIX and boleto on credit require a card and retain principal,
+interest, and IOF separately; see [Credit financing](credit-financing.md).
 Bank transfer is added idempotently when creating or entering a profile, including
 existing profiles, without a schema migration or manual upgrade action.
 Legacy methods retain their associations, and recognized legacy defaults acquire
@@ -224,6 +226,11 @@ copy payment dates onto purchases or create another expense transaction.
 Card/invoice navigation has its own selected period and profile-session request
 guards. The Cards section includes registration, archival, historical invoice
 entry, unlinked-purchase association, total reconciliation, and correction history.
+
+Transactions also retain nullable financing amounts and original charge terms
+for PIX and boleto on credit. Each installment stores its allocated principal,
+interest, and IOF; the original operation terms remain in the plan receipt. See
+[Credit financing](credit-financing.md) for units, calculation, and occurrence links.
 
 ### `payments`
 

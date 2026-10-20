@@ -1,3 +1,4 @@
+import CreditFinancingSummary from '@components/CreditFinancingSummary';
 import type {
   InstallmentPlanDto,
   InstallmentPreviewDto,
@@ -63,6 +64,7 @@ export function PlanSchedule({
                   ` · ${t('installments.manual_period')}`}
               </p>
             )}
+            <CreditFinancingSummary amounts={row.financing} />
           </div>
           {amountEditor ? (
             <div className="w-full space-y-2 sm:w-44">

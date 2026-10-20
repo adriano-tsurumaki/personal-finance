@@ -1,4 +1,4 @@
-import { and, eq, gt } from 'drizzle-orm';
+import { and, eq, gt, sql } from 'drizzle-orm';
 import type { AppDatabase } from '../db';
 import type {
   RecurrenceBoundaryInput,
@@ -86,7 +86,7 @@ export function previewRecurrenceBoundary(
           name: transactionsTable.name,
           scheduled_date: recurrenceOccurrencesTable.scheduled_date,
           reference_date: transactionsTable.reference_date,
-          amount_cents: transactionsTable.amount_cents,
+          amount_cents: sql<number>`coalesce((select total_amount_cents from installment where id = ${transactionsTable.installment_id} and user_id = ${userId}), ${transactionsTable.amount_cents})`,
         })
         .from(recurrenceOccurrencesTable)
         .innerJoin(

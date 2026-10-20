@@ -182,7 +182,9 @@
     "debit": "Cartão de débito",
     "credit": "Cartão de crédito",
     "cash": "Dinheiro",
-    "bank_transfer": "Transferência bancária"
+    "bank_transfer": "Transferência bancária",
+    "pix_credit": "Pix no crédito",
+    "boleto_credit": "Boleto no crédito"
   },
   "summary": {
     "previous": "Mês anterior",
@@ -450,5 +452,19 @@
     "add_day_to_invoice_opening_date": "Avançar um dia após o início do período da fatura",
     "invoice_date_error": "Cada fatura seguinte precisa ter uma data de início conhecida e posterior à parcela anterior. Verifique os períodos ou desative a opção de usar o início da fatura.",
     "credit_required": "Parcelamentos exigem a forma de pagamento crédito e um cartão selecionado."
+  },
+  "financing": {
+    "principal": "Valor original",
+    "interest": "Juros",
+    "iof": "IOF",
+    "rate": "Taxa total (%)",
+    "rate_hint": "Cada taxa é aplicada uma vez sobre o valor original, sem capitalização mensal. Informe a taxa total da operação.",
+    "total": "Total cobrado",
+    "invalid": "Confira o valor original e os encargos (taxas com até duas casas decimais).",
+    "breakdown": "Original: {principal} · Juros: {interest} · IOF: {iof}",
+    "installments": "Parcelar esta ocorrência",
+    "occurrence_hint": "Somente esta ocorrência será parcelada. Os próximos compromissos mantêm a regra original.",
+    "first_invoice_month": "Mês de fechamento da primeira fatura",
+    "invoice_month_hint": "Opcional. Deixe vazio para seleção automática. Faturas futuras são geradas ao salvar; confira os vencimentos na prévia."
   }
 }

@@ -5,7 +5,6 @@ import { join, resolve, sep } from 'node:path';
 import { test } from 'node:test';
 import { initDb } from '../db';
 import { createProfileService } from '../profiles';
-import { createTransactionService } from '../transactions';
 import { createInstallmentService } from '../installments';
 import { createCreditCardService } from '../credit-cards';
 import { installmentsTable, transactionsTable } from './schema';
@@ -52,19 +51,19 @@ test('installment upgrade preserves existing rows and durable receipts survive a
         .options()
         .payments.find((row) => row.catalog_key === 'pix')!.id,
     };
-    const transactions = createTransactionService(db, () =>
-      profiles.requireActive(),
-    );
-    transactions.create({
-      name: 'Existing entry',
-      type: 2,
-      amount_cents: 100,
-      reference_date: '2026-10-19',
-      payment_date: null,
-      payment_id: input.payment_id,
-      category_id: null,
-      user_id: result.profile.id,
-    });
+    // Seed the historical schema independently of current transaction columns.
+    db.$client
+      .prepare(
+        'INSERT INTO transactions (name, type, amount_cents, reference_date, payment_id, user_id) VALUES (?, ?, ?, ?, ?, ?)',
+      )
+      .run(
+        'Existing entry',
+        2,
+        100,
+        '2026-10-19',
+        input.payment_id,
+        result.profile.id,
+      );
     const group = db
       .insert(installmentsTable)
       .values({
@@ -80,26 +79,36 @@ test('installment upgrade preserves existing rows and durable receipts survive a
       .get()!;
 
     for (const [index, date] of ['2027-01-31', '2027-02-28'].entries()) {
-      db.insert(transactionsTable)
-        .values({
-          name: 'Legacy',
-          amount_cents: 100,
-          type: 2,
-          reference_date: date,
-          payment_date: null,
-          payment_id: input.payment_id,
-          user_id: result.profile.id,
-          installment_id: group.id,
-          installment_number: index + 1,
-        })
-        .run();
+      db.$client
+        .prepare(
+          'INSERT INTO transactions (name, type, amount_cents, reference_date, payment_id, user_id, installment_id, installment_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        )
+        .run(
+          'Legacy',
+          2,
+          100,
+          date,
+          input.payment_id,
+          result.profile.id,
+          group.id,
+          index + 1,
+        );
     }
 
-    const before = db.select().from(transactionsTable).all();
+    const before = db.$client
+      .prepare('SELECT * FROM transactions')
+      .all()
+      .map((row) => ({
+        ...(row as object),
+        financing: null,
+        financing_terms: null,
+      }));
     db.$client.close();
-    cpSync(join(resolve('drizzle'), latest), join(folder, latest), {
-      recursive: true,
-    });
+    for (const name of migrations.filter((name) => name >= latest)) {
+      cpSync(join(resolve('drizzle'), name), join(folder, name), {
+        recursive: true,
+      });
+    }
     db = initDb(filename, folder);
     profiles = createProfileService(db);
     profiles.enter(result.profile.id);

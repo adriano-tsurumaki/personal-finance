@@ -182,7 +182,9 @@
     "debit": "Debit card",
     "credit": "Credit card",
     "cash": "Cash",
-    "bank_transfer": "Bank transfer"
+    "bank_transfer": "Bank transfer",
+    "pix_credit": "PIX on credit",
+    "boleto_credit": "Boleto on credit"
   },
   "summary": {
     "previous": "Previous month",
@@ -450,5 +452,19 @@
     "add_day_to_invoice_opening_date": "Move one day after the invoice period starts",
     "invoice_date_error": "Each later invoice needs a known opening date after the preceding installment. Check invoice periods or turn off the invoice-opening-date option.",
     "credit_required": "Installments require the credit payment method and a selected card."
+  },
+  "financing": {
+    "principal": "Original amount",
+    "interest": "Interest",
+    "iof": "IOF",
+    "rate": "Total rate (%)",
+    "rate_hint": "Each rate applies once to the original amount, without monthly compounding. Enter the total rate for the operation.",
+    "total": "Total charged",
+    "invalid": "Check the original amount and charges (rates support up to two decimal places).",
+    "breakdown": "Original: {principal} · Interest: {interest} · IOF: {iof}",
+    "installments": "Split this occurrence into installments",
+    "occurrence_hint": "Only this occurrence will be split. Future commitments keep the original rule.",
+    "first_invoice_month": "First invoice closing month",
+    "invoice_month_hint": "Optional. Leave blank for automatic selection. Future invoices are created on save; check due dates in the preview."
   }
 }
