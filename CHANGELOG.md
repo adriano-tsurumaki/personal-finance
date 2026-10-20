@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.8.0 - 2026-10-20
+
 ### Added
 
 - Record PIX and boleto payments on credit with separately retained principal,

@@ -96,3 +96,12 @@ correcting invoice selection when switching payment methods and opening the
 installment form. Lint and type checking also passed. These regression checks
 cover draft normalization and invoice handoff; they do not replace interactive
 desktop verification.
+
+Release preparation for 0.8.0 on 2026-10-20 also passed formatting and generated
+the Windows x64 Squirrel installer with `pnpm make`. Packaging required running
+outside the sandbox to download its dependencies. Two attempts to start the
+packaged executable with an isolated previous-schema database left the process
+running without a visible window or startup diagnostics; the test database did
+not receive the migration. Packaged startup and upgrade therefore remain
+unverified. The generated installer has not been installed, and the automated
+migration tests must not be treated as installer-upgrade validation.
