@@ -63,6 +63,7 @@ test('unknown coverage blocks only periods depending on the authoritative cash-f
     assert.deepEqual(recurrences.getCashFlow('2026-03-01', '2026-04-01'), {
       openingIncomeCents: 0,
       openingExpenseCents: 0,
+      events: [],
       days: [],
     });
     assert.throws(
@@ -90,6 +91,7 @@ test('unknown coverage blocks only periods depending on the authoritative cash-f
     assert.deepEqual(recurrences.getCashFlow('2026-03-01', '2026-04-01'), {
       openingIncomeCents: 0,
       openingExpenseCents: 0,
+      events: [],
       days: [],
     });
   } finally {
@@ -140,6 +142,7 @@ test('archived defaults do not invalidate fully suppressed retained credit slots
     assert.deepEqual(recurrences.getCashFlow('2026-05-01', '2026-06-01'), {
       openingIncomeCents: 0,
       openingExpenseCents: 0,
+      events: [],
       days: [],
     });
     recurrences.restore({ recurrence_id: id, scheduled_date: '2026-03-12' });

@@ -46,12 +46,16 @@ export function setLocale(value: ProfileLocale): void {
 }
 
 export function useLocale(): ProfileLocale {
-  return useSyncExternalStore((listener) => {
-    listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
-  }, getLocale);
+  return useSyncExternalStore(
+    (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    getLocale,
+    getLocale,
+  );
 }
 
 export function t(

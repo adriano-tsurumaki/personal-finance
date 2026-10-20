@@ -1,3 +1,5 @@
+import SummaryStat from './SummaryStat';
+import { formatCompactCurrency } from '@lib/format/currency';
 import { useFinancialOperations } from '@store/financial-operations';
 import { useMonthlyStatementFeedback } from './use-monthly-statement-feedback';
 import {
@@ -6,14 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import BalanceSparkline from './BalanceSparkline';
 import OdometerMoney from '@components/OdometerMoney';
-import type { OdometerMoneyProps } from '@components/OdometerMoney/types';
-import {
-  formatCompactCurrency,
-  formatYearMonthToString,
-} from '@lib/format/currency';
-
+import { formatYearMonthToString } from '@lib/format/currency';
 import { useAppStore } from '@store/transaction';
 import { shiftMonth } from '@shared/lib/calc';
 import ProfileHeader from '@modules/Profiles/ProfileHeader';
@@ -28,16 +24,13 @@ export default function MonthlyFinance(): React.JSX.Element {
   const statementLoading = useAppStore((s) => s.statementLoading);
   const anchor = useAppStore((s) => s.indicatorAnchor);
   const statementIssue = useAppStore((s) => s.statementIssue);
-
   useMonthlyStatementFeedback();
-
   const [year, month] = monthKey.split('-').map(Number);
 
   return (
     <header className="border-b border-border bg-card">
       <div className="mx-auto max-w-3xl px-5 pb-8 pt-10 sm:px-8">
         <ProfileHeader />
-
         <div className="mt-6 flex items-center justify-between gap-4">
           <button
             type="button"
@@ -48,13 +41,9 @@ export default function MonthlyFinance(): React.JSX.Element {
           >
             <ChevronLeft className="size-4" />
           </button>
-
-          <div className="text-center">
-            <h1 className="text-lg font-semibold text-foreground">
-              {formatYearMonthToString(year, month)}
-            </h1>
-          </div>
-
+          <h1 className="text-lg font-semibold text-foreground">
+            {formatYearMonthToString(year, month)}
+          </h1>
           <button
             type="button"
             disabled={blocked}
@@ -65,49 +54,55 @@ export default function MonthlyFinance(): React.JSX.Element {
             <ChevronRight className="size-4" />
           </button>
         </div>
-
         <div
           aria-busy={statementLoading}
-          className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between"
+          className="mt-6 flex flex-col gap-1.5"
         >
-          <div className="flex flex-col gap-1.5">
-            <p className="text-sm text-muted-foreground">
-              {t('summary.balance')}
-            </p>
-            <div className="relative" aria-busy={statementLoading}>
-              <p className="font-mono text-4xl font-semibold tracking-tight text-foreground tabular-nums sm:text-5xl">
-                {loaded ? (
-                  <OdometerMoney value={monthlyStatement.closingBalance} />
-                ) : (
-                  '—'
-                )}
-              </p>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {t('summary.opening_balance')}{' '}
-              <span className="font-mono tabular-nums">
-                {loaded ? (
-                  <OdometerMoney value={monthlyStatement.openingBalance} />
-                ) : (
-                  '—'
-                )}
-              </span>
-            </p>
-          </div>
-
-          <div
-            className="w-full max-w-60 shrink-0"
-            style={{
-              visibility:
-                loaded && monthlyStatement.balanceSeries.length >= 2
-                  ? 'visible'
-                  : 'hidden',
-            }}
-          >
-            <BalanceSparkline data={monthlyStatement.balanceSeries} />
-          </div>
+          <p className="text-sm text-muted-foreground">
+            {t('summary.balance')}
+          </p>
+          <p className="font-mono text-4xl font-semibold tracking-tight text-foreground tabular-nums sm:text-5xl">
+            {loaded ? (
+              <OdometerMoney value={monthlyStatement.closingBalance} />
+            ) : (
+              '—'
+            )}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {t('summary.opening_balance')}{' '}
+            <span className="font-mono tabular-nums">
+              {loaded ? (
+                <OdometerMoney value={monthlyStatement.openingBalance} />
+              ) : (
+                '—'
+              )}
+            </span>
+          </p>
         </div>
-
+        <dl className="my-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <SummaryStat
+            available={loaded}
+            label={t('monthly_views.inflows')}
+            value={monthlyStatement.income}
+            tone="income"
+            icon={<ArrowUpRight className="size-4" />}
+          />
+          <SummaryStat
+            available={loaded}
+            label={t('monthly_views.outflows')}
+            value={monthlyStatement.expense}
+            tone="expense"
+            icon={<ArrowDownRight className="size-4" />}
+          />
+          <SummaryStat
+            available={loaded}
+            label={t('summary.saved')}
+            value={monthlyStatement.savingsRate}
+            format={{ style: 'percent', maximumFractionDigits: 0 }}
+            tone="neutral"
+            hint={formatCompactCurrency(monthlyStatement.net)}
+          />
+        </dl>
         {anchor && (
           <p
             role="status"
@@ -125,82 +120,7 @@ export default function MonthlyFinance(): React.JSX.Element {
               ` ${t('settings.partial_month')}`}
           </p>
         )}
-
-        <dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Stat
-            available={loaded}
-            label={t('summary.income')}
-            value={monthlyStatement.income}
-            tone="income"
-            icon={<ArrowUpRight className="size-4" aria-hidden="true" />}
-          />
-          <Stat
-            available={loaded}
-            label={t('summary.expenses')}
-            value={monthlyStatement.expense}
-            tone="expense"
-            icon={<ArrowDownRight className="size-4" aria-hidden="true" />}
-          />
-          <Stat
-            available={loaded}
-            label={t('summary.saved')}
-            value={monthlyStatement.savingsRate}
-            format={{ style: 'percent', maximumFractionDigits: 0 }}
-            tone="neutral"
-            hint={formatCompactCurrency(monthlyStatement.net)}
-          />
-        </dl>
       </div>
     </header>
-  );
-}
-
-function Stat({
-  label,
-  available,
-  value,
-  format,
-  tone,
-  icon,
-  hint,
-}: {
-  label: string;
-  available: boolean;
-  value: number;
-  format?: OdometerMoneyProps['format'];
-  tone: 'income' | 'expense' | 'neutral';
-  icon?: React.ReactNode;
-  hint?: string;
-}): React.JSX.Element {
-  const toneClass =
-    tone === 'income'
-      ? 'text-income'
-      : tone === 'expense'
-        ? 'text-expense'
-        : 'text-foreground';
-
-  return (
-    <div className="rounded-lg border border-border bg-background/60 p-3">
-      <dt className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-        {icon}
-        {label}
-      </dt>
-      <dd
-        className={`relative mt-1 font-mono text-lg font-semibold tabular-nums ${toneClass}`}
-      >
-        <span>
-          {available ? (
-            <OdometerMoney value={value} format={format} />
-          ) : (
-            '—'
-          )}
-          {available && hint ? (
-            <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-              {t('summary.net', { amount: hint })}
-            </span>
-          ) : null}
-        </span>
-      </dd>
-    </div>
   );
 }

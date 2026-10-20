@@ -7,7 +7,7 @@ import Categories from '@modules/Categories';
 import CreditCards from '@modules/CreditCards';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
 import UnderConstruction from '@components/UnderConstruction';
-import TimelineTransaction from '@modules/TimelineTransaction';
+import MonthlyTimeline from '@modules/TimelineTransaction/MonthlyTimeline';
 import { useAppStore } from '@store/transaction';
 import { t } from '@lib/i18n';
 
@@ -81,7 +81,7 @@ export default function FinanceSections() {
           </div>
         </div>
         <TabsContent value="timelines">
-          <TimelineTransaction
+          <MonthlyTimeline
             onCreateInstallment={() => {
               if (!useFinancialOperations.getState().pending.size) {
                 setCreatePlan(true);

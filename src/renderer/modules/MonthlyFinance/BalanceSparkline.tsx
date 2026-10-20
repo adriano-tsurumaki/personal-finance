@@ -10,8 +10,10 @@ type XY = readonly [number, number];
 
 export default function BalanceSparkline({
   data,
+  label,
 }: {
   data: Point[];
+  label?: string;
 }): React.JSX.Element {
   const width = 240;
   const height = 56;
@@ -116,7 +118,7 @@ export default function BalanceSparkline({
       className="h-14 w-full"
       preserveAspectRatio="none"
       role="img"
-      aria-label={t('summary.chart')}
+      aria-label={label ?? t('summary.chart')}
     >
       <defs>
         <linearGradient id="balance-fill" x1="0" y1="0" x2="0" y2="1">

@@ -1,6 +1,9 @@
 import { sql } from 'drizzle-orm';
 import type { AppDatabase } from './db';
-import type { MonthlyStatementDto } from '@shared/contracts/monthly-statement';
+import type {
+  CashFlowEventDto,
+  MonthlyStatementDto,
+} from '@shared/contracts/monthly-statement';
 import { getDaysInMonth } from '@shared/lib/calendar';
 import { createRecurrenceService } from './recurrences';
 import { createIndicatorAnchorService } from './indicator-anchor';
@@ -9,6 +12,7 @@ interface DailyCashFlow {
   date: string;
   income: number;
   expense: number;
+  events?: string;
 }
 
 /** Carries projected cash flow into the month; the DTO exposes BRL units. */
@@ -73,9 +77,13 @@ export function createMonthlyStatementService(
 
         const rows = tx.all<DailyCashFlow>(sql`
           SELECT CASE WHEN date < ${start} THEN '' ELSE date END AS date,
-                 SUM(income) AS income, SUM(expense) AS expense
+                 SUM(income) AS income, SUM(expense) AS expense,
+                 json_group_array(json_object(
+                   'id', kind || ':' || id, 'kind', kind, 'name', name,
+                   'date', date, 'income', income / 100.0, 'expense', expense / 100.0
+                 )) FILTER (WHERE date >= ${start}) AS events
           FROM (
-            SELECT t.payment_date AS date,
+            SELECT t.id, 'direct' AS kind, t.name, t.payment_date AS date,
                    CASE WHEN t.type = 1 THEN t.amount_cents ELSE 0 END AS income,
                    CASE WHEN t.type = 2 THEN t.amount_cents ELSE 0 END AS expense
             FROM transactions t
@@ -85,7 +93,7 @@ export function createMonthlyStatementService(
               AND t.payment_date >= ${lowerBound}
               AND t.credit_card_invoice_id IS NULL AND p.type = 1
             UNION ALL
-            SELECT t.reference_date AS date,
+            SELECT t.id, 'direct' AS kind, t.name, t.reference_date AS date,
                    CASE WHEN t.type = 1 THEN t.amount_cents ELSE 0 END AS income,
                    CASE WHEN t.type = 2 THEN t.amount_cents ELSE 0 END AS expense
             FROM transactions t
@@ -96,14 +104,14 @@ export function createMonthlyStatementService(
               AND t.reference_date >= ${lowerBound}
               AND t.credit_card_invoice_id IS NULL AND p.type = 1
             UNION ALL
-            SELECT i.paid_at AS date, 0 AS income, i.amount_cents AS expense
+            SELECT i.id, 'invoice_payment' AS kind, c.name, i.paid_at AS date, 0 AS income, i.amount_cents AS expense
             FROM credit_cards c
             INNER JOIN credit_card_invoice i ON i.credit_card_id = c.id
             WHERE c.user_id = ${user.id}
               AND i.paid_at < ${end}
               AND i.paid_at >= ${lowerBound}
             UNION ALL
-            SELECT i.due_date AS date, 0 AS income, i.amount_cents AS expense
+            SELECT i.id, 'invoice_due' AS kind, c.name, i.due_date AS date, 0 AS income, i.amount_cents AS expense
             FROM credit_cards c
             INNER JOIN credit_card_invoice i ON i.credit_card_id = c.id
             WHERE c.user_id = ${user.id} AND i.paid_at IS NULL
@@ -120,6 +128,13 @@ export function createMonthlyStatementService(
         );
         const projectedDays = new Map(
           projection.days.map((day) => [day.date, day]),
+        );
+        const cashFlowEvents: CashFlowEventDto[] = rows.flatMap((row) =>
+          row.events ? (JSON.parse(row.events) as CashFlowEventDto[]) : [],
+        );
+        cashFlowEvents.push(...projection.events);
+        cashFlowEvents.sort(
+          (a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id),
         );
         const openingRow = rows.find((row) => row.date === '');
 
@@ -217,6 +232,7 @@ export function createMonthlyStatementService(
           openingBalance: openingCents / 100,
           closingBalance: (openingCents + (income - expense)) / 100,
           balanceSeries,
+          cashFlowEvents,
         };
         cache.set(key, statement);
 

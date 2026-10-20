@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Added
+
+- Separate reference-date entries and cash flow into monthly timeline tabs, with
+  distinct totals and a cash-flow chart accompanied by its included movements.
+  Keep expected inflows, expected outflows, and savings in the monthly summary.
+  Select payments/due dates or all reference-date entries as the chart basis,
+  including credit purchases even when their payment falls in another month.
+  Invoice payments are excluded from reference totals to avoid counting purchases
+  twice. Recurring estimates are grouped by rule and effective cash-flow date.
+  Existing financial calculations and data are preserved; no upgrade action is required.
+
 ### Changed
 
 - Use NumberFlow for smooth monthly balance and indicator animations, with

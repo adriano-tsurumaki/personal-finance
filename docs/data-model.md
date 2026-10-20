@@ -421,7 +421,25 @@ the previous closing balance, including negative balances and year transitions.
 The savings rate remains monthly net divided by monthly income, or zero when
 there is no income. Computed summaries expose no identifier or transaction count.
 The timeline count remains separate because its reference-date entries differ
-from cash-flow events.
+from cash-flow events. The monthly timeline has separate Entries and Cash flow
+tabs. Entries totals include recorded reference-date transactions and unconfirmed
+occurrences, including credit purchases; separate invoice payment events are
+excluded from these totals. These totals describe the full reference month,
+independently of the indicator anchor, and do not represent available cash or a
+savings rate. Cash flow retains the anchored financial summary and shows its
+chart alongside included monthly movements. Expected inflows, expected outflows,
+and the savings rate remain in the monthly header and always use the projected
+cash-flow basis. A local chart selector can instead show all reference-date
+transactions and unconfirmed occurrences from the selected month, regardless of
+their settlement month or indicator anchor. This reference chart starts at zero,
+shows the accumulated monthly result, and excludes separate invoice-payment events
+to avoid counting credit purchases twice. Its accompanying list uses the same basis.
+Recorded direct entries and invoices
+retain their names; recurrence estimates are grouped by rule and effective date.
+The statement's additive `cashFlowEvents` field uses BRL units and includes only
+the selected reporting period, never individual opening-history movements.
+Switching between these already loaded views is local UI state and does not
+acquire a financial operation token. Existing navigation and mutation guards apply.
 
 By default, the cumulative projection starts from zero before the first recorded event. It
 includes unpaid commitments under the same rules as monthly flow, so it does not

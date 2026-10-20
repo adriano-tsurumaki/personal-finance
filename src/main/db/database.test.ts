@@ -955,6 +955,24 @@ test('monthly cash flow aggregates settlement dates, isolates profiles and inval
     assert.equal(statement.closingBalance, -755);
     assert.equal(statement.openingBalance, -800);
     assert.equal(statement.savingsRate, 0.45);
+    assert.equal(statement.cashFlowEvents!.length, 3);
+    assert.deepEqual(
+      statement.cashFlowEvents!.map((event) => event.kind),
+      ['direct', 'invoice_payment', 'direct'],
+    );
+    assert.equal(
+      statement.cashFlowEvents!.reduce((sum, event) => sum + event.income, 0),
+      statement.income,
+    );
+    assert.equal(
+      statement.cashFlowEvents!.reduce((sum, event) => sum + event.expense, 0),
+      statement.expense,
+    );
+    assert.ok(
+      statement.cashFlowEvents!.every((event) =>
+        event.date.startsWith('2026-10'),
+      ),
+    );
     assert.equal(statement.balanceSeries.length, 31);
     assert.deepEqual(statement.balanceSeries[0], {
       date: '2026-10-01',

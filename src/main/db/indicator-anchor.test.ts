@@ -89,6 +89,10 @@ test('inclusive partial-month anchors replace history with a baseline without cr
     assert.equal(result.balanceSeries[0].date, '2026-10-10');
     assert.equal(result.balanceSeries[0].balance, 400);
     assert.equal(result.balanceSeries.length, 22);
+    assert.deepEqual(
+      result.cashFlowEvents!.map((event) => event.date),
+      ['2026-10-10', '2026-10-11'],
+    );
     assert.equal(f.statements.get('2027-01').openingBalance, 600);
     const excluded = f.months.get('2026-09');
     assert.equal(excluded.statement, null);

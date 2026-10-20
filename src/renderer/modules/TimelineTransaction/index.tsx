@@ -13,6 +13,8 @@ import { t } from '@lib/i18n';
 import { Button } from '@components/ui/button';
 import { cardDate } from '@lib/card-corrections';
 import { formatSignedCurrency } from '@lib/format/currency';
+import SummaryStat from '@modules/MonthlyFinance/SummaryStat';
+import { referenceSummary } from './reference-summary';
 
 export default function TimelineTransaction({
   onReviewRecurrences,
@@ -34,9 +36,33 @@ export default function TimelineTransaction({
   const entryCount = transactions.length + projected.length + payments.length;
   const loading = useAppStore((s) => s.transactionsLoading);
   const failed = useAppStore((s) => s.transactionsFailed);
+  const summary = referenceSummary(transactions, recurrence?.occurrences ?? []);
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-8 sm:px-8">
+      <p className="mb-4 text-xs leading-relaxed text-muted-foreground">
+        {t('monthly_views.entries_hint')}
+      </p>
+      <dl className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <SummaryStat
+          available={!loading && !failed && summary !== null}
+          label={t('monthly_views.reference_income')}
+          value={summary?.income ?? 0}
+          tone="income"
+        />
+        <SummaryStat
+          available={!loading && !failed && summary !== null}
+          label={t('monthly_views.reference_expense')}
+          value={summary?.expense ?? 0}
+          tone="expense"
+        />
+        <SummaryStat
+          available={!loading && !failed && summary !== null}
+          label={t('monthly_views.reference_net')}
+          value={summary?.net ?? 0}
+          tone="neutral"
+        />
+      </dl>
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h2 className="text-sm font-semibold text-foreground">

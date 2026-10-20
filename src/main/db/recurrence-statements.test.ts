@@ -72,6 +72,9 @@ test('monthly and cumulative estimates share a no-write financial snapshot in di
     assert.equal(may.transactions.length, 0);
     assert.equal(may.statement.balanceSeries[10].balance, 6000);
     assert.equal(may.statement.balanceSeries[11].balance, 9000);
+    assert.equal(may.statement.cashFlowEvents!.length, 1);
+    assert.equal(may.statement.cashFlowEvents![0].date, '2026-05-12');
+    assert.equal(may.statement.cashFlowEvents![0].income, 3000);
     const distant = f.months.get('2100-01');
     assert.ok(distant.statement);
     assert.equal(
@@ -214,6 +217,12 @@ test('credit projections use due dates without invoices and a PIX confirmation r
     )!.count;
     assert.equal(f.statements.get('2026-03').expense, 0);
     assert.equal(f.statements.get('2026-04').expense, 100);
+    assert.equal(f.statements.get('2026-03').cashFlowEvents!.length, 0);
+    assert.equal(
+      f.statements.get('2026-04').cashFlowEvents![0].kind,
+      'recurrence',
+    );
+    assert.equal(f.statements.get('2026-04').cashFlowEvents![0].expense, 100);
     assert.equal(f.cards.invoices(credit_card_id).length, 0);
     assert.equal(
       f.db.get<{ count: number }>(sql`SELECT total_changes() AS count`)!.count,

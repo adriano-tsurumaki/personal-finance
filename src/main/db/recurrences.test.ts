@@ -281,6 +281,7 @@ test('incomplete legacy rules require explicit dismissal and retain all historic
   assert.deepEqual(recurrence.getCashFlow('2026-03-01', '2026-04-01'), {
     openingIncomeCents: 0,
     openingExpenseCents: 0,
+    events: [],
     days: [],
   });
   assert.throws(() => recurrence.dismissLegacy(row.id), /lifecycle_conflict/);

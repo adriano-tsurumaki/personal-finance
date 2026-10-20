@@ -1,5 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import type { AppDatabase } from './db';
+import type { CashFlowEventDto } from '@shared/contracts/monthly-statement';
 import {
   installmentRequestsTable,
   installmentsTable,
@@ -1051,11 +1052,17 @@ export function createRecurrenceService(
       const data = snapshot();
       let openingIncomeCents = 0;
       let openingExpenseCents = 0;
+      const events: CashFlowEventDto[] = [];
       const days = new Map<
         string,
         { date: string; incomeCents: number; expenseCents: number }
       >();
-      function add(when: string, type: 1 | 2, cents: number) {
+      function add(
+        when: string,
+        type: 1 | 2,
+        cents: number,
+        source?: { id: number; name: string },
+      ) {
         if (when >= end || (notBefore !== undefined && when < notBefore)) {
           return;
         }
@@ -1067,6 +1074,17 @@ export function createRecurrenceService(
             openingExpenseCents = exact(openingExpenseCents + cents);
           }
         } else {
+          if (source && cents !== 0) {
+            events.push({
+              id: `recurrence:${source.id}:${when}:${events.length}`,
+              kind: 'recurrence',
+              name: source.name,
+              date: when,
+              income: type === 1 ? cents / 100 : 0,
+              expense: type === 2 ? cents / 100 : 0,
+            });
+          }
+
           const day = days.get(when) ?? {
             date: when,
             incomeCents: 0,
@@ -1142,7 +1160,10 @@ export function createRecurrenceService(
                   )
                 ) {
                   validateProjection(v, data);
-                  add(scheduled, v.type!, v.amount_cents);
+                  add(scheduled, v.type!, v.amount_cents, {
+                    id: row.id,
+                    name: v.name,
+                  });
                 }
               }
             }
@@ -1196,7 +1217,10 @@ export function createRecurrenceService(
               },
               add(when, count) {
                 validateProjection(v, data);
-                add(when, v.type!, exact(count * v.amount_cents));
+                add(when, v.type!, exact(count * v.amount_cents), {
+                  id: row.id,
+                  name: v.name,
+                });
               },
               fail,
             });
@@ -1206,6 +1230,7 @@ export function createRecurrenceService(
       return {
         openingIncomeCents,
         openingExpenseCents,
+        events,
         days: [...days.values()].sort((a, b) => a.date.localeCompare(b.date)),
       };
     },
