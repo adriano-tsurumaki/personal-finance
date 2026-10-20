@@ -531,155 +531,6 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
         </DialogHeader>
         <FieldSet disabled={isSubmitting || blocked}>
           <FieldGroup>
-            {mode === 'add' && isCredit && (
-              <>
-                <FieldLabel>
-                  <Field orientation="horizontal">
-                    <Checkbox
-                      id="transaction-historical"
-                      disabled={isSubmitting || blocked}
-                      checked={historical_card}
-                      onCheckedChange={(checked) => {
-                        handleTransaction('historical_card', checked);
-
-                        if (
-                          !checked &&
-                          cards.find((card) => card.id === cardId)?.archived_at
-                        ) {
-                          handleTransaction('card_id', null);
-                          handleTransaction('credit_card_invoice_id', null);
-                        }
-                      }}
-                    />
-                    <FieldContent>
-                      <FieldTitle>{t('cards.historical')}</FieldTitle>
-                    </FieldContent>
-                  </Field>
-                </FieldLabel>
-                <Field>
-                  <FieldLabel htmlFor="transaction-card">
-                    {t('cards.card')}
-                  </FieldLabel>
-
-                  <Select<number>
-                    items={cards.map((card) => ({
-                      value: card.id,
-                      label: card.name,
-                    }))}
-                    value={cardId}
-                    onValueChange={(value) => {
-                      handleTransaction('card_id', Number(value) || null);
-                      handleTransaction('credit_card_invoice_id', null);
-                    }}
-                  >
-                    <SelectTrigger id="transaction-card">
-                      <SelectValue placeholder={t('cards.select_card')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {cards
-                          .filter(
-                            (card) => historical_card || !card.archived_at,
-                          )
-                          .map((card) => (
-                            <SelectItem key={card.id} value={card.id}>
-                              {card.name}
-                              {card.archived_at
-                                ? ` (${t('cards.archived')})`
-                                : ''}
-                            </SelectItem>
-                          ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCardEditor(true)}
-                >
-                  {t('cards.new_card')}
-                </Button>
-                <Field>
-                  <FieldLabel htmlFor="transaction-invoice-month">
-                    {t('financing.first_invoice_month')}
-                  </FieldLabel>
-                  <Input
-                    id="transaction-invoice-month"
-                    type="month"
-                    value={invoiceMonth ?? ''}
-                    onChange={(event) => {
-                      handleTransaction(
-                        'invoice_month',
-                        event.target.value || null,
-                      );
-                      handleTransaction('credit_card_invoice_id', null);
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {t('financing.invoice_month_hint')}
-                  </p>
-                </Field>
-                {cardId !== null && (
-                  <Field>
-                    <FieldLabel htmlFor="transaction-invoice">
-                      {t('cards.invoice')}
-                    </FieldLabel>
-                    <Select<number>
-                      items={[
-                        { value: null, label: t('cards.automatic') },
-                        ...cardInvoices.map((invoice) => ({
-                          value: invoice.id,
-                          label: `${cardDate(invoice.closing_date)} · #${invoice.id}`,
-                        })),
-                      ]}
-                      value={invoiceId}
-                      onValueChange={(value) => {
-                        handleTransaction('invoice_month', null);
-                        handleTransaction(
-                          'credit_card_invoice_id',
-                          Number(value) || null,
-                        );
-                      }}
-                    >
-                      <SelectTrigger id="transaction-invoice">
-                        <SelectValue placeholder={t('cards.automatic')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectItem value={null}>
-                            {t('cards.automatic')}
-                          </SelectItem>
-                          {cardInvoices.map((invoice) => (
-                            <SelectItem key={invoice.id} value={invoice.id}>
-                              {cardDate(invoice.closing_date)} · #{invoice.id}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-
-                    <FieldDescription>
-                      {t('cards.override_hint')}
-                    </FieldDescription>
-                  </Field>
-                )}
-                {suggestedPeriod && invoiceId === null && (
-                  <p className="text-xs text-muted-foreground">
-                    {t('cards.preview')}:{' '}
-                    {cardDate(suggestedPeriod.opening_date)} →{' '}
-                    {cardDate(suggestedPeriod.closing_date)}
-                  </p>
-                )}
-                {cardLoading && <p role="status">{t('common.loading')}</p>}
-                {cardFailed && <p role="alert">{t('cards.save_error')}</p>}
-              </>
-            )}
-            {mode === 'edit' && invoiceId !== null && (
-              <p className="text-xs text-muted-foreground">
-                {t('cards.date_correction')}
-              </p>
-            )}
             <Field>
               <FieldLabel htmlFor="title">{t('transactions.name')}</FieldLabel>
               <Input
@@ -828,6 +679,155 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                   </p>
                 )}
               </Field>
+            )}
+            {mode === 'add' && isCredit && (
+              <>
+                <FieldLabel>
+                  <Field orientation="horizontal">
+                    <Checkbox
+                      id="transaction-historical"
+                      disabled={isSubmitting || blocked}
+                      checked={historical_card}
+                      onCheckedChange={(checked) => {
+                        handleTransaction('historical_card', checked);
+
+                        if (
+                          !checked &&
+                          cards.find((card) => card.id === cardId)?.archived_at
+                        ) {
+                          handleTransaction('card_id', null);
+                          handleTransaction('credit_card_invoice_id', null);
+                        }
+                      }}
+                    />
+                    <FieldContent>
+                      <FieldTitle>{t('cards.historical')}</FieldTitle>
+                    </FieldContent>
+                  </Field>
+                </FieldLabel>
+                <Field>
+                  <FieldLabel htmlFor="transaction-card">
+                    {t('cards.card')}
+                  </FieldLabel>
+
+                  <Select<number>
+                    items={cards.map((card) => ({
+                      value: card.id,
+                      label: card.name,
+                    }))}
+                    value={cardId}
+                    onValueChange={(value) => {
+                      handleTransaction('card_id', Number(value) || null);
+                      handleTransaction('credit_card_invoice_id', null);
+                    }}
+                  >
+                    <SelectTrigger id="transaction-card">
+                      <SelectValue placeholder={t('cards.select_card')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {cards
+                          .filter(
+                            (card) => historical_card || !card.archived_at,
+                          )
+                          .map((card) => (
+                            <SelectItem key={card.id} value={card.id}>
+                              {card.name}
+                              {card.archived_at
+                                ? ` (${t('cards.archived')})`
+                                : ''}
+                            </SelectItem>
+                          ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCardEditor(true)}
+                >
+                  {t('cards.new_card')}
+                </Button>
+                <Field>
+                  <FieldLabel htmlFor="transaction-invoice-month">
+                    {t('financing.first_invoice_month')}
+                  </FieldLabel>
+                  <Input
+                    id="transaction-invoice-month"
+                    type="month"
+                    value={invoiceMonth ?? ''}
+                    onChange={(event) => {
+                      handleTransaction(
+                        'invoice_month',
+                        event.target.value || null,
+                      );
+                      handleTransaction('credit_card_invoice_id', null);
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t('financing.invoice_month_hint')}
+                  </p>
+                </Field>
+                {cardId !== null && (
+                  <Field>
+                    <FieldLabel htmlFor="transaction-invoice">
+                      {t('cards.invoice')}
+                    </FieldLabel>
+                    <Select<number>
+                      items={[
+                        { value: null, label: t('cards.automatic') },
+                        ...cardInvoices.map((invoice) => ({
+                          value: invoice.id,
+                          label: `${cardDate(invoice.closing_date)} · #${invoice.id}`,
+                        })),
+                      ]}
+                      value={invoiceId}
+                      onValueChange={(value) => {
+                        handleTransaction('invoice_month', null);
+                        handleTransaction(
+                          'credit_card_invoice_id',
+                          Number(value) || null,
+                        );
+                      }}
+                    >
+                      <SelectTrigger id="transaction-invoice">
+                        <SelectValue placeholder={t('cards.automatic')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value={null}>
+                            {t('cards.automatic')}
+                          </SelectItem>
+                          {cardInvoices.map((invoice) => (
+                            <SelectItem key={invoice.id} value={invoice.id}>
+                              {cardDate(invoice.closing_date)} · #{invoice.id}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+
+                    <FieldDescription>
+                      {t('cards.override_hint')}
+                    </FieldDescription>
+                  </Field>
+                )}
+                {suggestedPeriod && invoiceId === null && (
+                  <p className="text-xs text-muted-foreground">
+                    {t('cards.preview')}:{' '}
+                    {cardDate(suggestedPeriod.opening_date)} →{' '}
+                    {cardDate(suggestedPeriod.closing_date)}
+                  </p>
+                )}
+                {cardLoading && <p role="status">{t('common.loading')}</p>}
+                {cardFailed && <p role="alert">{t('cards.save_error')}</p>}
+              </>
+            )}
+            {mode === 'edit' && invoiceId !== null && (
+              <p className="text-xs text-muted-foreground">
+                {t('cards.date_correction')}
+              </p>
             )}
             {financed && (
               <CreditFinancingFields
