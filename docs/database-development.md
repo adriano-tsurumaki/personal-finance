@@ -96,7 +96,11 @@ not used to choose the packaged database location.
 
 ## Verification
 
-`pnpm test:db` runs isolated SQLite tests covering CRUD, month boundaries, category
+`pnpm test:db` automatically discovers all `*.test.ts` and `*.test.tsx` files
+under `src`, including database, shared utility, and renderer tests. New test
+files matching these patterns do not need to be added to `package.json`.
+
+The isolated SQLite tests cover CRUD, month boundaries, category
 joins, user isolation, input validation, seed idempotence, schema constraints,
 legacy adoption, successive migrations, and rollback after a failed migration.
 Profile tests also cover locale persistence after restart, catalog initialization,
