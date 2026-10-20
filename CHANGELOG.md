@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Use NumberFlow for smooth monthly balance and indicator animations, with
+  locale-aware BRL and percentage formatting.
+
 ## 0.8.0 - 2026-10-20
 
 ### Added

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import BalanceSparkline from './BalanceSparkline';
 import OdometerMoney from '@components/OdometerMoney';
+import type { OdometerMoneyProps } from '@components/OdometerMoney/types';
 import {
   formatCompactCurrency,
   formatYearMonthToString,
@@ -17,10 +18,6 @@ import { useAppStore } from '@store/transaction';
 import { shiftMonth } from '@shared/lib/calc';
 import ProfileHeader from '@modules/Profiles/ProfileHeader';
 import { t } from '@lib/i18n';
-
-function formatSavingsRate(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 export default function MonthlyFinance(): React.JSX.Element {
   const monthlyStatement = useAppStore((s) => s.monthlyStatement);
@@ -148,7 +145,7 @@ export default function MonthlyFinance(): React.JSX.Element {
             available={loaded}
             label={t('summary.saved')}
             value={monthlyStatement.savingsRate}
-            formatValue={formatSavingsRate}
+            format={{ style: 'percent', maximumFractionDigits: 0 }}
             tone="neutral"
             hint={formatCompactCurrency(monthlyStatement.net)}
           />
@@ -162,7 +159,7 @@ function Stat({
   label,
   available,
   value,
-  formatValue,
+  format,
   tone,
   icon,
   hint,
@@ -170,7 +167,7 @@ function Stat({
   label: string;
   available: boolean;
   value: number;
-  formatValue?: (value: number) => string;
+  format?: OdometerMoneyProps['format'];
   tone: 'income' | 'expense' | 'neutral';
   icon?: React.ReactNode;
   hint?: string;
@@ -193,7 +190,7 @@ function Stat({
       >
         <span>
           {available ? (
-            <OdometerMoney value={value} formatValue={formatValue} />
+            <OdometerMoney value={value} format={format} />
           ) : (
             '—'
           )}

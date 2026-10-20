@@ -61,6 +61,7 @@
   "dependencies": {
     "@base-ui/react": "^1.8.0",
     "@libsql/client": "^0.18.0",
+    "@number-flow/react": "^0.6.2",
     "@tailwindcss/vite": "^4.3.3",
     "better-sqlite3": "^13.0.3",
     "class-variance-authority": "^0.7.1",
