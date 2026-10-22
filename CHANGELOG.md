@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Changed
+
+- Choose the current invoice, next invoice, or two invoices later when creating
+  installments, with each option showing its due day and month. Deferring changes
+  the first invoice and subsequent billing months independently of timeline dates.
+  Existing plans are preserved; no migration or upgrade action is required.
+  Inherited selections beyond the three normal choices remain explicitly visible.
+  Suggestion failures allow retry or explicit invoice mapping without hiding catalogs.
+
 ## 0.9.0 - 2026-10-20
 
 ### Added

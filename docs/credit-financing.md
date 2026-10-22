@@ -53,6 +53,9 @@ Confirm a selected expense occurrence with either method. Single confirmation
 supports charges and an invoice override. Choose **Split this occurrence into
 installments** to preview and save the occurrence as a finite plan, including a
 future first invoice. The plan retains an explicitly selected first invoice.
+In the installment form, choose the current invoice, next invoice, or two invoices
+later using their due day and month. Current is relative to the purchase date;
+reference-date changes alone do not defer billing.
 Switching to a direct payment clears invoice choices before confirmation.
 This does not change the recurrence's defaults or later
 occurrences. A financed rule default is an estimated amount; actual charges and

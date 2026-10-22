@@ -4,8 +4,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { setLocale, t } from '@lib/i18n';
 import type { InstallmentPlanDto } from '@shared/contracts/installment';
 import PlanPreview, { PlanSchedule } from './PlanPreview';
-import { Choice } from './PlanDialog';
+import { Choice, FirstInvoiceField } from './PlanDialog';
 import TimelineEntryRow from '../TimelineTransaction/TimelineEntryRow';
+import { installmentInvoiceSelection } from '../Recurrences/invoice-selection';
 
 const plan: InstallmentPlanDto = {
   id: 1,
@@ -48,6 +49,85 @@ const plan: InstallmentPlanDto = {
     },
   ],
 };
+
+test('first invoice selection shows localized due dates and retains a deferred choice', () => {
+  try {
+    for (const locale of ['en-US', 'pt-BR'] as const) {
+      setLocale(locale);
+      const choices = [
+        { month: '2026-08', dueDate: '2026-09-07' },
+        { month: '2026-09', dueDate: '2026-10-07' },
+        { month: '2026-10', dueDate: '2026-11-07' },
+      ];
+      for (const [index, key] of [
+        'installments.current_invoice',
+        'installments.next_invoice',
+        'installments.two_invoices_later',
+      ].entries()) {
+        const html = renderToStaticMarkup(
+          <FirstInvoiceField
+            choices={choices}
+            selectedMonth={index === 0 ? null : choices[index].month}
+            onChange={() => {}}
+          />,
+        );
+        const date = new Intl.DateTimeFormat(locale, {
+          day: 'numeric',
+          month: 'long',
+        }).format(new Date(`${choices[index].dueDate}T12:00:00`));
+        assert.ok(html.includes(t(key as Parameters<typeof t>[0], { date })));
+        assert.doesNotMatch(html, /type="month"/);
+      }
+      const loading = renderToStaticMarkup(
+        <FirstInvoiceField
+          choices={[]}
+          selectedMonth={null}
+          onChange={() => {}}
+        />,
+      );
+      assert.ok(loading.includes(t('installments.select_first_invoice')));
+    }
+  } finally {
+    setLocale('pt-BR');
+  }
+});
+
+test('recurrence invoice months outside the normal choices remain visible without changing the inherited instruction', () => {
+  try {
+    for (const locale of ['en-US', 'pt-BR'] as const) {
+      setLocale(locale);
+      const inherited = installmentInvoiceSelection('2026-12', null);
+      const choices = [
+        { month: '2026-08', dueDate: '2026-09-07' },
+        { month: '2026-09', dueDate: '2026-10-07' },
+        { month: '2026-10', dueDate: '2026-11-07' },
+      ];
+      for (const available of [choices, []]) {
+        const html = renderToStaticMarkup(
+          <FirstInvoiceField
+            choices={available}
+            selectedMonth={inherited.first_invoice_month}
+            onChange={() =>
+              assert.fail('Rendering must preserve the inherited choice')
+            }
+          />,
+        );
+        const month = new Intl.DateTimeFormat(locale, {
+          month: 'long',
+          year: 'numeric',
+        }).format(new Date(2026, 11, 1));
+        assert.ok(
+          html.includes(t('installments.retained_first_invoice', { month })),
+        );
+        assert.ok(html.includes(t('installments.change_first_invoice')));
+        assert.ok(!html.includes(t('installments.select_first_invoice')));
+        assert.equal(inherited.first_invoice_month, '2026-12');
+      }
+    }
+  } finally {
+    setLocale('pt-BR');
+  }
+});
 
 test('installment rows distinguish scheduled reference dates, actual payment evidence and invoice dates in both locales', () => {
   try {

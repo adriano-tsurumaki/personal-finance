@@ -38,6 +38,10 @@ import {
 } from '@store/financial-operations';
 import { categoryLabel, getLocale, t } from '@lib/i18n';
 import { redistributeInstallmentAmounts } from './allocation';
+import {
+  loadFirstInvoiceChoices,
+  type FirstInvoiceChoice,
+} from './invoice-choices';
 import type {
   InstallmentInput,
   InstallmentPlanDto,
@@ -85,6 +89,74 @@ export function Choice({
   );
 }
 
+export function FirstInvoiceField({
+  choices,
+  selectedMonth,
+  onChange,
+}: {
+  choices: FirstInvoiceChoice[];
+  selectedMonth: string | null;
+  onChange: (month: string) => void;
+}) {
+  const selected = selectedMonth
+    ? choices.findIndex((choice) => choice.month === selectedMonth) + 1
+    : choices.length
+      ? 1
+      : null;
+  const retainedMonth = selectedMonth && selected === 0 ? selectedMonth : null;
+  const labels = [
+    'installments.current_invoice',
+    'installments.next_invoice',
+    'installments.two_invoices_later',
+  ] as const;
+  return (
+    <div className="space-y-2">
+      {retainedMonth && (
+        <p role="status" className="text-sm">
+          {t('installments.retained_first_invoice', {
+            month: new Intl.DateTimeFormat(getLocale(), {
+              month: 'long',
+              year: 'numeric',
+            }).format(parseISO(`${retainedMonth}-01`)),
+          })}
+        </p>
+      )}
+      <Choice
+        label={t('installments.first_invoice')}
+        placeholder={t(
+          retainedMonth
+            ? 'installments.change_first_invoice'
+            : 'installments.select_first_invoice',
+        )}
+        value={selected}
+        items={choices.map((choice, index) => ({
+          value: index + 1,
+          label: t(labels[index], {
+            date: new Intl.DateTimeFormat(getLocale(), {
+              day: 'numeric',
+              month: 'long',
+            }).format(parseISO(choice.dueDate)),
+          }),
+        }))}
+        onChange={(id) => {
+          const choice = choices[(id ?? 0) - 1];
+
+          if (choice) {
+            onChange(choice.month);
+          }
+        }}
+      />
+      <p className="text-xs text-muted-foreground">
+        {t(
+          choices.length
+            ? 'installments.first_invoice_hint'
+            : 'installments.invoice_mapping_hint',
+        )}
+      </p>
+    </div>
+  );
+}
+
 export default function PlanDialog({
   month,
   plan,
@@ -120,6 +192,9 @@ export default function PlanDialog({
   }));
   const [cards, setCards] = useState<CreditCardDto[]>([]);
   const [invoices, setInvoices] = useState<InvoiceDto[]>([]);
+  const [invoiceChoices, setInvoiceChoices] = useState<FirstInvoiceChoice[]>(
+    [],
+  );
   const [preview, setPreview] = useState<InstallmentPreviewDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [locked, setLocked] = useState<boolean[]>([]);
@@ -127,6 +202,7 @@ export default function PlanDialog({
   const [allocationError, setAllocationError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [catalogFailed, setCatalogFailed] = useState(false);
+  const [invoiceChoicesFailed, setInvoiceChoicesFailed] = useState(false);
   const [catalogRevision, setCatalogRevision] = useState(0);
   const alive = useRef(false);
   const running = useRef(false);
@@ -219,7 +295,9 @@ export default function PlanDialog({
   useEffect(() => {
     let active = true;
     setCatalogFailed(false);
+    setInvoiceChoicesFailed(false);
     setInvoices([]);
+    setInvoiceChoices([]);
     const release = useFinancialOperations
       .getState()
       .begin('transaction-details');
@@ -229,10 +307,40 @@ export default function PlanDialog({
         ? window.api.getCardInvoices(input.card_id)
         : Promise.resolve([]),
     ])
-      .then(([cardRows, invoiceRows]) => {
-        if (active && current()) {
-          setCards(cardRows);
-          setInvoices(invoiceRows);
+      .then(async ([cardRows, invoiceRows]) => {
+        if (!active || !current()) {
+          return;
+        }
+
+        setCards(cardRows);
+        setInvoices(invoiceRows);
+        const card = cardRows.find((row) => row.id === input.card_id);
+
+        if (
+          !plan &&
+          credit &&
+          card &&
+          card.closing_day !== null &&
+          card.includes_closing_day !== null &&
+          card.due_days_after_closing !== null &&
+          /^\d{4}-\d{2}-\d{2}$/.test(input.purchase_at)
+        ) {
+          try {
+            const choices = await loadFirstInvoiceChoices(
+              window.api,
+              card.id,
+              input.purchase_at,
+              invoiceRows,
+            );
+
+            if (active && current()) {
+              setInvoiceChoices(choices);
+            }
+          } catch {
+            if (active && current()) {
+              setInvoiceChoicesFailed(true);
+            }
+          }
         }
       })
       .catch(() => {
@@ -244,7 +352,7 @@ export default function PlanDialog({
     return () => {
       active = false;
     };
-  }, [input.card_id, catalogRevision]);
+  }, [input.card_id, input.purchase_at, credit, catalogRevision]);
   async function act(save: boolean) {
     if (
       running.current ||
@@ -257,6 +365,16 @@ export default function PlanDialog({
 
     if (!plan && (!credit || input.card_id === null)) {
       setError(t('installments.credit_required'));
+      return;
+    }
+
+    if (
+      !plan &&
+      invoiceChoicesFailed &&
+      !input.first_invoice_month &&
+      !input.invoice_ids[0]
+    ) {
+      setError(t('installments.invoice_choices_error'));
       return;
     }
 
@@ -444,6 +562,8 @@ export default function PlanDialog({
                     change({
                       purchase_at: value ? format(value, 'yyyy-MM-dd') : '',
                       start_date: value ? format(value, 'yyyy-MM-dd') : '',
+                      first_invoice_month: null,
+                      invoice_ids: [],
                     })
                   }
                 />
@@ -490,6 +610,7 @@ export default function PlanDialog({
                         input.total_amount_cents,
                       financing: null,
                       card_id: null,
+                      first_invoice_month: null,
                       invoice_ids: [],
                       use_invoice_opening_date: false,
                       add_day_to_invoice_opening_date: false,
@@ -535,6 +656,7 @@ export default function PlanDialog({
                             change({
                               historical_card: !!checked,
                               card_id: null,
+                              first_invoice_month: null,
                               invoice_ids: [],
                             })
                           }
@@ -552,28 +674,48 @@ export default function PlanDialog({
                         )
                         .map((row) => ({ value: row.id, label: row.name }))}
                       onChange={(id) =>
-                        change({ card_id: id, invoice_ids: [] })
+                        change({
+                          card_id: id,
+                          invoice_ids: [],
+                          first_invoice_month: null,
+                        })
                       }
                     />
-                    <Field>
-                      <FieldLabel htmlFor={`${prefix}-invoice-month`}>
-                        {t('financing.first_invoice_month')}
-                      </FieldLabel>
-                      <Input
-                        id={`${prefix}-invoice-month`}
-                        type="month"
-                        value={input.first_invoice_month ?? ''}
-                        onChange={(event) =>
-                          change({
-                            first_invoice_month: event.target.value || null,
-                            invoice_ids: [],
-                          })
-                        }
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {t('financing.invoice_month_hint')}
-                      </p>
-                    </Field>
+                    <FirstInvoiceField
+                      choices={invoiceChoices}
+                      selectedMonth={
+                        input.first_invoice_month ??
+                        invoices
+                          .find((row) => row.id === input.invoice_ids[0])
+                          ?.closing_date.slice(0, 7) ??
+                        null
+                      }
+                      onChange={(month) =>
+                        change({ first_invoice_month: month, invoice_ids: [] })
+                      }
+                    />
+                    {invoiceChoicesFailed && (
+                      <div role="alert" className="space-y-2 sm:col-span-2">
+                        <p className="text-sm text-destructive">
+                          {t('installments.invoice_choices_error')}
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={blocked || busy}
+                          onClick={() => {
+                            if (
+                              !financialActionsBlocked() &&
+                              !running.current
+                            ) {
+                              setCatalogRevision((value) => value + 1);
+                            }
+                          }}
+                        >
+                          {t('common.retry')}
+                        </Button>
+                      </div>
+                    )}
                     {input.card_id && (
                       <details className="rounded-lg border border-border p-3 sm:col-span-2">
                         <summary className="cursor-pointer text-sm">
@@ -708,7 +850,16 @@ export default function PlanDialog({
             </Button>
             <Button
               type="submit"
-              disabled={blocked || busy || catalogFailed || allocationError}
+              disabled={
+                blocked ||
+                busy ||
+                catalogFailed ||
+                allocationError ||
+                (!plan &&
+                  invoiceChoicesFailed &&
+                  !input.first_invoice_month &&
+                  !input.invoice_ids[0])
+              }
             >
               {busy
                 ? t('installments.working')

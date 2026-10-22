@@ -58,9 +58,22 @@ including generated invoices and audit records.
 
 ## Invoices and financial reporting
 
-The first card invoice is suggested from the purchase date. Users can choose an
-explicit first invoice and, when required, map every position to an existing
-invoice. Later installments use successive closing months of the same card.
+The first card invoice is suggested from the purchase date. The creation form
+offers the current invoice, the next invoice, or two invoices later, each labeled
+with its due day and month. Current is relative to the purchase date, not today.
+Selecting a later invoice defers actual invoice membership, independently of
+timeline reference dates. Existing invoices supply their recorded due dates;
+missing periods are previewed without writes and generated only on save.
+Changing the purchase date or card resets the choice to the current invoice.
+An explicit first invoice passed from a recurrence confirmation is retained.
+If it falls outside the three normal options, a visible notice identifies its
+closing month and explains that it remains selected until replaced. The same
+notice covers a first invoice selected through advanced mapping.
+Suggestion failures leave the card and invoice catalogs available, with a retry
+action. An explicit first invoice is required before previewing after such a
+failure; the advanced mapping remains available for choosing existing invoices.
+Users can also map every position to an existing invoice in the advanced mapping.
+Later installments use successive closing months of the same card.
 Legacy cards without billing settings require explicit existing invoice mappings;
 missing or ambiguous periods must be registered or corrected in Cards first.
 Archived cards require the explicit historical-purchase option.
