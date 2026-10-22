@@ -2,7 +2,7 @@
   "name": "personal-finance",
   "productName": "personal-finance",
   "version": "0.10.1",
-  "description": "My Electron application description",
+  "description": "A desktop personal finance app that helps people understand their spending, manage financial commitments, and project future balances.",
   "main": ".vite/build/main.js",
   "private": true,
   "packageManager": "pnpm@10.10.0",
