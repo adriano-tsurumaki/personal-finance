@@ -76,7 +76,7 @@ function SelectContent({
         alignOffset={alignOffset}
         alignItemWithTrigger={alignItemWithTrigger}
         collisionAvoidance={{
-          side: 'none',
+          side: 'flip',
           align: 'shift',
           fallbackAxisSide: 'none',
         }}

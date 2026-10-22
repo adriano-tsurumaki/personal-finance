@@ -8,6 +8,11 @@
   generated trigger IDs and associated labels, descriptions, and validation errors.
   Existing values and financial operation guards are preserved.
 
+### Fixed
+
+- Allow select menus to open above their trigger when there is insufficient space
+  below. No database migration or manual upgrade action is required.
+
 ## 0.10.0 - 2026-10-21
 
 ### Changed
