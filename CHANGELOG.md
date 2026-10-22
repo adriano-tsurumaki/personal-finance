@@ -11,6 +11,19 @@
   Inherited selections beyond the three normal choices remain explicitly visible.
   Suggestion failures allow retry or explicit invoice mapping without hiding catalogs.
 
+### Added
+
+- Display invoice purchases and unlinked credit entries in a minimal table with
+  bottom row dividers, multiple selection by clicking rows, and a selected count.
+  Selection is local to each displayed entry set and resets when that set changes;
+  bulk financial actions are not included. Existing entry actions and installment
+  restrictions remain available. Amounts and actions align right, the reference-date
+  column is compact, and selected rows use the theme’s green highlight, including
+  when clicking titles and secondary text. No database migration or upgrade action
+  is required.
+  Labeled checkboxes also support keyboard selection and expose each row's selected
+  state. Custom column widths keep reference dates compact and descriptions flexible.
+
 ## 0.9.0 - 2026-10-20
 
 ### Added

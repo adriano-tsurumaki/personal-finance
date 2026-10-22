@@ -53,6 +53,10 @@
     "partial_month": "Este mês apresenta totais parciais a partir da data inicial."
   },
   "cards": {
+    "entry_actions": "Ações",
+    "select_all_entries": "Selecionar todos os lançamentos",
+    "select_entry": "Selecionar {name}",
+    "selected_entries": "{count} selecionados",
     "title": "Cartões e faturas",
     "name": "Nome do cartão",
     "card": "Cartão",

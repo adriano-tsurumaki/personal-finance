@@ -53,6 +53,10 @@
     "partial_month": "This month shows partial totals from the start date."
   },
   "cards": {
+    "entry_actions": "Actions",
+    "select_all_entries": "Select all entries",
+    "select_entry": "Select {name}",
+    "selected_entries": "{count} selected",
     "title": "Cards and invoices",
     "name": "Card name",
     "card": "Card",

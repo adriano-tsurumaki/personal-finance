@@ -14,7 +14,7 @@ import { toast } from '@components/ui/toast';
 import { confirmation } from '@store/confirmation';
 import { useAppStore } from '@store/transaction';
 import { useProfileStore } from '@store/profile';
-import { useRef } from 'react';
+import { cloneElement, useRef } from 'react';
 import { creditCardStore } from '@store/credit-cards';
 import { confirmCardCorrection } from '@lib/card-corrections';
 
@@ -29,10 +29,14 @@ export default function MenuOptionsTransaction({
   children,
   transactionId,
   installment = false,
+  renderTrigger = <li />,
+  triggerClassName = 'group/transaction mb-4 rounded-lg transition-colors duration-150 ease-in-out hover:bg-secondary/40 motion-reduce:transition-none',
 }: {
   children: (actions: TransactionActions) => React.ReactNode;
   transactionId: number;
   installment?: boolean;
+  renderTrigger?: React.ReactElement;
+  triggerClassName?: string;
 }) {
   const blocked = useFinancialOperations((state) => state.pending.size > 0);
   const isRemoving = useRef(false);
@@ -160,8 +164,10 @@ export default function MenuOptionsTransaction({
   return (
     <ContextMenu>
       <ContextMenuTrigger
-        render={<li />}
-        className="group/transaction mb-4 rounded-lg transition-colors duration-150 ease-in-out hover:bg-secondary/40 motion-reduce:transition-none"
+        render={(triggerProps) =>
+          cloneElement(renderTrigger, triggerProps, triggerProps.children)
+        }
+        className={triggerClassName}
       >
         {children({
           onEdit: handleEdit,

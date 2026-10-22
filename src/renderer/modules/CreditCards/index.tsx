@@ -8,8 +8,6 @@ import {
   CreditCard,
   Pencil,
   Plus,
-  Link2,
-  Trash2,
   ReceiptText,
   History,
   ChevronDown,
@@ -26,7 +24,6 @@ import { dialogTransactionStore } from '@store/dialog-transaction';
 import { useProfileStore } from '@store/profile';
 import { useAppStore } from '@store/transaction';
 import { confirmation } from '@store/confirmation';
-import MenuOptionsTransaction from '@modules/TimelineTransaction/MenuOptionsTransaction';
 import type {
   CreditCardDto,
   InvoiceEntryDto,
@@ -45,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@components/ui/select';
+import Entries from './Entries';
 
 const operationKeys = [
   'pay_invoice',
@@ -172,84 +170,6 @@ export default function CreditCards() {
     store.handleTransaction(
       'reference_date',
       invoice?.opening_date ?? `${state.periodMonth}-01`,
-    );
-  }
-
-  function entries(rows: InvoiceEntryDto[]) {
-    return (
-      <ul className="divide-y divide-border">
-        {rows.map((entry) => (
-          <MenuOptionsTransaction
-            key={entry.id}
-            transactionId={entry.id}
-            installment={!!entry.installment_id}
-          >
-            {(actions) => (
-              <div className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <div>
-                  <p className="font-medium">{entry.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {cardDate(entry.reference_date)}
-                    {entry.installment_number
-                      ? ` · ${entry.installment_number}/${entry.total_installments ?? '?'}`
-                      : ''}
-                  </p>
-                  {entry.outside_period && (
-                    <p className="text-xs text-muted-foreground">
-                      {t('cards.outside_period')}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-sm">
-                    {formatCurrency(entry.amount_cents / 100)}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={t('cards.associate_label', {
-                      name: entry.name,
-                    })}
-                    title={t('cards.associate')}
-                    onClick={(event) => {
-                      returnFocus.current = event.currentTarget;
-                      setAssociation(entry);
-                    }}
-                    disabled={actions.disabled || !!entry.installment_id}
-                  >
-                    <Link2 aria-hidden="true" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={t('transactions.edit_label', {
-                      name: entry.name,
-                    })}
-                    title={t('common.edit')}
-                    onClick={actions.onEdit}
-                    disabled={actions.disabled || !!entry.installment_id}
-                  >
-                    <Pencil aria-hidden="true" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    className="text-muted-foreground hover:text-expense"
-                    aria-label={t('transactions.remove_label', {
-                      name: entry.name,
-                    })}
-                    title={t('common.remove')}
-                    onClick={actions.onRemove}
-                    disabled={actions.disabled || !!entry.installment_id}
-                  >
-                    <Trash2 aria-hidden="true" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </MenuOptionsTransaction>
-        ))}
-      </ul>
     );
   }
 
@@ -524,7 +444,11 @@ export default function CreditCards() {
           )}
           <div className="mt-4">
             {state.details.entries.length ? (
-              entries(state.details.entries)
+              <Entries
+                rows={state.details.entries}
+                returnFocus={returnFocus}
+                setAssociation={setAssociation}
+              />
             ) : (
               <p className="py-5 text-sm text-muted-foreground">
                 {t('cards.no_entries')}
@@ -588,7 +512,12 @@ export default function CreditCards() {
       {!!state.unlinked.length && (
         <section className="mt-6">
           <h3 className="text-sm font-semibold">{t('cards.unlinked')}</h3>
-          {entries(state.unlinked)}
+
+          <Entries
+            rows={state.unlinked}
+            returnFocus={returnFocus}
+            setAssociation={setAssociation}
+          />
         </section>
       )}
       {editor && (
