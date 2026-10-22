@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.10.0 - 2026-10-21
+
 ### Changed
 
 - Choose the current invoice, next invoice, or two invoices later when creating
