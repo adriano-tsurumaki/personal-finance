@@ -1,5 +1,43 @@
 # Release validation
 
+## 0.10.1 - 2026-10-22
+
+The approved patch centralizes select fields and their accessible IDs and allows
+menus to open above their trigger when space below is insufficient. This records
+release preparation, not a distribution-readiness declaration.
+
+### Completed checks
+
+- Three independent analysis agents reviewed the code, commit grouping, and version
+  impact. Code review approved the implementation without findings.
+- The complete repository suite passed all 187 tests before the metadata-only
+  version bump, including three new select field tests for unique IDs, accessible
+  feedback, null/zero/string values, placeholders, and disabled controls. A retry
+  outside the sandbox resolved temporary session-file rename restrictions.
+- `pnpm lint`, `pnpm typecheck`, and `pnpm format:check` passed with version `0.10.1`.
+- `pnpm make` generated production bundles, the Windows x64 application package,
+  and the Squirrel installer. The packaged `app.asar` and executable product/file
+  versions were checked and report `0.10.1`. Distributables are under `out/make`.
+- Existing dependency `use client` warnings and the ESLint configuration module-type
+  warning did not prevent compilation, checks, or packaging.
+
+### Pending checks and known limitations
+
+- The initial sandboxed packaging attempt could not resolve `github.com`. Retrying
+  outside the sandbox completed packaging and installer generation.
+- The available browser could not access the local preview server. Verify menu
+  direction at window edges, dialog scrolling, long lists, keyboard navigation,
+  and resizing in Electron before distribution. The new tests verify markup,
+  not interactive behavior or geometry.
+- Installer execution, clean installation, application startup, and an installed
+  upgrade from `0.10.0` with representative existing data were not verified.
+- No schema migration or manual upgrade action is required from `0.10.0`. Existing
+  financial records, contracts, and operation guards are preserved.
+- No release tags exist to establish distributed artifact provenance. Historical
+  release preparation commits and changelog entries do not demonstrate distribution.
+- No other platform was packaged or validated. No tag, push, or publication was
+  performed.
+
 ## 0.7.0 - 2026-10-19
 
 The approved minor version adds an optional one-calendar-day offset to invoice

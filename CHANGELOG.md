@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.10.1 - 2026-10-22
+
 ### Changed
 
 - Share select field composition and option definitions across forms, with unique
