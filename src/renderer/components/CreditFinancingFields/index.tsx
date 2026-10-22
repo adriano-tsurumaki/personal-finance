@@ -1,13 +1,11 @@
 import { useId } from 'react';
-import { Field, FieldLabel, FieldMoney } from '@components/ui/field';
-import { Input } from '@components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@components/ui/select';
+  FieldSelect,
+  Field,
+  FieldLabel,
+  FieldMoney,
+} from '@components/ui/field';
+import { Input } from '@components/ui/input';
 import { getLocale, t } from '@lib/i18n';
 import { formatCurrency } from '@lib/format/currency';
 import { financingAmounts } from '@shared/lib/credit-financing';
@@ -58,29 +56,17 @@ export default function CreditFinancingFields({
       />
       {(['interest', 'iof'] as const).map((key) => (
         <div key={key} className="grid grid-cols-2 gap-3">
-          <Field>
-            <FieldLabel htmlFor={`${prefix}-${key}-mode`}>
-              {t(`financing.${key}`)}
-            </FieldLabel>
-            <Select
-              value={value[key].mode}
-              items={[
-                { value: 'amount', label: 'R$' },
-                { value: 'percent', label: '%' },
-              ]}
-              onValueChange={(mode) =>
-                change({ ...value, [key]: { mode, value: 0 } })
-              }
-            >
-              <SelectTrigger id={`${prefix}-${key}-mode`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="amount">R$</SelectItem>
-                <SelectItem value="percent">%</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
+          <FieldSelect
+            label={t(`financing.${key}`)}
+            value={value[key].mode}
+            options={[
+              { value: 'amount', label: 'R$' },
+              { value: 'percent', label: '%' },
+            ]}
+            onValueChange={(mode) =>
+              change({ ...value, [key]: { mode, value: 0 } })
+            }
+          />
           {value[key].mode === 'amount' ? (
             <FieldMoney
               label={t(`financing.${key}`)}

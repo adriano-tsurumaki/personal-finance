@@ -19,18 +19,12 @@ import { Input } from '@components/ui/input';
 import { Checkbox } from '@components/ui/checkbox';
 import { toast } from '@components/ui/toast';
 import {
+  FieldSelect,
   Field,
   FieldDatePicker,
   FieldLabel,
   FieldMoney,
 } from '@components/ui/field';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@components/ui/select';
 import { useProfileStore } from '@store/profile';
 import {
   financialActionsBlocked,
@@ -64,28 +58,15 @@ export function Choice({
   items: { value: number; label: string }[];
   onChange: (id: number | null) => void;
 }) {
-  const id = useId();
   const selected = value ?? (items.some((item) => item.value === 0) ? 0 : null);
   return (
-    <Field>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Select
-        value={items.some((item) => item.value === selected) ? selected : null}
-        items={items}
-        onValueChange={(next) => onChange(Number(next) || null)}
-      >
-        <SelectTrigger id={id}>
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          {items.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </Field>
+    <FieldSelect
+      label={label}
+      value={items.some((item) => item.value === selected) ? selected : null}
+      options={items}
+      onValueChange={(next) => onChange(Number(next) || null)}
+      placeholder={placeholder}
+    />
   );
 }
 

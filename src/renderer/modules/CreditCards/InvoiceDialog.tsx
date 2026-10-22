@@ -16,6 +16,7 @@ import { Checkbox } from '@components/ui/checkbox';
 import { format, parseISO } from 'date-fns';
 import { CalendarDays } from 'lucide-react';
 import {
+  FieldSelect,
   Field,
   FieldGroup,
   FieldLabel,
@@ -31,14 +32,6 @@ import { getLocale, t } from '@lib/i18n';
 import { confirmCardCorrection } from '@lib/card-corrections';
 import { useProfileStore } from '@store/profile';
 import type { InvoiceDto, InvoiceInput } from '@shared/contracts/credit-cards';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@components/ui/select';
 
 export default function InvoiceDialog({
   cardId,
@@ -211,46 +204,28 @@ export default function InvoiceDialog({
                   </FieldContent>
                 </Field>
               </FieldLabel>
-              <Field>
-                <FieldLabel htmlFor={`${id}-source`}>
-                  {t('cards.total_source')}
-                </FieldLabel>
-
-                <Select
-                  items={[
-                    {
-                      value: 'statement',
-                      label: t('cards.statement'),
-                    },
-                    {
-                      value: 'calculated',
-                      label: t('cards.calculated'),
-                    },
-                  ]}
-                  required
-                  value={input.total_source}
-                  onValueChange={(value) =>
-                    setInput({
-                      ...input,
-                      total_source: value as InvoiceInput['total_source'],
-                    })
-                  }
-                >
-                  <SelectTrigger id={`${id}-source`}>
-                    <SelectValue placeholder={t('cards.select_card')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="statement">
-                        {t('cards.statement')}
-                      </SelectItem>
-                      <SelectItem value="calculated">
-                        {t('cards.calculated')}
-                      </SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
+              <FieldSelect
+                label={t('cards.total_source')}
+                options={[
+                  {
+                    value: 'statement',
+                    label: t('cards.statement'),
+                  },
+                  {
+                    value: 'calculated',
+                    label: t('cards.calculated'),
+                  },
+                ]}
+                required
+                value={input.total_source}
+                onValueChange={(value) =>
+                  setInput({
+                    ...input,
+                    total_source: value as InvoiceInput['total_source'],
+                  })
+                }
+                placeholder={t('cards.select_card')}
+              />
               {input.total_source === 'statement' && (
                 <FieldMoney
                   label={t('cards.total')}

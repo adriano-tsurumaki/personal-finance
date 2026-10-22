@@ -1,7 +1,12 @@
 import { useState, type RefObject } from 'react';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
-import { Field, FieldGroup, FieldLabel } from '@components/ui/field';
+import {
+  FieldSelect,
+  Field,
+  FieldGroup,
+  FieldLabel,
+} from '@components/ui/field';
 import {
   Dialog,
   DialogContent,
@@ -10,13 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@components/ui/select';
 import { getCategoryIcon } from '@lib/category-icons';
 import { categoryLabel, t } from '@lib/i18n';
 import {
@@ -140,31 +138,16 @@ export default function CategoryDialog({
                     }
                   />
                 </Field>
-                <Field>
-                  <FieldLabel htmlFor="category-type">
-                    {t('category_manager.type')}
-                  </FieldLabel>
-                  <Select
-                    items={types}
-                    value={input.transaction_type}
-                    onValueChange={(value) => {
-                      if (value) {
-                        setInput({ ...input, transaction_type: value });
-                      }
-                    }}
-                  >
-                    <SelectTrigger id="category-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {types.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
+                <FieldSelect
+                  label={t('category_manager.type')}
+                  options={types}
+                  value={input.transaction_type}
+                  onValueChange={(value) => {
+                    if (value) {
+                      setInput({ ...input, transaction_type: value });
+                    }
+                  }}
+                />
               </div>
               <Field>
                 <FieldLabel>{t('category_manager.icon')}</FieldLabel>

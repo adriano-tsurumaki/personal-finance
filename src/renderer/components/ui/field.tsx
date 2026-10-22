@@ -12,6 +12,103 @@ import { Input } from './input';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { Label } from '@components/ui/label';
 import { Separator } from '@components/ui/separator';
+import type { Select as SelectPrimitive } from '@base-ui/react/select';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './select';
+
+interface FieldSelectOption<Value extends string | number> {
+  value: Value | null;
+  label: React.ReactNode;
+  /** Optional popup content when it differs from the selected label. */
+  content?: React.ReactNode;
+  disabled?: boolean;
+}
+
+interface FieldSelectProps<Value extends string | number> extends Omit<
+  SelectPrimitive.Root.Props<Value>,
+  'children' | 'items' | 'id'
+> {
+  label: React.ReactNode;
+  options: readonly FieldSelectOption<Value>[];
+  id?: string;
+  placeholder?: React.ReactNode;
+  description?: React.ReactNode;
+  error?: string;
+  className?: string;
+  /** Additional field feedback, such as loading or retry controls. */
+  children?: React.ReactNode;
+}
+
+function FieldSelect<Value extends string | number>({
+  label,
+  options,
+  id,
+  placeholder,
+  description,
+  error,
+  className,
+  children,
+  ...props
+}: FieldSelectProps<Value>) {
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
+  const describedBy =
+    [
+      description ? `${inputId}-description` : null,
+      error ? `${inputId}-error` : null,
+    ]
+      .filter(Boolean)
+      .join(' ') || undefined;
+
+  return (
+    <Field
+      className={className}
+      data-disabled={props.disabled}
+      data-invalid={!!error}
+    >
+      <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
+      <Select {...props} items={options}>
+        <SelectTrigger
+          id={inputId}
+          aria-describedby={describedBy}
+          aria-invalid={!!error}
+        >
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            {options.map((option) => (
+              <SelectItem
+                key={
+                  option.value === null
+                    ? 'null'
+                    : `${typeof option.value}:${option.value}`
+                }
+                value={option.value}
+                disabled={option.disabled}
+              >
+                {option.content ?? option.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+      {description && (
+        <FieldDescription id={`${inputId}-description`}>
+          {description}
+        </FieldDescription>
+      )}
+      {error && <FieldError id={`${inputId}-error`}>{error}</FieldError>}
+      {children}
+    </Field>
+  );
+}
 
 function FieldSet({ className, ...props }: React.ComponentProps<'fieldset'>) {
   return (
@@ -485,6 +582,7 @@ function FieldError({
 
 export {
   Field,
+  FieldSelect,
   FieldDatePicker,
   FieldMoney,
   FieldLabel,
@@ -498,4 +596,9 @@ export {
   FieldTitle,
 };
 
-export type { FieldDatePickerProps, FieldMoneyProps };
+export type {
+  FieldDatePickerProps,
+  FieldMoneyProps,
+  FieldSelectProps,
+  FieldSelectOption,
+};

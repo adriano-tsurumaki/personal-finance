@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Repeat, Plus } from 'lucide-react';
 import { Button } from '@components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
-import { Field, FieldLabel } from '@components/ui/field';
+import { FieldSelect, Field, FieldLabel } from '@components/ui/field';
 import { Input } from '@components/ui/input';
 import {
   Dialog,
@@ -21,13 +21,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@components/ui/select';
 import { toast } from '@components/ui/toast';
 import { t, getLocale } from '@lib/i18n';
 import { formatCurrency } from '@lib/format/currency';
@@ -973,31 +966,14 @@ export function RecurrenceEditor({
         />
       )}
       {editor.action === 'create' && (
-        <Field>
-          <FieldLabel htmlFor="recurrence-cadence">
-            {t('recurrence.frequency')}
-          </FieldLabel>
-          <Select
-            value={cadence}
-            items={(['weekly', 'monthly', 'quarterly', 'yearly'] as const).map(
-              (value) => ({ value, label: t(`recurrence.${value}`) }),
-            )}
-            onValueChange={(value) => setCadence(String(value))}
-          >
-            <SelectTrigger id="recurrence-cadence">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(['weekly', 'monthly', 'quarterly', 'yearly'] as const).map(
-                (value) => (
-                  <SelectItem key={value} value={value}>
-                    {t(`recurrence.${value}`)}
-                  </SelectItem>
-                ),
-              )}
-            </SelectContent>
-          </Select>
-        </Field>
+        <FieldSelect
+          label={t('recurrence.frequency')}
+          value={cadence}
+          options={(['weekly', 'monthly', 'quarterly', 'yearly'] as const).map(
+            (value) => ({ value, label: t(`recurrence.${value}`) }),
+          )}
+          onValueChange={(value) => setCadence(String(value))}
+        />
       )}
       <Field>
         <FieldLabel htmlFor="recurrence-date">
@@ -1101,36 +1077,21 @@ export function RecurrenceEditor({
         </Field>
       )}
       {editor.action === 'confirm' && credit && (
-        <Field>
-          <FieldLabel htmlFor="recurrence-invoice">
-            {t('cards.invoice')}
-          </FieldLabel>
-          <Select
-            value={invoiceId}
-            items={[
-              { value: null, label: t('cards.automatic') },
-              ...invoices.map((row) => ({
-                value: row.id,
-                label: `#${row.id} · ${occurrenceDate(row.due_date)}`,
-              })),
-            ]}
-            onValueChange={(id) => {
-              setInvoiceMonth(null);
-              setInvoiceId(Number(id) || null);
-            }}
-          >
-            <SelectTrigger id="recurrence-invoice">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={null}>{t('cards.automatic')}</SelectItem>
-              {invoices.map((row) => (
-                <SelectItem key={row.id} value={row.id}>
-                  #{row.id} · {occurrenceDate(row.due_date)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <FieldSelect
+          label={t('cards.invoice')}
+          value={invoiceId}
+          options={[
+            { value: null, label: t('cards.automatic') },
+            ...invoices.map((row) => ({
+              value: row.id,
+              label: `#${row.id} · ${occurrenceDate(row.due_date)}`,
+            })),
+          ]}
+          onValueChange={(id) => {
+            setInvoiceMonth(null);
+            setInvoiceId(Number(id) || null);
+          }}
+        >
           {billingLoading && (
             <p role="status" className="text-xs">
               {t('common.loading')}
@@ -1141,7 +1102,7 @@ export function RecurrenceEditor({
               {t('recurrence.billing_unavailable')}
             </p>
           )}
-        </Field>
+        </FieldSelect>
       )}
       {editor.action === 'confirm' && (
         <p className="text-xs text-muted-foreground">

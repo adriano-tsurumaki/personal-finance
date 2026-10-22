@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed
+
+- Share select field composition and option definitions across forms, with unique
+  generated trigger IDs and associated labels, descriptions, and validation errors.
+  Existing values and financial operation guards are preserved.
+
 ## 0.10.0 - 2026-10-21
 
 ### Changed

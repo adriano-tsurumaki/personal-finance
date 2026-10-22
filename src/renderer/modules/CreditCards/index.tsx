@@ -15,7 +15,7 @@ import {
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { toast } from '@components/ui/toast';
-import { Field, FieldLabel } from '@components/ui/field';
+import { FieldSelect, Field, FieldLabel } from '@components/ui/field';
 import { getLocale, t, type TranslationKey } from '@lib/i18n';
 import { formatCurrency } from '@lib/format/currency';
 import { cardDate } from '@lib/card-corrections';
@@ -34,14 +34,6 @@ import CardDialog from './CardDialog';
 import InvoiceDialog from './InvoiceDialog';
 import InvoicePaymentDialog from './InvoicePaymentDialog';
 import AssociationDialog from './AssociationDialog';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@components/ui/select';
 import Entries from './Entries';
 
 const operationKeys = [
@@ -220,37 +212,22 @@ export default function CreditCards() {
           {t('cards.no_cards')}
         </p>
       ) : (
-        <Field>
-          <FieldLabel htmlFor={`${id}-card`}>{t('cards.card')}</FieldLabel>
-
-          <Select<number>
-            items={state.cards.map((card) => ({
-              value: card.id,
-              label: card.name,
-            }))}
-            value={state.cardId}
-            onValueChange={(value) => {
-              if (!financialActionsBlocked()) {
-                void state.selectCard(value);
-              }
-            }}
-            disabled={blocked}
-          >
-            <SelectTrigger id={`${id}-card`}>
-              <SelectValue placeholder={t('cards.select_card')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {state.cards.map((card) => (
-                  <SelectItem key={card.id} value={card.id}>
-                    {card.name}
-                    {card.archived_at ? ` (${t('cards.archived')})` : ''}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field>
+        <FieldSelect<number>
+          label={t('cards.card')}
+          options={state.cards.map((card) => ({
+            value: card.id,
+            label: card.name,
+            content: `${card.name}${card.archived_at ? ` (${t('cards.archived')})` : ''}`,
+          }))}
+          value={state.cardId}
+          onValueChange={(value) => {
+            if (!financialActionsBlocked()) {
+              void state.selectCard(value);
+            }
+          }}
+          disabled={blocked}
+          placeholder={t('cards.select_card')}
+        />
       )}
       {card && (
         <>
@@ -305,40 +282,21 @@ export default function CreditCards() {
                 }}
               />
             </Field>
-            <Field>
-              <FieldLabel htmlFor={`${id}-invoice`}>
-                {t('cards.invoice')}
-              </FieldLabel>
-
-              <Select<number>
-                items={state.invoices.map((invoice) => ({
-                  value: invoice.id,
-                  label: `${cardDate(invoice.closing_date)} · ${formatCurrency(invoice.amount_cents / 100)} · #${invoice.id}`,
-                }))}
-                value={state.invoiceId}
-                onValueChange={(value) => {
-                  if (!financialActionsBlocked()) {
-                    void state.selectInvoice(value);
-                  }
-                }}
-                disabled={blocked}
-              >
-                <SelectTrigger id={`${id}-invoice`}>
-                  <SelectValue placeholder={t('cards.select_invoice')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {state.invoices.map((invoice) => (
-                      <SelectItem key={invoice.id} value={invoice.id}>
-                        {cardDate(invoice.closing_date)} ·{' '}
-                        {formatCurrency(invoice.amount_cents / 100)} · #
-                        {invoice.id}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
+            <FieldSelect<number>
+              label={t('cards.invoice')}
+              options={state.invoices.map((invoice) => ({
+                value: invoice.id,
+                label: `${cardDate(invoice.closing_date)} · ${formatCurrency(invoice.amount_cents / 100)} · #${invoice.id}`,
+              }))}
+              value={state.invoiceId}
+              onValueChange={(value) => {
+                if (!financialActionsBlocked()) {
+                  void state.selectInvoice(value);
+                }
+              }}
+              disabled={blocked}
+              placeholder={t('cards.select_invoice')}
+            />
           </div>
           {!invoice && period && (
             <p className="my-4 rounded-lg bg-secondary p-3 text-sm">

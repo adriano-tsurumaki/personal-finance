@@ -1,3 +1,4 @@
+import { FieldSelect } from '@components/ui/field';
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -5,13 +6,6 @@ import {
   Repeat,
 } from 'lucide-react';
 import { useState } from 'react';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@components/ui/select';
 import { useAppStore } from '@store/transaction';
 import { t } from '@lib/i18n';
 import { cardDate } from '@lib/card-corrections';
@@ -66,39 +60,20 @@ export default function CashFlow({
         )}
       </p>
       <div className="my-5 max-w-sm">
-        <p
-          id="chart-basis-label"
-          className="mb-2 text-xs font-medium text-muted-foreground"
-        >
-          {t('monthly_views.chart_basis')}
-        </p>
         {/* Both views use the confirmed snapshot; this local choice needs no financial lock. */}
-        <Select
+        <FieldSelect
+          label={t('monthly_views.chart_basis')}
+          options={[
+            { value: 'cash_flow', label: t('monthly_views.cash_flow_option') },
+            { value: 'reference', label: t('monthly_views.reference_option') },
+          ]}
           value={basis}
           onValueChange={(value) => {
             if (value === 'cash_flow' || value === 'reference') {
               setBasis(value);
             }
           }}
-        >
-          <SelectTrigger aria-labelledby="chart-basis-label">
-            <SelectValue>
-              {t(
-                byReference
-                  ? 'monthly_views.reference_option'
-                  : 'monthly_views.cash_flow_option',
-              )}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="cash_flow">
-              {t('monthly_views.cash_flow_option')}
-            </SelectItem>
-            <SelectItem value="reference">
-              {t('monthly_views.reference_option')}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        />
       </div>
       {!loaded ? (
         <p

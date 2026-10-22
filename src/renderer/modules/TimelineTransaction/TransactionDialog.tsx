@@ -17,25 +17,17 @@ import {
   DialogTitle,
 } from '@components/ui/dialog';
 import {
+  FieldSelect,
   Field,
   FieldDatePicker,
   FieldContent,
   FieldTitle,
-  FieldDescription,
   FieldGroup,
   FieldLabel,
   FieldMoney,
   FieldSet,
 } from '@components/ui/field';
 import { Input } from '@components/ui/input';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-  SelectGroup,
-} from '@components/ui/select';
 import { toast } from '@components/ui/toast';
 import { Pencil, Plus, X } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -555,27 +547,13 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                   showCurrencySymbol
                 />
               </Field>
-              <Field>
-                <FieldLabel htmlFor="type">{t('transactions.type')}</FieldLabel>
-                <Select<number>
-                  items={types}
-                  value={type}
-                  onValueChange={(value) => handleTransaction('type', value)}
-                >
-                  <SelectTrigger id="type">
-                    <SelectValue placeholder={t('transactions.select_type')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {types.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
+              <FieldSelect<number>
+                label={t('transactions.type')}
+                options={types}
+                value={type}
+                onValueChange={(value) => handleTransaction('type', value)}
+                placeholder={t('transactions.select_type')}
+              />
             </div>
             <div
               className={
@@ -583,33 +561,14 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
               }
             >
               {mode === 'add' && (
-                <Field>
-                  <FieldLabel htmlFor="category">
-                    {t('transactions.category')}
-                  </FieldLabel>
-                  <Select
-                    items={categories}
-                    value={category_id}
-                    onValueChange={(value) =>
-                      handleTransaction('category_id', value)
-                    }
-                  >
-                    <SelectTrigger id="category">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {categories.map((category) => (
-                          <SelectItem
-                            key={category.value}
-                            value={category.value}
-                          >
-                            {category.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                <FieldSelect
+                  label={t('transactions.category')}
+                  options={categories}
+                  value={category_id}
+                  onValueChange={(value) =>
+                    handleTransaction('category_id', value)
+                  }
+                >
                   {categoryCleared && (
                     <p role="status" className="text-xs text-muted-foreground">
                       {t('category_manager.incompatible')}
@@ -626,7 +585,7 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                       }
                     </p>
                   )}
-                </Field>
+                </FieldSelect>
               )}
               <Field>
                 <FieldDatePicker
@@ -644,41 +603,25 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
               </Field>
             </div>
             {mode === 'add' && (
-              <Field>
-                <FieldLabel htmlFor="payment">
-                  {t('transactions.payment')}
-                </FieldLabel>
-                <Select
-                  items={payments}
-                  value={payment_id || null}
-                  onValueChange={(value) => {
-                    handleTransaction('payment_id', value ?? 0);
-                    handleTransaction(
-                      'amount_cents',
-                      financing?.principal_cents ?? amount_cents,
-                    );
-                    handleTransaction('financing', null);
-                  }}
-                >
-                  <SelectTrigger id="payment">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {payments.map((payment) => (
-                        <SelectItem key={payment.value} value={payment.value}>
-                          {payment.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+              <FieldSelect
+                label={t('transactions.payment')}
+                options={payments}
+                value={payment_id || null}
+                onValueChange={(value) => {
+                  handleTransaction('payment_id', value ?? 0);
+                  handleTransaction(
+                    'amount_cents',
+                    financing?.principal_cents ?? amount_cents,
+                  );
+                  handleTransaction('financing', null);
+                }}
+              >
                 {isCredit && (
                   <p className="text-xs text-muted-foreground">
                     {t('transactions.credit_hint')}
                   </p>
                 )}
-              </Field>
+              </FieldSelect>
             )}
             {mode === 'add' && isCredit && (
               <>
@@ -705,43 +648,22 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                     </FieldContent>
                   </Field>
                 </FieldLabel>
-                <Field>
-                  <FieldLabel htmlFor="transaction-card">
-                    {t('cards.card')}
-                  </FieldLabel>
-
-                  <Select<number>
-                    items={cards.map((card) => ({
+                <FieldSelect<number>
+                  label={t('cards.card')}
+                  options={cards
+                    .filter((card) => historical_card || !card.archived_at)
+                    .map((card) => ({
                       value: card.id,
                       label: card.name,
+                      content: `${card.name}${card.archived_at ? ` (${t('cards.archived')})` : ''}`,
                     }))}
-                    value={cardId}
-                    onValueChange={(value) => {
-                      handleTransaction('card_id', Number(value) || null);
-                      handleTransaction('credit_card_invoice_id', null);
-                    }}
-                  >
-                    <SelectTrigger id="transaction-card">
-                      <SelectValue placeholder={t('cards.select_card')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {cards
-                          .filter(
-                            (card) => historical_card || !card.archived_at,
-                          )
-                          .map((card) => (
-                            <SelectItem key={card.id} value={card.id}>
-                              {card.name}
-                              {card.archived_at
-                                ? ` (${t('cards.archived')})`
-                                : ''}
-                            </SelectItem>
-                          ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </Field>
+                  value={cardId}
+                  onValueChange={(value) => {
+                    handleTransaction('card_id', Number(value) || null);
+                    handleTransaction('credit_card_invoice_id', null);
+                  }}
+                  placeholder={t('cards.select_card')}
+                />
                 <Button
                   type="button"
                   variant="outline"
@@ -770,48 +692,26 @@ export default function TransactionDialog({ mode }: { mode: 'add' | 'edit' }) {
                   </p>
                 </Field>
                 {cardId !== null && (
-                  <Field>
-                    <FieldLabel htmlFor="transaction-invoice">
-                      {t('cards.invoice')}
-                    </FieldLabel>
-                    <Select<number>
-                      items={[
-                        { value: null, label: t('cards.automatic') },
-                        ...cardInvoices.map((invoice) => ({
-                          value: invoice.id,
-                          label: `${cardDate(invoice.closing_date)} · #${invoice.id}`,
-                        })),
-                      ]}
-                      value={invoiceId}
-                      onValueChange={(value) => {
-                        handleTransaction('invoice_month', null);
-                        handleTransaction(
-                          'credit_card_invoice_id',
-                          Number(value) || null,
-                        );
-                      }}
-                    >
-                      <SelectTrigger id="transaction-invoice">
-                        <SelectValue placeholder={t('cards.automatic')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectItem value={null}>
-                            {t('cards.automatic')}
-                          </SelectItem>
-                          {cardInvoices.map((invoice) => (
-                            <SelectItem key={invoice.id} value={invoice.id}>
-                              {cardDate(invoice.closing_date)} · #{invoice.id}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-
-                    <FieldDescription>
-                      {t('cards.override_hint')}
-                    </FieldDescription>
-                  </Field>
+                  <FieldSelect<number>
+                    label={t('cards.invoice')}
+                    options={[
+                      { value: null, label: t('cards.automatic') },
+                      ...cardInvoices.map((invoice) => ({
+                        value: invoice.id,
+                        label: `${cardDate(invoice.closing_date)} · #${invoice.id}`,
+                      })),
+                    ]}
+                    value={invoiceId}
+                    onValueChange={(value) => {
+                      handleTransaction('invoice_month', null);
+                      handleTransaction(
+                        'credit_card_invoice_id',
+                        Number(value) || null,
+                      );
+                    }}
+                    placeholder={t('cards.automatic')}
+                    description={t('cards.override_hint')}
+                  />
                 )}
                 {suggestedPeriod && invoiceId === null && (
                   <p className="text-xs text-muted-foreground">
