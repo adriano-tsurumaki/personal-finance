@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### Changed
+
+- Modernize category management with compact responsive cards, accessible action
+  menus, localized name search, compatibility filters, and a collapsible archived
+  section. Show current-month recorded income, expenses, entry counts, and daily
+  activity charts without counting invoice payments again. Preserve existing
+  themes, category rules, and history; no dependencies, database migration, or
+  manual upgrade action are required.
+
+### Fixed
+
+- Reject category activity totals or daily amounts outside exact integer-cent
+  precision, showing activity as unavailable instead of displaying rounded totals.
+- Keep category names and descriptions at the top of each card and group monthly
+  activity at the bottom, reserving space for secondary amounts so cards in a row
+  remain aligned despite different descriptions or activity.
+
 ## 0.12.0 - 2026-10-23
 
 ### Added

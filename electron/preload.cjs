@@ -67,6 +67,8 @@ contextBridge.exposeInMainWorld('api', {
   previewTransactionDeletion: (id) =>
     ipcRenderer.invoke('transactions:preview-delete', id),
   getCategories: () => ipcRenderer.invoke('categories:list'),
+  getCategoryActivity: (month) =>
+    ipcRenderer.invoke('categories:activity', month),
   createCategory: (input) => ipcRenderer.invoke('categories:create', input),
   updateCategory: (id, input) =>
     ipcRenderer.invoke('categories:update', id, input),

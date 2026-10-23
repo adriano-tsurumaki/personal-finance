@@ -271,6 +271,26 @@ but disappear from new transaction options. Their names remain reserved. A
 category edit never clears its catalog identity, so initialization does not
 recreate an edited or archived default.
 
+The category screen uses compact responsive cards with name search and filters
+for compatible income/expense categories. A category supporting both types is
+included in either type filter. Archived categories remain in a separate
+collapsible section, including when filtering or searching.
+
+Current-calendar-month activity is read through `categories:activity` independently
+of the selected timeline month. Main sums recorded transaction cents by category
+and reference date, returning separate income/expense totals, daily series, and
+an entry count. This includes recorded purchases and installments once, regardless
+of invoice settlement dates, and excludes invoice payments, uncategorized entries,
+and unconfirmed recurrence projections. Archived categories retain their recorded
+activity. Compatibility changes do not reclassify historical entries. These values
+describe reference-month activity rather than settled cash flow; future-dated
+recorded entries within the month are included. A failed activity read shows
+unavailable amounts and retry without disabling category management. Activity
+aggregation rejects unsafe integer-cent totals and daily sums instead of publishing
+rounded values. Local reads,
+search, filters, and section expansion do not acquire a financial operation token;
+mutations retain the shared guard through persistence and required refreshes.
+
 Names are unique per profile, including archived categories. Both application
 validation and the SQLite expression index use `categoryNameKey`: trim, Unicode
 NFC normalization and Unicode lowercase. Accents are preserved (`café` differs

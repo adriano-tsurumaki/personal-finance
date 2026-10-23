@@ -30,6 +30,7 @@ import type {
 import type { ProfileOptionsDto } from './profile-catalog';
 import type {
   CategoryDto,
+  CategoryActivityDto,
   CategoryInput,
   CategoryMutationResult,
 } from './categories';
@@ -80,6 +81,7 @@ export interface Api {
   ): Promise<CardCorrectionPreview>;
   previewTransactionDeletion(id: number): Promise<CardCorrectionPreview>;
   getCategories(): Promise<CategoryDto[]>;
+  getCategoryActivity(month: string): Promise<CategoryActivityDto[]>;
   createCategory(input: CategoryInput): Promise<CategoryMutationResult>;
   updateCategory(
     id: number,

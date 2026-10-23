@@ -130,6 +130,18 @@ profile session and remains available during financial operations because it doe
 not navigate or mutate financial state. This is an explicit product requirement
 extending the original single-surface composition.
 
+Category management adapts the centered layout to a maximum width of 80rem for a
+compact card grid: one column by default, two at `sm`, three at `lg`, and four at
+`xl`. Keep the existing semantic surfaces, foregrounds, borders, and focus tokens
+across light and dark themes. Category colors tint their icons and daily activity
+bars; they do not replace theme colors for controls. Each card has a named Base UI
+action-menu trigger, metadata, recorded monthly amounts, and an entry count.
+Search and filter controls wrap at narrow widths. Archived cards share the same
+presentation within an accessible collapsible section.
+Keep names and descriptions in the top section of each card and monthly activity
+in a bottom section. Reserve a line for secondary amounts to align primary values,
+charts, and entry-count footers across cards in the same grid row.
+
 Base radius is `--radius: 0.75rem` (12px at a 16px root): sm = ×0.6 (7.2px), md = ×0.8 (9.6px), lg = ×1 (12px), xl = ×1.4 (16.8px), 2xl = ×1.8 (21.6px), 3xl = ×2.2 (26.4px), 4xl = ×2.6 (31.2px). Full radius is 9999px. Do not substitute a framework's default radius scale for these mappings.
 
 | Surface        | Radius | Padding | Fill and border                                 |

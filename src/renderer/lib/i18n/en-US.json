@@ -386,7 +386,23 @@
       "heart_handshake": "Health & Wellness",
       "pill": "Pill",
       "other": "Other"
-    }
+    },
+    "actions": "Actions for {name}",
+    "search": "Search categories…",
+    "filters": "Filter categories",
+    "all": "All",
+    "no_results": "No categories match your search and filters.",
+    "no_archived": "No archived categories match your search and filters.",
+    "archived_count": "Archived categories ({count})",
+    "month_income": "Income this month",
+    "month_expense": "Spent this month",
+    "entry_count": "Entries: {count}",
+    "activity_period": "{month} · Recorded entries by reference date; invoice payments and projected entries are excluded.",
+    "activity_loading": "Loading monthly activity…",
+    "activity_error": "Monthly activity could not be loaded. Category management is still available.",
+    "income_chart": "Daily recorded income this month",
+    "expense_chart": "Daily recorded expenses this month",
+    "chart_hint": "Each bar represents one calendar day. Empty days have no recorded activity."
   },
   "recurrence": {
     "add": "Add recurrence",

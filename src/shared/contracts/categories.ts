@@ -93,6 +93,17 @@ export interface CategoryDto extends Omit<CategoryInput, 'icon_key'> {
   archived_at: string | null;
 }
 
+/** Recorded entries by reference date, excluding invoice payments and projections. */
+export interface CategoryActivityDto {
+  category_id: number;
+  income_cents: number;
+  expense_cents: number;
+  entry_count: number;
+  /** Daily amounts in cents, indexed by day of month minus one. */
+  income_daily_cents: number[];
+  expense_daily_cents: number[];
+}
+
 export type CategoryMutationResult =
   | { ok: true }
   | {

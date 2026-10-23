@@ -142,6 +142,7 @@ export function registerIpcHandlers(
   register('transactions:preview-update', service.previewUpdate);
   register('transactions:preview-delete', service.previewRemove);
 
+  register('categories:activity', categories.activity);
   ipcMain.handle('categories:list', (event) => {
     authorize(event);
     return categories.list();

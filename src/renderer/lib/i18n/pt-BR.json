@@ -386,7 +386,23 @@
       "heart_handshake": "Saúde e bem-estar",
       "pill": "Remédios",
       "other": "Outros"
-    }
+    },
+    "actions": "Ações de {name}",
+    "search": "Buscar categorias…",
+    "filters": "Filtrar categorias",
+    "all": "Todas",
+    "no_results": "Nenhuma categoria corresponde à busca e aos filtros.",
+    "no_archived": "Nenhuma categoria arquivada corresponde à busca e aos filtros.",
+    "archived_count": "Categorias arquivadas ({count})",
+    "month_income": "Recebido neste mês",
+    "month_expense": "Gasto neste mês",
+    "entry_count": "Lançamentos: {count}",
+    "activity_period": "{month} · Lançamentos registrados pela data de referência; pagamentos de fatura e projeções não são incluídos.",
+    "activity_loading": "Carregando atividade mensal…",
+    "activity_error": "Não foi possível carregar a atividade mensal. O gerenciamento de categorias continua disponível.",
+    "income_chart": "Receitas registradas por dia neste mês",
+    "expense_chart": "Despesas registradas por dia neste mês",
+    "chart_hint": "Cada barra representa um dia do calendário. Dias vazios não possuem atividade registrada."
   },
   "recurrence": {
     "add": "Adicionar recorrência",
