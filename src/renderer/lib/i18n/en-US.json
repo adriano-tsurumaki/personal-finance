@@ -1,4 +1,20 @@
 {
+  "sidebar": {
+    "label": "Application sidebar",
+    "navigation": "Main navigation",
+    "expand": "Expand sidebar",
+    "collapse": "Collapse sidebar",
+    "overview": "Overview",
+    "organization": "Organization",
+    "commitments": "Commitments",
+    "dashboard": "Dashboard",
+    "timeline": "Timeline",
+    "categories": "Categories",
+    "cards": "Cards",
+    "invoices": "Invoices",
+    "installments": "Installments",
+    "deferred": "Navigation will be available when the screens are migrated. For now, use the monthly view tabs."
+  },
   "monthly_views": {
     "label": "Monthly views",
     "entries": "Entries",

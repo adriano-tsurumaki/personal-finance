@@ -12,7 +12,6 @@ import OdometerMoney from '@components/OdometerMoney';
 import { formatYearMonthToString } from '@lib/format/currency';
 import { useAppStore } from '@store/transaction';
 import { shiftMonth } from '@shared/lib/calc';
-import ProfileHeader from '@modules/Profiles/ProfileHeader';
 import { t } from '@lib/i18n';
 
 export default function MonthlyFinance(): React.JSX.Element {
@@ -30,8 +29,7 @@ export default function MonthlyFinance(): React.JSX.Element {
   return (
     <header className="border-b border-border bg-card">
       <div className="mx-auto max-w-3xl px-5 pb-8 pt-10 sm:px-8">
-        <ProfileHeader />
-        <div className="mt-6 flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4">
           <button
             type="button"
             disabled={blocked}

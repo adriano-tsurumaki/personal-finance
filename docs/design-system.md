@@ -83,7 +83,7 @@ the system and resolves that preference to one explicit mode class.
 | `--chart-5`                                 | `0.55 0.15 25`        | `0.62 0.16 25`        |
 | `--overlay`                                 | `0.22 0.02 160 / 30%` | `0.12 0.02 165 / 55%` |
 
-Tint recipe: `color-mix(in oklab, var(--primary) 10%, transparent)`. Use 5% for milestone fills, 10% for tinted nodes/badges, 20% for installment outlines, and 30% for tinted borders. KPI tiles use background at 60%. Do not introduce another palette for installment or recurrence status. Legacy `--sidebar-*` tokens do not authorize adding a sidebar.
+Tint recipe: `color-mix(in oklab, var(--primary) 10%, transparent)`. Use 5% for milestone fills, 10% for tinted nodes/badges, 20% for installment outlines, and 30% for tinted borders. KPI tiles use background at 60%. Do not introduce another palette for installment or recurrence status. The product sidebar uses the semantic `--sidebar-*` tokens.
 
 The export exposes CSS variables and `.ldg-*` classes through `styles.css`. Tailwind examples below express equivalent geometry; they do not require a specific consumer framework.
 
@@ -116,7 +116,19 @@ Spacing scale in pixels: **2, 4, 6, 8, 10, 12, 16, 20, 24, 32, 40**. These corre
 - KPI grid: two columns below 640px, three from 640px. Form grids become two columns at 640px; wide fields span both.
 - Weekly composition: stacked until 1024px, then 3fr/2fr. Recurring and installment forecast compositions can use `1fr 260px` from 768px with the aside sticky at 16px.
 - Keep financial amounts legible at narrow widths; allow text to truncate or wrap without causing page overflow. Tabs must remain reachable when labels do not fit.
-- No product sidebar, dashboard grid, floating action button, fixed product header, or bottom navigation by default.
+- No dashboard grid, floating action button, fixed product header, or bottom navigation by default.
+
+Product sidebar adaptation (2026-10-23): the active-profile shell has a persistent
+left rail outside the main content scroll area. It starts at 56px with icons and
+expands to 224px, capped at 45% of the viewport on narrow windows. Use semantic
+sidebar surface, foreground, border, and accent tokens, 36px controls, quiet group
+dividers, and a 150ms width transition disabled for reduced motion. Group the
+destinations under Overview, Organization, and Commitments. Destinations remain
+explicitly unavailable until screen migration; retain the existing monthly tabs.
+The profile menu belongs in the sidebar footer. Expansion is local to the mounted
+profile session and remains available during financial operations because it does
+not navigate or mutate financial state. This is an explicit product requirement
+extending the original single-surface composition.
 
 Base radius is `--radius: 0.75rem` (12px at a 16px root): sm = ×0.6 (7.2px), md = ×0.8 (9.6px), lg = ×1 (12px), xl = ×1.4 (16.8px), 2xl = ×1.8 (21.6px), 3xl = ×2.2 (26.4px), 4xl = ×2.6 (31.2px). Full radius is 9999px. Do not substitute a framework's default radius scale for these mappings.
 
@@ -253,10 +265,10 @@ The application extends the Ledger recipes with a local profile creation form
 and a profile entry screen. Use the centered 48rem surface, a form panel up to
 28rem wide, 20px panel padding, the 16.8px panel radius, compact typography,
 semantic green selection fills, and one primary submit action. Profile entry
-uses radio selection and a Continue action. The financial header shows a circular
-36px profile icon button that opens an anchored menu. Keep the selected profile
+uses radio selection and a Continue action. The sidebar footer shows a
+36px profile icon button, with the profile name when expanded, that opens an anchored menu. Keep the selected profile
 name and locale inside that menu, followed by a Change language submenu with checked options for Português (Brasil) and English (US), and the Leave profile action. Keep the
-header in normal flow; use the menu primitive's keyboard navigation, dismissal,
+monthly header in normal flow; use the menu primitive's keyboard navigation, dismissal,
 and focus restoration.
 
 Text inputs, select triggers, money-field surfaces, and date triggers share the

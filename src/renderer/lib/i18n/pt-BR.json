@@ -1,4 +1,20 @@
 {
+  "sidebar": {
+    "label": "Barra lateral do aplicativo",
+    "navigation": "Navegação principal",
+    "expand": "Expandir barra lateral",
+    "collapse": "Recolher barra lateral",
+    "overview": "Visão geral",
+    "organization": "Organização",
+    "commitments": "Compromissos",
+    "dashboard": "Dashboard",
+    "timeline": "Timeline",
+    "categories": "Categorias",
+    "cards": "Cartões",
+    "invoices": "Faturas",
+    "installments": "Parcelamentos",
+    "deferred": "A navegação estará disponível quando as telas forem migradas. Por enquanto, use as abas da visão mensal."
+  },
   "monthly_views": {
     "label": "Visões do mês",
     "entries": "Lançamentos",

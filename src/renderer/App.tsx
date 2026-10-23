@@ -8,6 +8,8 @@ import FinanceSections from '@modules/FinanceSections';
 import { Toaster } from '@components/ui/toast';
 import ConfirmationDialogHost from '@components/ConfirmationDialog/ConfirmationDialogHost';
 import TransactionDialog from '@modules/TimelineTransaction/TransactionDialog';
+import AppSidebar from '@components/AppSidebar';
+import { TooltipProvider } from '@components/ui/tooltip';
 
 function FinanceHome() {
   const init = useAppStore((state) => state.init);
@@ -37,10 +39,15 @@ export default function App(): React.JSX.Element {
   }, [locale]);
 
   return (
-    <Toaster key={profile?.id ?? 'profiles'}>
-      <main className="flex-1 min-h-0 overflow-y-auto">
-        {profile ? <FinanceHome key={profile.id} /> : <Profiles />}
-      </main>
-    </Toaster>
+    <TooltipProvider>
+      <Toaster key={profile?.id ?? 'profiles'}>
+        <div className="flex min-h-0 flex-1">
+          {profile && <AppSidebar key={profile.id} />}
+          <main className="min-w-0 flex-1 overflow-y-auto">
+            {profile ? <FinanceHome key={profile.id} /> : <Profiles />}
+          </main>
+        </div>
+      </Toaster>
+    </TooltipProvider>
   );
 }

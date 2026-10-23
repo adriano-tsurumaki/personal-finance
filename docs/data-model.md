@@ -469,7 +469,9 @@ Financial mutation refreshes use the same coordinated loading path.
 A renderer-owned operation store tracks independently released tokens for period
 loading, financial mutations, and transaction detail loading. Navigation and
 conflicting financial actions are disabled while these operations are pending;
-profile controls remain available. Form submission guards also enforce the lock.
+profile language and settings controls remain available. Leaving the profile is
+disabled while financial operations are pending, with a matching guard in the
+action handler. Form submission guards also enforce the lock.
 Session reset clears pending tokens, and older completions cannot unlock a newer
 operation. This coordination is transient UI state, not a persisted financial lock.
 

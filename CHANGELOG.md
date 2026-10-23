@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- Add a collapsible sidebar, initially showing icons only, with grouped Dashboard,
+  Timeline, Categories, Cards, Invoices, and Installments destinations. These
+  destinations remain unavailable until their screens are migrated; existing
+  monthly tabs remain in place. Move the profile menu to the sidebar footer.
+  No database migration or manual upgrade action is required.
+
 ## 0.11.0 - 2026-10-23
 
 ### Added
