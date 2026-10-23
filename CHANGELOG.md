@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.11.0 - 2026-10-23
+
 ### Added
 
 - Add the supplied Bubblegum, Japan Blues, Sakura, Zen, and Claude Plus themes,

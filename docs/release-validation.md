@@ -1,5 +1,53 @@
 # Release validation
 
+## 0.11.0 - 2026-10-23
+
+The approved minor version adds persistent application appearance, seven themes,
+independent Light/Dark/System modes, and the supplied visual presets. This records
+release preparation, not a distribution-readiness declaration.
+
+### Completed checks
+
+- Independent review approved the appearance scope after correcting remote-font
+  startup gating and secondary-surface contrast. The implementation commit is
+  `471e194` (`feat(appearance): add persistent themes and full visual presets`).
+- Concurrent sidebar changes were preserved outside the appearance commit and
+  release. Validation used an exported appearance-only index snapshot with the
+  approved `0.11.0` package version, excluding the unrelated working-tree changes.
+- `pnpm lint`, `pnpm typecheck`, `pnpm format:check`, and all 196 tests passed in
+  that snapshot. The two font-loader regressions cover delayed delivery/success
+  and offline/HTTP failures. Existing appearance tests cover persistence, invalid
+  input, concurrent actions, stale snapshots, and retry.
+- `pnpm make` generated production bundles, the Windows x64 application package,
+  and Squirrel distributables. Packaged `app.asar` metadata and executable
+  product/file versions report `0.11.0`. Preserved artifacts are under
+  `out/release-validation-0.11.0`, with the installer and package under
+  `make/squirrel.windows/x64`.
+- A harness loaded the actual packaged 0.11.0 code in the matching Electron
+  runtime with isolated user data. Both renderer font requests were deliberately
+  held for four seconds; the window became visible and financial APIs remained
+  usable. Cancelling those requests preserved fallback typography and operation.
+- Real mouse hover checks confirmed computed foreground/background pairs on month
+  navigation and dialog-close controls in dark Japan Blues and Claude Plus.
+- Packaged 0.10.1 code created an isolated profile with representative income and
+  expense entries. Packaged 0.11.0 code reopened the same fixture with the profile
+  and transaction DTOs unchanged. No financial schema or migration changed.
+
+### Pending checks and known limitations
+
+- Installer execution, clean installation, and an installed upgrade from 0.10.1
+  were not performed. The packaged-code harness does not substitute for executing
+  the distributed executable or installer. Complete those checks with
+  representative data before distribution.
+- Visual verification is targeted; not every financial state, hover combination,
+  display scale, or platform was audited. Only Windows x64 was packaged.
+- Fonts remain optional Google Fonts requests with local fallback stacks; uncached
+  custom font delivery requires internet access but does not block startup.
+- No release tags exist to establish historical artifact provenance. No tag,
+  push, or publication was performed.
+- Existing dependency `use client`, bundle-size, and ESLint module-type warnings
+  did not prevent the successful checks or packaging.
+
 ## 0.10.1 - 2026-10-22
 
 The approved patch centralizes select fields and their accessible IDs and allows
