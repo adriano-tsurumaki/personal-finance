@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.12.0 - 2026-10-23
+
 ### Added
 
 - Add a collapsible sidebar, initially showing icons only, with grouped Dashboard,
