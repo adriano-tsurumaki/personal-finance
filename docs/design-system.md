@@ -36,9 +36,9 @@ Source discrepancies and interpretation:
 ## Quick implementation rules
 
 - One centered financial surface, maximum width 48rem, quiet horizontal section dividers, compact controls, and restrained headings.
-- Use semantic green-tinted tokens. Income is green; expense is red. Destructive actions have their own token.
-- Instrument Sans for UI text; JetBrains Mono with tabular numerals for financial amounts and numeric counters.
-- Border and fill define surfaces. No decorative shadows, glass, blur, photography, patterned backgrounds, or background gradients.
+- Use semantic tokens. Ledger uses green-tinted interface tokens; the application also supports a neutral Graphite palette through the [appearance contract](appearance.md). Income is green; expense is red. Destructive actions have their own token.
+- Instrument Sans for Ledger/Graphite UI text; JetBrains Mono with tabular numerals for financial amounts and numeric counters. Imported themes use their supplied font stacks, including their monospace stack for amounts.
+- Border and fill define Ledger/Graphite surfaces. Imported themes may apply their exported shadow presets. No glass, blur, photography, patterned backgrounds, or background gradients are introduced.
 - Use Lucide icons, sentence-case English UI copy, and formatted amounts.
 - Use the reference component contracts as design guidance, not as proof of local exports or compatible props.
 - Sample dates and calculations illustrate the screens rather than defining production domain rules.
@@ -46,6 +46,16 @@ Source discrepancies and interpretation:
 ## Color tokens and themes
 
 Values below are CSS `oklch(...)` arguments. Author colors through semantic tokens, not duplicated literals in components. Light mode is the default; dark mode replaces the same roles. Foreground tokens must accompany their corresponding filled surfaces.
+
+Application extension: named palettes are independent of light/dark/system mode.
+Ledger retains the reference values below. Graphite intentionally substitutes
+neutral interface roles to support a quieter alternative while retaining financial
+color meanings and the same geometry and typography. User-supplied tweakcn themes
+extend this behavior to typography, corner geometry, shadow presets, spacing,
+and tracking so the full exported visual identity can be applied. Both renderers
+share the scoped stylesheets. See [Application appearance](appearance.md) for the registry,
+fallback, persistence, and extension rules. The application defaults to following
+the system and resolves that preference to one explicit mode class.
 
 | Token                                       | Light                 | Dark                  |
 | ------------------------------------------- | --------------------- | --------------------- |

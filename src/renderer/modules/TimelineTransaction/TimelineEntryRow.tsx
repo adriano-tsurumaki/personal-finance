@@ -31,7 +31,7 @@ export default function TimelineEntryRow({
   const Icon = getCategoryIcon(entry.category?.icon_key);
   const nodeClass = isIncome
     ? 'border-income/30 bg-income/10 text-income'
-    : 'border-border bg-secondary text-muted-foreground';
+    : 'border-border bg-secondary text-secondary-foreground';
   const amountClass = isIncome ? 'text-income' : 'text-expense';
   const categoryColor = entry.category?.color;
   const nodeStyle =
@@ -119,7 +119,7 @@ export default function TimelineEntryRow({
                 type="button"
                 variant="ghost"
                 size="icon-xs"
-                className="text-muted-foreground hover:bg-secondary"
+                className="text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
                 aria-label={t('transactions.edit_label', { name: entry.name })}
                 title={t('transactions.edit')}
                 onClick={onEdit}
@@ -131,7 +131,7 @@ export default function TimelineEntryRow({
                 type="button"
                 variant="ghost"
                 size="icon-xs"
-                className="text-muted-foreground hover:bg-secondary"
+                className="text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
                 aria-label={t('transactions.copy_label', { name: entry.name })}
                 title={t('transactions.copy')}
                 onClick={onCopy}
@@ -143,7 +143,7 @@ export default function TimelineEntryRow({
                 type="button"
                 variant="ghost"
                 size="icon-xs"
-                className="text-muted-foreground hover:bg-secondary hover:text-expense"
+                className="text-muted-foreground hover:bg-expense/10 hover:text-expense"
                 aria-label={t('transactions.remove_label', {
                   name: entry.name,
                 })}

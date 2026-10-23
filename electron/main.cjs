@@ -5,16 +5,52 @@ const {
   WebContentsView,
   dialog,
   ipcMain,
+  nativeTheme,
 } = require('electron');
 const started = require('electron-squirrel-startup');
 const { initDb } = require('../src/main/db.ts');
 const { getDevelopmentDatabasePath } = require('../src/main/db/config.ts');
 const { registerIpcHandlers } = require('../src/main/ipc.ts');
+const { createAppearanceService } = require('../src/main/appearance.ts');
+const { appearanceThemes } = require('../src/shared/contracts/appearance.ts');
 
 const TITLEBAR_HEIGHT = 28;
 
 let mainWindow = null;
 let contentView = null;
+let appearance = null;
+
+function appearanceSnapshot() {
+  return appearance.snapshot(nativeTheme.shouldUseDarkColors);
+}
+
+function appearanceBackground() {
+  const snapshot = appearanceSnapshot();
+  return appearanceThemes.find((theme) => theme.id === snapshot.themeId)
+    .background[snapshot.resolvedMode];
+}
+
+function publishAppearance() {
+  const snapshot = appearanceSnapshot();
+  const background = appearanceBackground();
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setBackgroundColor(background);
+    mainWindow.webContents.send('appearance:changed', snapshot);
+  }
+
+  if (contentView && !contentView.webContents.isDestroyed()) {
+    contentView.setBackgroundColor(background);
+    contentView.webContents.send('appearance:changed', snapshot);
+  }
+}
+
+function isAppearanceSender(event) {
+  return (
+    event.sender === mainWindow?.webContents ||
+    event.sender === contentView?.webContents
+  );
+}
 
 if (started) {
   app.quit();
@@ -68,8 +104,8 @@ async function createWindow() {
      * defines the draggable region.
      */
     frame: false,
-
-    backgroundColor: '#181818',
+    show: false,
+    backgroundColor: appearanceBackground(),
 
     webPreferences: {
       preload: getPreloadPath(),
@@ -79,7 +115,7 @@ async function createWindow() {
   });
 
   /*
-   * A BrowserWindow carrega apenas a TitleBar.
+   * The BrowserWindow hosts only the title bar.
    */
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     await mainWindow.loadURL(rendererUrl('titlebar.html'));
@@ -97,6 +133,7 @@ async function createWindow() {
       nodeIntegration: false,
     },
   });
+  contentView.setBackgroundColor(appearanceBackground());
 
   mainWindow.contentView.addChildView(contentView);
 
@@ -107,6 +144,8 @@ async function createWindow() {
   }
 
   resizeContentView();
+  publishAppearance();
+  mainWindow.show();
 
   mainWindow.on('resize', resizeContentView);
   mainWindow.on('maximize', () => {
@@ -184,6 +223,34 @@ ipcMain.handle('window:close', (event) => {
 app
   .whenReady()
   .then(async () => {
+    appearance = createAppearanceService(
+      path.join(
+        app.getPath('userData'),
+        app.isPackaged ? 'appearance.json' : 'appearance.dev.json',
+      ),
+    );
+    nativeTheme.themeSource = appearanceSnapshot().colorMode;
+    ipcMain.on('appearance:initial', (event) => {
+      if (isAppearanceSender(event)) {
+        event.returnValue = appearanceSnapshot();
+      } else {
+        event.returnValue = null;
+      }
+    });
+    ipcMain.handle('appearance:update', (event, preference) => {
+      if (!isAppearanceSender(event)) {
+        throw new Error('Appearance access is unavailable.');
+      }
+
+      const saved = appearance.update(preference);
+      nativeTheme.themeSource = saved.colorMode;
+      publishAppearance();
+      return appearanceSnapshot();
+    });
+    nativeTheme.on('updated', () => {
+      appearance.systemChanged();
+      publishAppearance();
+    });
     const dbPath = app.isPackaged
       ? path.join(app.getPath('userData'), 'personal_finance.db')
       : getDevelopmentDatabasePath(app.getAppPath());

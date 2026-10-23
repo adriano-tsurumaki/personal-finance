@@ -91,6 +91,18 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('transactions:delete', id, token),
 });
 
+contextBridge.exposeInMainWorld('appearance', {
+  initial: ipcRenderer.sendSync('appearance:initial'),
+  update: (preference) => ipcRenderer.invoke('appearance:update', preference),
+  onChange: (callback) => {
+    const listener = (_event, snapshot) => callback(snapshot);
+    ipcRenderer.on('appearance:changed', listener);
+    // Catch changes between the initial preload snapshot and subscription.
+    callback(ipcRenderer.sendSync('appearance:initial'));
+    return () => ipcRenderer.removeListener('appearance:changed', listener);
+  },
+});
+
 contextBridge.exposeInMainWorld('desktopWindow', {
   platform: process.platform,
   minimize: () => ipcRenderer.invoke('window:minimize'),

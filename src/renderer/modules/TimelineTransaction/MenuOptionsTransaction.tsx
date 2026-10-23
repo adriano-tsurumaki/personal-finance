@@ -30,7 +30,7 @@ export default function MenuOptionsTransaction({
   transactionId,
   installment = false,
   renderTrigger = <li />,
-  triggerClassName = 'group/transaction mb-4 rounded-lg transition-colors duration-150 ease-in-out hover:bg-secondary/40 motion-reduce:transition-none',
+  triggerClassName = 'group/transaction mb-4 rounded-lg transition-colors duration-150 ease-in-out hover:bg-muted/40 motion-reduce:transition-none',
 }: {
   children: (actions: TransactionActions) => React.ReactNode;
   transactionId: number;

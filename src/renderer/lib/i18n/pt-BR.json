@@ -29,9 +29,20 @@
     "recurrence_reference": "Estimativa recorrente não confirmada",
     "reference_chart_hint": "Inclui todos os lançamentos por referência e estimativas não confirmadas da timeline, inclusive compras no crédito pagas em outro mês. Parte de zero e mostra o resultado acumulado do mês, independentemente do ponto inicial dos indicadores. Eventos de pagamento de fatura ficam fora para não contar compras duas vezes."
   },
+  "appearance": {
+    "title": "Appearance",
+    "description": "Applies to the entire app, including the profile chooser and window controls.",
+    "theme": "Theme",
+    "mode": "Color mode",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark",
+    "saving": "Saving appearance…",
+    "error": "Could not save appearance. Your previous preference is unchanged. Choose an option to retry."
+  },
   "settings": {
     "title": "Configurações",
-    "description": "Preferências do perfil ativo.",
+    "description": "Application appearance and preferences for the active profile.",
     "topics": "Tópicos das configurações",
     "general": "Geral",
     "indicators": "Indicadores",

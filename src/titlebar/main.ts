@@ -1,4 +1,16 @@
 import './style.css';
+import { applyAppearance, connectAppearance } from '@lib/appearance';
+import { loadThemeFonts } from '@lib/theme-fonts';
+
+const disconnectAppearance = connectAppearance(
+  window.appearance,
+  applyAppearance,
+);
+loadThemeFonts();
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(disconnectAppearance);
+}
 
 const minimizeButton =
   document.querySelector<HTMLButtonElement>('#window-minimize');

@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+### Added
+
+- Add the supplied Bubblegum, Japan Blues, Sakura, Zen, and Claude Plus themes,
+  including their light/dark colors, loaded font families, corner shapes, shadows,
+  spacing, and letter spacing. Theme styles are isolated and restore the original
+  Ledger appearance when switched back. Fonts use Google Fonts with fallback
+  stacks when unavailable. Existing preferences and financial data are preserved;
+  no migration or manual upgrade action is required.
+
+- Choose Ledger or Graphite appearance independently of Light, Dark, or System
+  color mode in Settings > General. The app remembers the preference across
+  restarts and profiles, including profile selection and window controls.
+  Failed saves preserve the previous appearance and allow retry. No financial
+  database migration or manual upgrade action is required.
+
+### Fixed
+
+- Keep startup usable while web fonts are pending or unavailable by fetching font
+  definitions after local document load. Correct secondary foregrounds on month
+  navigation, dialog close controls, and timeline actions in imported dark themes.
+
+- Pair filled secondary surfaces with their foreground tokens in settings tabs
+  and card views, and use the accent foreground on hovered window controls so
+  imported themes keep those labels readable.
+
+- Keep semantic colors and dark-mode component variants aligned when following
+  the system appearance, with a single shared palette for both renderers.
+
 ## 0.10.1 - 2026-10-22
 
 ### Changed

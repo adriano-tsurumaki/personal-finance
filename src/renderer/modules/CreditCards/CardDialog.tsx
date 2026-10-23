@@ -242,7 +242,7 @@ export default function CardDialog({
               >
                 <h3
                   id={`${id}-preview`}
-                  className="border-b border-border bg-secondary/50 px-3 py-2 text-xs font-medium"
+                  className="border-b border-border bg-muted px-3 py-2 text-xs font-medium"
                 >
                   {t('cards.billing_preview')}
                 </h3>

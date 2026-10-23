@@ -299,7 +299,7 @@ export default function CreditCards() {
             />
           </div>
           {!invoice && period && (
-            <p className="my-4 rounded-lg bg-secondary p-3 text-sm">
+            <p className="my-4 rounded-lg bg-secondary text-secondary-foreground p-3 text-sm">
               {t('cards.preview')}: {cardDate(period.opening_date)} →{' '}
               {cardDate(period.closing_date)} · {t('cards.due')}:{' '}
               {cardDate(period.due_date)}
@@ -420,7 +420,7 @@ export default function CreditCards() {
                 aria-hidden="true"
               />
               {t('cards.history')}
-              <span className="rounded-full bg-secondary px-2 py-0.5 font-mono text-[11px] tabular-nums">
+              <span className="rounded-full bg-secondary text-secondary-foreground px-2 py-0.5 font-mono text-[11px] tabular-nums">
                 {state.details.history.length}
               </span>
             </summary>
@@ -433,9 +433,9 @@ export default function CreditCards() {
                 className="group/history mt-3 overflow-hidden rounded-lg border border-border bg-card"
               >
                 <summary className="flex cursor-pointer list-none items-center gap-3 p-3 text-xs [&::-webkit-details-marker]:hidden">
-                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-secondary">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-secondary text-secondary-foreground">
                     <History
-                      className="size-3.5 text-muted-foreground"
+                      className="size-3.5 text-secondary-foreground"
                       aria-hidden="true"
                     />
                   </span>

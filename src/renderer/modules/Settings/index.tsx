@@ -22,6 +22,7 @@ import {
 import type { IndicatorAnchorDto } from '@shared/contracts/indicator-anchor';
 import type { ProfileLocale } from '@shared/contracts/user';
 import { changeIndicatorAnchor } from './indicator-anchor-actions';
+import AppearanceSettings from './AppearanceSettings';
 
 function GeneralSettings() {
   const profile = useProfileStore((state) => state.activeProfile);
@@ -60,6 +61,7 @@ function GeneralSettings() {
   return (
     <section className="space-y-5">
       <h2 className="font-semibold">{t('settings.general')}</h2>
+      <AppearanceSettings />
       <fieldset disabled={pending} className="space-y-3">
         <legend className="mb-3 text-sm font-medium">
           {t('profiles.language')}
@@ -313,14 +315,14 @@ export default function SettingsDialog({
             >
               <TabsTrigger
                 value="general"
-                className="m-0 h-auto whitespace-normal rounded-md border-0 px-3 py-3 text-left text-xs data-active:bg-secondary"
+                className="m-0 h-auto whitespace-normal rounded-md border-0 px-3 py-3 text-left text-xs data-active:bg-secondary data-active:text-secondary-foreground data-active:hover:text-secondary-foreground"
               >
                 <Globe aria-hidden="true" />
                 {t('settings.general')}
               </TabsTrigger>
               <TabsTrigger
                 value="indicators"
-                className="m-0 h-auto whitespace-normal rounded-md border-0 px-3 py-3 text-left text-xs data-active:bg-secondary"
+                className="m-0 h-auto whitespace-normal rounded-md border-0 px-3 py-3 text-left text-xs data-active:bg-secondary data-active:text-secondary-foreground data-active:hover:text-secondary-foreground"
               >
                 <ChartNoAxesCombined aria-hidden="true" />
                 {t('settings.indicators')}

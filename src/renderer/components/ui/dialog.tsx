@@ -68,7 +68,7 @@ function DialogContent({
             render={
               <Button
                 variant="ghost"
-                className="absolute top-4 right-4 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground active:translate-y-0 [&_svg]:size-3.5"
+                className="absolute top-4 right-4 rounded-md text-muted-foreground hover:bg-secondary hover:text-secondary-foreground active:translate-y-0 [&_svg]:size-3.5"
                 size="icon-sm"
               >
                 <XIcon aria-hidden="true" />

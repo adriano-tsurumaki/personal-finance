@@ -37,7 +37,7 @@ export default function MonthlyFinance(): React.JSX.Element {
             disabled={blocked}
             onClick={() => setMonthKey(shiftMonth(monthKey, -1))}
             aria-label={t('summary.previous')}
-            className="flex size-9 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex size-9 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-secondary hover:text-secondary-foreground disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ChevronLeft className="size-4" />
           </button>
@@ -49,7 +49,7 @@ export default function MonthlyFinance(): React.JSX.Element {
             disabled={blocked}
             onClick={() => setMonthKey(shiftMonth(monthKey, 1))}
             aria-label={t('summary.next')}
-            className="flex size-9 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex size-9 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-secondary hover:text-secondary-foreground disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ChevronRight className="size-4" />
           </button>

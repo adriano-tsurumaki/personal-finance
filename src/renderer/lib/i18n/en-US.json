@@ -29,9 +29,20 @@
     "recurrence_reference": "Unconfirmed recurring estimate",
     "reference_chart_hint": "Includes all reference-date entries and unconfirmed estimates shown in the timeline, including credit purchases paid in another month. Starts at zero and shows this month’s accumulated result, independently of the indicator starting point. Separate invoice payment events are excluded to avoid counting purchases twice."
   },
+  "appearance": {
+    "title": "Appearance",
+    "description": "Applies to the entire app, including the profile chooser and window controls.",
+    "theme": "Theme",
+    "mode": "Color mode",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark",
+    "saving": "Saving appearance…",
+    "error": "Could not save appearance. Your previous preference is unchanged. Choose an option to retry."
+  },
   "settings": {
     "title": "Settings",
-    "description": "Preferences for the active profile.",
+    "description": "Application appearance and preferences for the active profile.",
     "topics": "Settings topics",
     "general": "General",
     "indicators": "Indicators",

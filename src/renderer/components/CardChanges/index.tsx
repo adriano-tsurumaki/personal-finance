@@ -45,7 +45,7 @@ export default function CardChanges({
             key={`${change.entity}-${change.id}`}
             className="overflow-hidden rounded-lg border border-border bg-card"
           >
-            <div className="flex items-center gap-2 border-b border-border bg-secondary/50 px-3 py-2">
+            <div className="flex items-center gap-2 border-b border-border bg-muted px-3 py-2">
               <Icon
                 className="size-4 shrink-0 text-muted-foreground"
                 aria-hidden="true"
