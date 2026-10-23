@@ -2,8 +2,7 @@ import { useFinancialOperations } from '@store/financial-operations';
 import { useState } from 'react';
 import Recurrences from '@modules/Recurrences';
 import Installments from '@modules/Installments';
-import { CreditCard, Repeat, Tags, Target, Wallet } from 'lucide-react';
-import Categories from '@modules/Categories';
+import { CreditCard, Repeat, Target, Wallet } from 'lucide-react';
 import CreditCards from '@modules/CreditCards';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
 import UnderConstruction from '@components/UnderConstruction';
@@ -54,10 +53,6 @@ export default function FinanceSections() {
                     {transactionCount}
                   </span>
                 </TabsTrigger>
-                <TabsTrigger value="categories">
-                  <Tags aria-hidden="true" />
-                  {t('category_manager.title')}
-                </TabsTrigger>
                 <TabsTrigger value="cards">
                   <CreditCard aria-hidden="true" />
                   {t('cards.title')}
@@ -94,9 +89,6 @@ export default function FinanceSections() {
               }
             }}
           />
-        </TabsContent>
-        <TabsContent value="categories">
-          <Categories />
         </TabsContent>
         <TabsContent value="cards">
           <CreditCards />

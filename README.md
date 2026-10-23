@@ -114,7 +114,8 @@ pnpm db:migrate
 2. Open the profile menu and choose **Settings**. Under **Indicators**, optionally
    set a start date and the balance immediately before that date. Without these
    settings, projections use the full recorded history starting from zero.
-3. Review the default categories and add categories that match your spending.
+3. Open Categories in the sidebar to review the default categories and add
+   categories that match your spending. Use Timeline to return to the monthly view.
 4. Add your income and expenses. Configure a credit card before recording credit
    purchases, and use installment plans for purchases spread across several bills.
 5. Register recurring commitments, such as salary or rent, to include their

@@ -15,23 +15,38 @@ import { t } from '@lib/i18n';
 import { cn } from '@lib/utils';
 import ProfileMenu from '@modules/Profiles/ProfileMenu';
 import {
+  financialActionsBlocked,
+  useFinancialOperations,
+} from '@store/financial-operations';
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@components/ui/tooltip';
 
-const groups = [
+export type AppDestination = 'timeline' | 'categories';
+
+interface SidebarItem {
+  label: Parameters<typeof t>[0];
+  icon: typeof Tags;
+  destination?: AppDestination;
+}
+
+const groups: {
+  label: Parameters<typeof t>[0];
+  items: SidebarItem[];
+}[] = [
   {
     label: 'sidebar.overview',
     items: [
       { label: 'sidebar.dashboard', icon: LayoutDashboard },
-      { label: 'sidebar.timeline', icon: Waypoints },
+      { label: 'sidebar.timeline', icon: Waypoints, destination: 'timeline' },
     ],
   },
   {
     label: 'sidebar.organization',
     items: [
-      { label: 'sidebar.categories', icon: Tags },
+      { label: 'sidebar.categories', icon: Tags, destination: 'categories' },
       { label: 'sidebar.cards', icon: CreditCard },
     ],
   },
@@ -42,10 +57,17 @@ const groups = [
       { label: 'sidebar.installments', icon: CalendarRange },
     ],
   },
-] as const;
+];
 
-export default function AppSidebar() {
+export default function AppSidebar({
+  destination,
+  onNavigate,
+}: {
+  destination: AppDestination;
+  onNavigate: (destination: AppDestination) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const blocked = useFinancialOperations((state) => state.pending.size > 0);
   const contentId = useId();
   const hintId = useId();
   const toggleLabel = t(expanded ? 'sidebar.collapse' : 'sidebar.expand');
@@ -109,7 +131,7 @@ export default function AppSidebar() {
               {t(group.label)}
             </h2>
             <ul className="space-y-1">
-              {group.items.map(({ label, icon: Icon }) => (
+              {group.items.map(({ label, icon: Icon, destination: target }) => (
                 <li key={label}>
                   <Tooltip>
                     <TooltipTrigger
@@ -117,16 +139,31 @@ export default function AppSidebar() {
                       render={
                         <button
                           type="button"
-                          aria-disabled="true"
+                          aria-disabled={!target || blocked}
+                          aria-current={
+                            target === destination ? 'page' : undefined
+                          }
                           aria-label={t(label)}
-                          aria-describedby={hintId}
+                          aria-describedby={!target ? hintId : undefined}
+                          onClick={() => {
+                            if (target && !financialActionsBlocked()) {
+                              onNavigate(target);
+                            }
+                          }}
                           title={
                             expanded
-                              ? `${t(label)} · ${t('sidebar.deferred')}`
+                              ? target
+                                ? t(label)
+                                : `${t(label)} · ${t('sidebar.deferred')}`
                               : ''
                           }
                           className={cn(
-                            'flex h-9 cursor-not-allowed items-center rounded-lg text-sidebar-foreground/50',
+                            'flex h-9 items-center rounded-lg',
+                            !target || blocked
+                              ? 'cursor-not-allowed text-sidebar-foreground/50'
+                              : 'cursor-pointer text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                            target === destination &&
+                              'bg-sidebar-accent text-sidebar-accent-foreground',
                             expanded
                               ? 'w-full gap-3 px-2.5'
                               : 'w-9 justify-center',
@@ -142,7 +179,11 @@ export default function AppSidebar() {
                         </button>
                       }
                     />
-                    <TooltipContent side="right">{`${t(label)} · ${t('sidebar.deferred')}`}</TooltipContent>
+                    <TooltipContent side="right">
+                      {target
+                        ? t(label)
+                        : `${t(label)} · ${t('sidebar.deferred')}`}
+                    </TooltipContent>
                   </Tooltip>
                 </li>
               ))}

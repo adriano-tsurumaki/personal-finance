@@ -257,13 +257,13 @@ export default function Categories() {
     >
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2
+          <h1
             id="categories-title"
             className="flex items-center gap-2 text-lg font-semibold text-foreground"
           >
             <Tags className="size-5" aria-hidden="true" />
             {t('category_manager.title')}
-          </h2>
+          </h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             {t('category_manager.hint')}
           </p>

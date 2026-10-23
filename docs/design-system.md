@@ -123,8 +123,12 @@ left rail outside the main content scroll area. It starts at 56px with icons and
 expands to 224px, capped at 45% of the viewport on narrow windows. Use semantic
 sidebar surface, foreground, border, and accent tokens, 36px controls, quiet group
 dividers, and a 150ms width transition disabled for reduced motion. Group the
-destinations under Overview, Organization, and Commitments. Destinations remain
-explicitly unavailable until screen migration; retain the existing monthly tabs.
+destinations under Overview, Organization, and Commitments. Categories opens a
+standalone management screen without the monthly summary or tabs; Timeline returns
+to the monthly workspace, whose remaining tabs are retained. Mark the selected
+destination with the sidebar accent and `aria-current="page"`. Other destinations
+remain explicitly unavailable until screen migration. Guard navigation while
+financial operations are pending, including in action handlers.
 The profile menu belongs in the sidebar footer. Expansion is local to the mounted
 profile session and remains available during financial operations because it does
 not navigate or mutate financial state. This is an explicit product requirement

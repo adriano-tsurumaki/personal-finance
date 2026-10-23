@@ -250,7 +250,7 @@ render the `other` icon. Transaction responses expose category details as
 The Drizzle schema gives new categories an `other` default. The prototype seed
 assigns icons explicitly. Existing icons from the previous initializer are preserved.
 Renaming a category does not change its stored icon. Category management has its
-own tab, with profile-owned listing, creation, editing and archival through IPC.
+own sidebar screen, with profile-owned listing, creation, editing and archival through IPC.
 The icon picker persists supported keys; main validates names, six-digit hex
 colors, icons and compatibility before writing. Names are trimmed and limited to
 100 characters. Descriptions are optional, limited to 500 characters, trimmed,

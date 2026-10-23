@@ -11,6 +11,12 @@
   themes, category rules, and history; no dependencies, database migration, or
   manual upgrade action are required.
 
+- Move category management from the monthly tabs to a dedicated Categories
+  screen in the sidebar. Enable Timeline in the sidebar to return to the monthly
+  workspace, and guard navigation during pending financial operations. Existing
+  categories and financial history are preserved; no database migration or manual
+  upgrade action is required.
+
 ### Fixed
 
 - Reject category activity totals or daily amounts outside exact integer-cent
