@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.13.0 - 2026-10-23
+
 ### Added
 
 - Add `pnpm db:seed:demo` to recreate an isolated development profile with 103
