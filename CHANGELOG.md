@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- Add `pnpm db:seed:demo` to recreate an isolated development profile with 103
+  categories and 16,236 transactions for category screen previews. Include active
+  and archived categories, empty and busy cards, descriptions, and historical
+  income/expense combinations. Existing profiles are preserved; no new migration
+  or manual upgrade action is required.
+
 ### Changed
 
 - Modernize category management with compact responsive cards, accessible action

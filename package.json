@@ -19,6 +19,7 @@
     "format:check": "prettier --check .",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/main/db/migrate.ts",
+    "db:seed:demo": "tsx src/main/db/seed-demo.ts",
     "db:studio": "drizzle-kit studio",
     "test:db": "tsx --test \"src/**/*.test.ts\" \"src/**/*.test.tsx\""
   },

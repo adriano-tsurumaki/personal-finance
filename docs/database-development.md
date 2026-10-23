@@ -31,6 +31,12 @@ repeat initialization from duplicating defaults or overwriting customized names,
 colors, or archived categories. Existing prototype profiles remain selectable.
 Use `pnpm db:studio` to inspect the local database.
 
+For a repeatable category visualization fixture, close the app and run
+`pnpm db:seed:demo`. See the [README demo instructions](../README.md#optional-recreate-a-category-demo-profile)
+for coverage and replacement behavior. The command applies current migrations and
+uses category and transaction services to regenerate a reserved development
+profile in one transaction; it never resets the database or other profiles.
+
 ## Changing the schema
 
 1. Edit `src/main/db/schema.ts`.
