@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.14.0 - 2026-10-24
+
 ### Changed
 
 - Standardize migrated screen headers, search fields, and filter control sizes.

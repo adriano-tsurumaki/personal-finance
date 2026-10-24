@@ -1,5 +1,59 @@
 # Release validation
 
+## 0.14.0 - 2026-10-24
+
+The approved minor version adds a dedicated Recurring sidebar screen, search and
+filters, and independent category activity month navigation. This records release
+preparation, not a distribution-readiness declaration.
+
+### Completed checks
+
+- Three independent analysis agents reviewed the pending implementation, commit
+  grouping, and version impact. The code review approved the changes without
+  findings. Implementation commits are `546dfd9` (recurrence navigation and editor
+  composition) and `4909522` (category activity navigation).
+- The recurrence commit was exported from the index into an isolated temporary
+  snapshot before committing. Lint, TypeScript, formatting, all 212 tests, and the
+  renderer production build passed for that snapshot. The final combined
+  implementation also passed those static checks and all 212 tests.
+- With package version `0.14.0`, `pnpm lint`, `pnpm typecheck`,
+  `pnpm format:check`, and all 212 tests passed. An initial sandboxed test run
+  failed three persistence tests because temporary-file replacement was denied;
+  the complete suite passed outside the sandbox.
+- `pnpm make` generated production bundles, the Windows x64 application package,
+  and Squirrel distributables under `out/make/squirrel.windows/x64`. The packaged
+  `app.asar` version and executable product/file versions report `0.14.0`.
+- A hidden-window harness loaded actual packaged code in the matching Electron
+  runtime with explicitly isolated user data. A clean `0.14.0` fixture loaded the
+  renderer and preload, created a profile and two representative income/expense
+  entries, and preserved the complete profile, transaction DTOs, and financial
+  month snapshot after restart.
+- Packaged `0.11.0` code created another isolated fixture. Packaged `0.14.0` code
+  reopened it with the complete profile, two transaction DTOs, and financial month
+  snapshot unchanged. No real user database was opened or modified.
+
+### Pending checks and known limitations
+
+- Installer execution, clean installation, and an installed upgrade were not
+  performed. The packaged-code harness does not substitute for executing the
+  distributed executable or installer. Complete those checks before distribution.
+- No preserved `0.13.0` packaged artifact was available for the harness; its
+  upgrade fixture used the available `0.11.0` package. No release tags establish
+  historical artifact provenance. Verify an installed upgrade from the intended
+  previous distributed version with representative existing data.
+- Native UI interactions and visual layouts were not manually exercised during
+  this release preparation. Earlier simulated-browser checks in
+  [Recurrences](recurrences.md) remain historical evidence, not newly repeated
+  native-window validation.
+- The initial sandboxed packaging attempt failed while creating Forge output
+  directories. Retrying outside the sandbox completed packaging. Existing
+  dependency `use client`, bundle-size, and ESLint module-type warnings did not
+  prevent successful checks or packaging.
+- The pending UI changes introduce no database migration or manual upgrade action
+  from `0.13.0`. Existing legacy-adoption requirements and recurrence-coverage
+  limitations remain in effect. Only Windows x64 was packaged and tested.
+- No tag, push, publication, or history rewriting was performed.
+
 ## 0.11.0 - 2026-10-23
 
 The approved minor version adds persistent application appearance, seven themes,
