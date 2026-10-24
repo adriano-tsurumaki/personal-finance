@@ -10,15 +10,15 @@ import {
   ChevronDown,
   LayoutGrid,
   Plus,
-  Search,
   Tags,
 } from 'lucide-react';
 import { Button } from '@components/ui/button';
 import { toast } from '@components/ui/toast';
 import { categoryLabel, t } from '@lib/i18n';
-import { Input } from '@components/ui/input';
+import ScreenHeader from '@components/ScreenHeader';
+import { ScreenFilters, ScreenSearch } from '@components/ScreenToolbar';
 import { currentMonthKey } from '@shared/lib/calc';
-import { formatYearMonthToString } from '@lib/format/currency';
+import MonthNavigator from '@components/MonthNavigator';
 import CategoryCard from './CategoryCard';
 import { filterCategories, type CategoryFilter } from './presentation';
 import { useProfileStore } from '@store/profile';
@@ -36,6 +36,8 @@ export default function Categories() {
   const [filter, setFilter] = useState<CategoryFilter>('all');
   const [archivedOpen, setArchivedOpen] = useState(false);
   const [month, setMonth] = useState(currentMonthKey);
+  const calendarMonth = useRef(month);
+  const [activityMonth, setActivityMonth] = useState<string | null>(null);
   const [activity, setActivity] = useState<CategoryActivityDto[] | null>(null);
   const [activityFailed, setActivityFailed] = useState(false);
   const activityRequest = useRef(0);
@@ -63,6 +65,7 @@ export default function Categories() {
 
       if (current() && request === activityRequest.current) {
         setActivity(result);
+        setActivityMonth(month);
       }
     } catch {
       if (current() && request === activityRequest.current) {
@@ -72,7 +75,12 @@ export default function Categories() {
   }
 
   useEffect(() => {
-    const update = () => setMonth(currentMonthKey());
+    const update = () => {
+      const next = currentMonthKey();
+      const previous = calendarMonth.current;
+      calendarMonth.current = next;
+      setMonth((selected) => (selected === previous ? next : selected));
+    };
     const timer = window.setInterval(update, 60_000);
     window.addEventListener('focus', update);
     return () => {
@@ -209,11 +217,14 @@ export default function Categories() {
   const filtered = filterCategories(categories, query, filter);
   const active = filtered.filter((category) => !category.archived_at);
   const archived = filtered.filter((category) => category.archived_at);
+  const activityAvailable = activity !== null && activityMonth === month;
   const activityByCategory = new Map(
-    activity?.map((item) => [item.category_id, item]),
+    (activityAvailable ? activity : null)?.map((item) => [
+      item.category_id,
+      item,
+    ]),
   );
   const showArchived = archivedOpen;
-  const [year, monthNumber] = month.split('-').map(Number);
   const filters = [
     { value: 'all', label: 'category_manager.all', icon: LayoutGrid },
     {
@@ -233,7 +244,7 @@ export default function Categories() {
             key={category.id}
             category={category}
             activity={activityByCategory.get(category.id)}
-            activityAvailable={activity !== null}
+            activityAvailable={activityAvailable}
             blocked={blocked}
             onEdit={(selected, trigger) => {
               if (financialActionsBlocked()) {
@@ -255,78 +266,64 @@ export default function Categories() {
       className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-10"
       aria-labelledby="categories-title"
     >
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1
-            id="categories-title"
-            className="flex items-center gap-2 text-lg font-semibold text-foreground"
+      <ScreenHeader
+        id="categories-title"
+        title={t('category_manager.title')}
+        description={t('category_manager.hint')}
+        icon={Tags}
+        actions={
+          <Button
+            disabled={blocked}
+            onClick={(event) => {
+              if (financialActionsBlocked()) {
+                return;
+              }
+
+              returnFocus.current = event.currentTarget;
+              setEditor('new');
+            }}
           >
-            <Tags className="size-5" aria-hidden="true" />
-            {t('category_manager.title')}
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            {t('category_manager.hint')}
-          </p>
-        </div>
-        <Button
-          disabled={blocked}
-          onClick={(event) => {
-            if (financialActionsBlocked()) {
-              return;
-            }
-
-            returnFocus.current = event.currentTarget;
-            setEditor('new');
-          }}
-        >
-          <Plus aria-hidden="true" />
-          {t('category_manager.add')}
-        </Button>
-      </div>
+            <Plus aria-hidden="true" />
+            {t('category_manager.add')}
+          </Button>
+        }
+      />
       <div className="mb-5 flex flex-wrap items-center gap-3">
-        <div className="relative min-w-0 flex-[1_1_16rem]">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <Input
-            type="search"
-            className="pl-9"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            aria-label={t('category_manager.search')}
-            placeholder={t('category_manager.search')}
-          />
-        </div>
-        <div
-          role="group"
-          aria-label={t('category_manager.filters')}
-          className="flex flex-wrap gap-2"
-        >
-          {filters.map(({ value, label, icon: Icon }) => (
-            <Button
-              key={value}
-              variant={filter === value ? 'default' : 'outline'}
-              aria-pressed={filter === value}
-              onClick={() => {
-                setFilter(value);
+        <ScreenSearch
+          label={t('category_manager.search')}
+          value={query}
+          onValueChange={setQuery}
+        />
+        <ScreenFilters
+          label={t('category_manager.filters')}
+          value={filter}
+          items={filters.map((item) => ({ ...item, label: t(item.label) }))}
+          onValueChange={(value) => {
+            setFilter(value);
 
-                if (value === 'archived') {
-                  setArchivedOpen(true);
-                }
-              }}
-            >
-              <Icon aria-hidden="true" />
-              {t(label)}
-            </Button>
-          ))}
-        </div>
+            if (value === 'archived') {
+              setArchivedOpen(true);
+            }
+          }}
+        />
       </div>
-      <p className="mb-4 text-xs text-muted-foreground">
-        {t('category_manager.activity_period', {
-          month: formatYearMonthToString(year, monthNumber),
-        })}
-      </p>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <MonthNavigator
+          month={month}
+          disabled={blocked}
+          onChange={(next) => {
+            if (!financialActionsBlocked()) {
+              activityRequest.current += 1;
+              setActivity(null);
+              setActivityFailed(false);
+              setMonth(next);
+            }
+          }}
+        />
+        <p className="flex-[1_1_20rem] text-xs text-muted-foreground">
+          {t('category_manager.activity_period')}
+        </p>
+      </div>
       {activityFailed ? (
         <div
           role="alert"
@@ -342,7 +339,7 @@ export default function Categories() {
           </Button>
         </div>
       ) : (
-        activity === null && (
+        !activityAvailable && (
           <p role="status" className="mb-4 text-xs text-muted-foreground">
             {t('category_manager.activity_loading')}
           </p>
@@ -380,9 +377,10 @@ export default function Categories() {
             ))}
           <div className="mt-5 rounded-xl border border-border">
             <h2>
-              <button
+              <Button
                 type="button"
-                className="flex w-full items-center gap-3 rounded-xl p-4 text-left text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                variant="ghost"
+                className="h-auto w-full justify-start gap-3 rounded-xl p-4 text-left hover:bg-accent hover:text-accent-foreground"
                 aria-expanded={showArchived}
                 aria-controls="archived-categories"
                 onClick={() => {
@@ -397,7 +395,7 @@ export default function Categories() {
                   className={`ml-auto size-4 transition-transform motion-reduce:transition-none ${showArchived ? 'rotate-180' : ''}`}
                   aria-hidden="true"
                 />
-              </button>
+              </Button>
             </h2>
             <div
               id="archived-categories"

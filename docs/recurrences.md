@@ -253,7 +253,7 @@ UI migration.
 
 ### Migrated-screen refinements (2026-10-23)
 
-Recurring now uses shared heading, description, search, filter, and
+Categories and Recurring now share heading, description, search, filter, and
 month-navigation presentation. Existing monthly-workspace tab styling is retained.
 The recurrence editor uses a composition shell and render-only form, a form-state
 hook, cancellable preview queries, and a dedicated persistence command. Parent
@@ -267,6 +267,7 @@ date, direct-payment invoice cleanup, profile changes during correction review,
 historical version selection, and quarterly creation. An isolated browser fixture
 verified matching 32px search/filter controls and 18px headings, side-by-side
 panels at a 1025px CSS viewport and stacked panels at 909px without horizontal
-overflow, creation and keyboard editing with focus restoration.
+overflow, creation and keyboard editing with focus restoration, and category
+month navigation with stale-response rejection and failure/retry recovery.
 These browser checks use simulated IPC; persistence remains covered by the
 integration suite. No database migration or manual upgrade action is required.

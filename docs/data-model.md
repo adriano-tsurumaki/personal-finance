@@ -276,8 +276,9 @@ for compatible income/expense categories. A category supporting both types is
 included in either type filter. Archived categories remain in a separate
 collapsible section, including when filtering or searching.
 
-Current-calendar-month activity is read through `categories:activity` independently
-of the selected timeline month. Main sums recorded transaction cents by category
+Selected-month activity starts at the current calendar month and is read through `categories:activity` independently
+of the selected timeline month. Previous/next controls change only category activity;
+returning focus or a calendar check does not reset a manually selected month. Main sums recorded transaction cents by category
 and reference date, returning separate income/expense totals, daily series, and
 an entry count. This includes recorded purchases and installments once, regardless
 of invoice settlement dates, and excludes invoice payments, uncategorized entries,

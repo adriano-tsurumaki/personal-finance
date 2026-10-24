@@ -103,10 +103,9 @@ test('sidebar exposes Categories and Timeline with current-page and financial-op
     assert.match(recurrences, /aria-label="Next month"/);
     const categories = renderToStaticMarkup(<Categories />);
     assert.match(categories, /<h1[^>]*id="categories-title"/);
-    assert.doesNotMatch(
-      categories,
-      /Opening balance|Previous month|role="tablist"/,
-    );
+    assert.match(categories, /aria-label="Previous month"/);
+    assert.match(categories, /aria-label="Next month"/);
+    assert.doesNotMatch(categories, /Opening balance|role="tablist"/);
   } finally {
     Object.assign(snapshot, original);
     setLocale('pt-BR');
