@@ -6,6 +6,7 @@ import Profiles from '@modules/Profiles';
 import MonthlyFinance from '@modules/MonthlyFinance';
 import FinanceSections from '@modules/FinanceSections';
 import Categories from '@modules/Categories';
+import Recurrences from '@modules/Recurrences';
 import { Toaster } from '@components/ui/toast';
 import ConfirmationDialogHost from '@components/ConfirmationDialog/ConfirmationDialogHost';
 import TransactionDialog from '@modules/TimelineTransaction/TransactionDialog';
@@ -35,10 +36,18 @@ function FinanceHome() {
       <main className="min-w-0 flex-1 overflow-y-auto">
         {destination === 'categories' ? (
           <Categories />
+        ) : destination === 'recurrences' ? (
+          <Recurrences />
         ) : (
           <>
             <MonthlyFinance />
-            <FinanceSections />
+            <FinanceSections
+              onReviewRecurrences={() => {
+                if (!financialActionsBlocked()) {
+                  setDestination('recurrences');
+                }
+              }}
+            />
           </>
         )}
       </main>

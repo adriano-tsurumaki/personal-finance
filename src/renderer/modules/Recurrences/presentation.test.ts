@@ -1,8 +1,17 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { forecastEnd, localToday, monthlyEquivalent } from './presentation';
+import {
+  filterOccurrences,
+  filterRules,
+  forecastEnd,
+  localToday,
+  monthlyEquivalent,
+} from './presentation';
 import { validateDefaults } from './validation';
-import type { RecurrenceRuleDto } from '@shared/contracts/recurrence';
+import type {
+  RecurrenceRuleDto,
+  RecurrenceOccurrenceDto,
+} from '@shared/contracts/recurrence';
 
 const rule: RecurrenceRuleDto = {
   id: 1,
@@ -116,4 +125,60 @@ test('confirmation field validation rejects incompatible classifications and arc
       .amount_cents,
     'recurrence.invalid_amount',
   );
+});
+
+test('search and type filters retain occurrence state and order without changing their source', () => {
+  const base = {
+    recurrence_id: 1,
+    name: 'Café plan',
+    type: 2,
+    state: 'unconfirmed',
+  } as RecurrenceOccurrenceDto;
+  const rows = [
+    base,
+    {
+      ...base,
+      recurrence_id: 2,
+      name: 'Salary',
+      type: 1 as const,
+      state: 'confirmed' as const,
+    },
+    { ...base, recurrence_id: 3, state: 'ignored' as const },
+  ];
+  assert.deepEqual(
+    filterOccurrences(rows, ' CAFÉ ', 'all').map((row) => row.recurrence_id),
+    [1, 3],
+  );
+  assert.deepEqual(
+    filterOccurrences(rows, '', 'income').map((row) => row.recurrence_id),
+    [2],
+  );
+  assert.deepEqual(
+    filterOccurrences(rows, '', 'expense').map((row) => row.recurrence_id),
+    [1, 3],
+  );
+  assert.deepEqual(filterOccurrences(rows, '', 'pending'), [base]);
+  assert.equal(rows.length, 3);
+});
+
+test('pending rules follow the selected month and search includes paused and ended history', () => {
+  const rules = [
+    rule,
+    { ...rule, id: 2, status: 'paused' as const },
+    { ...rule, id: 3, status: 'ended' as const },
+  ];
+  const pending = {
+    recurrence_id: 2,
+    name: rule.name,
+    type: 2,
+    state: 'unconfirmed',
+  } as RecurrenceOccurrenceDto;
+  assert.deepEqual(
+    filterRules(rules, 'annual', 'pending', [pending]).map((row) => row.id),
+    [2],
+  );
+  assert.deepEqual(filterRules(rules, '', 'pending', []), []);
+  assert.equal(filterRules(rules, 'ANNUAL', 'all', []).length, 3);
+  assert.deepEqual(filterRules(rules, '', 'income', []), []);
+  assert.equal(monthlyEquivalent(rule), 10000);
 });

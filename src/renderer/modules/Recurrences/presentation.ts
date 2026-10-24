@@ -1,4 +1,7 @@
-import type { RecurrenceRuleDto } from '@shared/contracts/recurrence';
+import type {
+  RecurrenceRuleDto,
+  RecurrenceOccurrenceDto,
+} from '@shared/contracts/recurrence';
 
 /** Local calendar dates intentionally avoid UTC conversion at the renderer boundary. */
 export function localToday(now = new Date()): string {
@@ -26,4 +29,50 @@ export function monthlyEquivalent(rule: RecurrenceRuleDto): number {
           ? 1 / 12
           : 1;
   return (version.amount_cents * multiplier) / version.interval;
+}
+
+export type RecurrenceFilter = 'all' | 'income' | 'expense' | 'pending';
+
+function matchesName(name: string, query: string) {
+  return name
+    .normalize('NFC')
+    .toLocaleLowerCase()
+    .includes(query.trim().normalize('NFC').toLocaleLowerCase());
+}
+
+export function filterOccurrences(
+  rows: RecurrenceOccurrenceDto[],
+  query: string,
+  filter: RecurrenceFilter,
+) {
+  return rows.filter(
+    (row) =>
+      matchesName(row.name, query) &&
+      (filter === 'all' ||
+        (filter === 'pending'
+          ? row.state === 'unconfirmed'
+          : row.type === (filter === 'income' ? 1 : 2))),
+  );
+}
+
+export function filterRules(
+  rows: RecurrenceRuleDto[],
+  query: string,
+  filter: RecurrenceFilter,
+  occurrences: RecurrenceOccurrenceDto[],
+) {
+  const pending = new Set(
+    occurrences
+      .filter((row) => row.state === 'unconfirmed')
+      .map((row) => row.recurrence_id),
+  );
+  return rows.filter(
+    (row) =>
+      matchesName(row.name, query) &&
+      (filter === 'all' ||
+        (filter === 'pending'
+          ? pending.has(row.id)
+          : (row.versions.at(-1)?.type ?? 2) ===
+            (filter === 'income' ? 1 : 2))),
+  );
 }

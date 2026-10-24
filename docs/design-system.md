@@ -146,6 +146,34 @@ Keep names and descriptions in the top section of each card and monthly activity
 in a bottom section. Reserve a line for secondary amounts to align primary values,
 charts, and entry-count footers across cards in the same grid row.
 
+### Standalone screen headers and toolbars
+
+Migrated standalone management screens use the shared `ScreenHeader`,
+`ScreenSearch`, and `ScreenFilters` components. This standard applies to migrated screens; existing
+monthly-workspace tabs keep their established composition until their migration.
+
+- Page heading: one `h1`, 18px (`text-lg`), weight 600, foreground text, and a
+  neutral 20px Lucide icon with an 8px gap. Reserve semantic icon colors for
+  financial meaning or category identity within content.
+- Description: 14px muted text, an 8px top margin, and a maximum width of 42rem.
+  Keep the description with its heading and align the primary action to the top
+  of that group. The header wraps with a 16px gap and has a 24px bottom margin.
+- Search and adjacent filter buttons share a 32px height. `ScreenSearch` sets
+  `h-8 py-0` on the existing `Input`; `ScreenFilters` uses the default `Button`
+  size. Do not shrink filters independently with `size="sm"`. Search icons are
+  16px and vertically centered; filter buttons have an 8px gap.
+- Toolbars wrap with a 12px gap. Search can grow from a 16rem preferred width;
+  filter groups can wrap independently and must remain keyboard accessible.
+
+These shared components own presentation only. Search and filter state remains
+local and available during unrelated financial operations. Screens retain
+operation guards on primary actions and period navigation. Use `MonthNavigator`
+for month stepping on migrated screens: 32px icon buttons surround the localized
+month label. The owning feature decides whether the month is shared financial
+state or an independent activity period, and guards its navigation accordingly.
+
+### Surface geometry
+
 Base radius is `--radius: 0.75rem` (12px at a 16px root): sm = ×0.6 (7.2px), md = ×0.8 (9.6px), lg = ×1 (12px), xl = ×1.4 (16.8px), 2xl = ×1.8 (21.6px), 3xl = ×2.2 (26.4px), 4xl = ×2.6 (31.2px). Full radius is 9999px. Do not substitute a framework's default radius scale for these mappings.
 
 | Surface        | Radius | Padding | Fill and border                                 |
@@ -323,7 +351,11 @@ The kit limits timeline navigation to January–March 2026 and anchors the forec
 
 [Recurrences](recurrences.md) defines the implemented product behavior.
 Keep the Ledger recurrence form, overview tiles, income/expense rule
-groups, paused-row treatment, and sticky 45-day forecast. Extend the screen with
+groups, paused-row treatment, and sticky 45-day forecast. The dedicated sidebar
+screen extends the reference to a centered 80rem maximum so occurrence cards and
+the forecast have room beside each other on wide windows; smaller windows stack
+the panels. Search, local filters, and compact rule action menus reduce clutter.
+Extend the screen with
 existing tab primitives for **In month** and **All recurrences**. The first follows
 the confirmed monthly-summary selection and shows retained occurrences with normal
 styling. The second preserves visibility of all created rules, including paused-rule

@@ -6,6 +6,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ReceiptText,
+  Repeat,
   Tags,
   Wallet,
   Waypoints,
@@ -24,7 +25,7 @@ import {
   TooltipTrigger,
 } from '@components/ui/tooltip';
 
-export type AppDestination = 'timeline' | 'categories';
+export type AppDestination = 'timeline' | 'categories' | 'recurrences';
 
 interface SidebarItem {
   label: Parameters<typeof t>[0];
@@ -53,6 +54,7 @@ const groups: {
   {
     label: 'sidebar.commitments',
     items: [
+      { label: 'sections.recurring', icon: Repeat, destination: 'recurrences' },
       { label: 'sidebar.invoices', icon: ReceiptText },
       { label: 'sidebar.installments', icon: CalendarRange },
     ],

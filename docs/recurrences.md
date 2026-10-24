@@ -175,11 +175,11 @@ Confirmation preselects the default card and suggested invoice; permit method/ca
 
 Use the local Ledger reference: `ui_kits/ledger/RecurringManager.jsx`, `components/finance/RecurringRow.jsx`, `components/finance/TimelineEntryRow.jsx`, and `ui_kits/ledger/finance-data.js`. Consult [Design system](design-system.md) for production adaptations.
 
-Preserve the centered 48rem composition, existing primary/income/expense palette, Instrument Sans text, JetBrains Mono amounts, border-based surfaces, compact badges, inline rule form, income/expense groups, 55% paused-row treatment, and sticky 45-day panel at the reference breakpoint. The new internal tabs are a deliberate extension using existing tab components, not a new navigation layout.
+The dedicated Recurring screen is accessible from the sidebar. It uses a responsive wide composition, theme-aware primary/income/expense colors, monospaced amounts, compact occurrence cards, an inline rule form, income/expense rule groups, and 55% paused-row treatment. The 45-day panel sits beside the monthly list from the 1024px (`lg`) viewport breakpoint and below it on smaller windows. Internal tabs switch between the selected month and all rules; previous/next controls use the shared financial month loader and its notifications. Name search and income/expense/pending filters affect these tabs only, leaving overview estimates and the today-based forecast unchanged. Pending rules are those with unconfirmed occurrences in the selected month. Rule action menus support keyboard navigation and return focus to their trigger.
 
 - **In month:** scheduled date, estimate or confirmed amount, rule origin, state, and actual transaction reference date when different. Unconfirmed rows offer confirmation and proposed ignore actions. Retained occurrences use normal styling even when the rule is paused. Paused intervals generate no occurrences; existing confirmed transactions remain visible. Do not render a separate paused-rule group.
 - **All recurrences:** continuous rules, active/paused/ended state, defaults, cadence, first date, and last retained date where applicable. Provide create, edit, pause, resume, and end actions.
-- **Timeline:** unconfirmed projected rows use the existing row language with a clear state badge and recurrence icon. The period notice links to the same month's **In month** tab. Confirmations occur in the recurrence screen.
+- **Timeline:** unconfirmed projected rows use the existing row language with a clear state badge and recurrence icon. The period notice opens the dedicated Recurring screen in the same month's **In month** tab. Confirmations occur in the recurrence screen.
 - **Confirmation:** prefilled title, actual BRL amount, category, method, reference date, and card/invoice when applicable. Show the resulting cash-flow period before saving when the method or invoice changes.
 - **Overview tiles:** retain the Ledger monthly-equivalent view, explicitly labeled as an estimate. The selected month's summary continues to show dated cash-flow totals, not equivalents.
 
@@ -231,3 +231,42 @@ and a distributed-app upgrade were not exercised; database upgrades use isolated
 SQLite fixtures.
 
 The implementation and verification evidence above describe the delivered recurrence scope. The early-paid invoice coverage availability issue remains a known limitation, as described in the credit estimate selection discussion. The defaults and reconciliation policy above are finalized implementation choices.
+
+### Dedicated screen validation (2026-10-23)
+
+The sidebar migration preserves the existing editor, mutation executor, main
+services, and IPC contracts. The old monthly recurrence tab is removed; the
+monthly notice navigates to the dedicated screen. Automated coverage includes
+sidebar availability and financial-operation states, search normalization,
+income/expense filters, selected-month pending-rule filtering, and preservation
+of scheduled versus actual dates. All 208 tests passed with temporary files
+located inside the workspace, alongside TypeScript, lint, and formatting checks.
+Production bundles and the Windows x64 application package were built.
+
+An isolated browser fixture with simulated IPC responses was checked at wide and
+narrow viewport sizes. It verified search, pending filtering, month navigation
+without changing the forecast, keyboard rule-menu access, editor opening, Escape,
+and restoration of focus to the action trigger. These checks validate renderer
+composition, not native-window behavior or persistence. Database behavior remains
+covered by the integration suite; no installed-app upgrade was exercised for this
+UI migration.
+
+### Migrated-screen refinements (2026-10-23)
+
+Recurring now uses shared heading, description, search, filter, and
+month-navigation presentation. Existing monthly-workspace tab styling is retained.
+The recurrence editor uses a composition shell and render-only form, a form-state
+hook, cancellable preview queries, and a dedicated persistence command. Parent
+mutation ownership remains unchanged; hints and errors reuse the existing field
+primitives. Semantic headings, lists, definition lists, and time elements remain
+native HTML.
+
+All 212 tests, TypeScript, lint, formatting, and the renderer production build
+passed. Four command regression tests cover occurrence identity versus reference
+date, direct-payment invoice cleanup, profile changes during correction review,
+historical version selection, and quarterly creation. An isolated browser fixture
+verified matching 32px search/filter controls and 18px headings, side-by-side
+panels at a 1025px CSS viewport and stacked panels at 909px without horizontal
+overflow, creation and keyboard editing with focus restoration.
+These browser checks use simulated IPC; persistence remains covered by the
+integration suite. No database migration or manual upgrade action is required.

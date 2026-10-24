@@ -474,7 +474,15 @@
     "invalid_input": "Revise o valor, as associações e a data do calendário.",
     "conflict": "Esta regra mudou. Recarregue o mês e reabra o editor.",
     "not_found": "Esta regra ou ocorrência não está mais disponível.",
-    "repair_required_error": "Revise a regra ou a cobertura da fatura antes de continuar."
+    "repair_required_error": "Revise a regra ou a cobertura da fatura antes de continuar.",
+    "search": "Buscar recorrências…",
+    "filters": "Filtrar recorrências",
+    "filter_all": "Todas",
+    "filter_income": "Receitas",
+    "filter_expense": "Despesas",
+    "filter_pending": "Pendentes",
+    "no_results": "Nenhuma recorrência corresponde à busca e aos filtros.",
+    "actions": "Ações de {name}"
   },
   "installments": {
     "intro": "Distribua uma compra entre meses, com total exato e prévia das faturas.",

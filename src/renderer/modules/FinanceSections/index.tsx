@@ -1,8 +1,7 @@
 import { useFinancialOperations } from '@store/financial-operations';
 import { useState } from 'react';
-import Recurrences from '@modules/Recurrences';
 import Installments from '@modules/Installments';
-import { CreditCard, Repeat, Target, Wallet } from 'lucide-react';
+import { CreditCard, Target, Wallet } from 'lucide-react';
 import CreditCards from '@modules/CreditCards';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@components/ui/tabs';
 import UnderConstruction from '@components/UnderConstruction';
@@ -14,7 +13,11 @@ const deferredSections = [
   { id: 'weekly', label: 'sections.weekly', icon: Target },
 ] as const;
 
-export default function FinanceSections() {
+export default function FinanceSections({
+  onReviewRecurrences,
+}: {
+  onReviewRecurrences?: () => void;
+}) {
   const [section, setSection] = useState('timelines');
   const [createPlan, setCreatePlan] = useState(false);
   const blocked = useFinancialOperations((state) => state.pending.size > 0);
@@ -57,10 +60,6 @@ export default function FinanceSections() {
                   <CreditCard aria-hidden="true" />
                   {t('cards.title')}
                 </TabsTrigger>
-                <TabsTrigger value="recurring">
-                  <Repeat aria-hidden="true" />
-                  {t('sections.recurring')}
-                </TabsTrigger>
                 <TabsTrigger value="installments">
                   <CreditCard aria-hidden="true" />
                   {t('sections.installments')}
@@ -85,16 +84,13 @@ export default function FinanceSections() {
             }}
             onReviewRecurrences={() => {
               if (!useFinancialOperations.getState().pending.size) {
-                setSection('recurring');
+                onReviewRecurrences?.();
               }
             }}
           />
         </TabsContent>
         <TabsContent value="cards">
           <CreditCards />
-        </TabsContent>
-        <TabsContent value="recurring">
-          <Recurrences />
         </TabsContent>
         <TabsContent value="installments">
           <Installments

@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Changed
+
+- Move recurring commitments from the monthly workspace tab to a dedicated sidebar
+  screen. Add compact occurrence cards, rule action menus, name search,
+  income/expense/pending filters, and month navigation alongside a responsive
+  today-based 45-day forecast, shown beside the list from 1024px. Use shared
+  screen headers, search fields, and filter control sizes. Split recurrence editor
+  state, asynchronous previews, save commands, and form presentation into focused
+  collaborators. Preserve existing recurrence calculations, confirmation, lifecycle,
+  invoice coverage, and financial history. No database migration or manual upgrade
+  action is required.
+
 ## 0.13.0 - 2026-10-23
 
 ### Added
